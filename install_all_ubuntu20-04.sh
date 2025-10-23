@@ -54,6 +54,7 @@ mkdir -p geant4-build geant4-install
 cd geant4-build
 
 echo "[6/8] Configurando Geant4..."
+sudo apt-get install libxerces-c-dev
 cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/geant4-install \
       -DGEANT4_INSTALL_DATA=ON \
       -DGEANT4_USE_GDML=ON \
