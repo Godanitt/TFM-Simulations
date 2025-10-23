@@ -1,0 +1,3 @@
+/home/daniel/Documentos/Master Fisica/TFM/fatGem/build/CMakeFiles/fatGem.dir
+/home/daniel/Documentos/Master Fisica/TFM/fatGem/build/CMakeFiles/edit_cache.dir
+/home/daniel/Documentos/Master Fisica/TFM/fatGem/build/CMakeFiles/rebuild_cache.dir

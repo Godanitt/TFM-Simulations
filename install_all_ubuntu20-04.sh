@@ -72,6 +72,7 @@ cd $INSTALL_DIR
 git clone https://gitlab.cern.ch/garfield/garfieldpp.git garfield
 mkdir -p garfield-build garfield-install
 cd garfield-build
+sudo apt-get install libvdt-dev
 cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/garfield-install \
       -DGeant4_DIR=$INSTALL_DIR/geant4-install/lib/cmake/Geant4 \
       -DROOT_DIR=$INSTALL_DIR/root-install/cmake \
