@@ -1,0 +1,18 @@
+# bashrc
+alias bashrc='nano ~/.bashrc'
+
+# ROOT
+source ~/root-install/bin/thisroot.sh
+
+# Geant4
+source ~/geant4-install/bin/geant4.sh
+
+# Garfield++
+export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:/home/daniel/garfield/install
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/daniel/garfield/install/lib
+
+# Garfield++ en python
+export GARFIELD_HOME=$HOME/garfield
+export LD_LIBRARY_PATH=$GARFIELD_HOME:$LD_LIBRARY_PATH
+export PYTHONPATH=$GARFIELD_HOME:$PYTHONPATH
+
