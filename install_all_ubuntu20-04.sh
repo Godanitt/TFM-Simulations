@@ -8,16 +8,23 @@ echo " Instalador ROOT + Geant4 + Garfield++"
 echo " Ubuntu 20.04 - configurado automáticamente"
 echo "=============================="
 
-# --- Dependencias del sistema ---
+# --- Eliminar repositorios rotos (TeamViewer, etc.) ---
+echo "[0/8] Limpiando repositorios problemáticos..."
+sudo rm -f /etc/apt/sources.list.d/teamviewer*.list || true
+
+# --- Actualizar sistema ---
 echo "[1/8] Instalando dependencias del sistema..."
-sudo apt-get update
+sudo apt-get clean
+sudo apt-get update --allow-releaseinfo-change || true
+
+# --- Instalar dependencias necesarias ---
 sudo apt-get install -y \
   build-essential gfortran git wget curl cmake cmake-curses-gui \
   libssl-dev libx11-dev libxpm-dev libxft-dev libxext-dev \
   libxmu-dev libxi-dev libxrender-dev libxrandr-dev libxt-dev \
   libglu1-mesa-dev freeglut3-dev mesa-common-dev libglew-dev \
   libfftw3-dev libcfitsio-dev libpng-dev libjpeg-dev \
-  qt5-default qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools \
+  qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools \
   libexpat1-dev libxml2-dev python3 python3-pip unzip
 
 # --- Instalar ROOT ---
