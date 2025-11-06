@@ -31,6 +31,7 @@ for col in scCF3.columns:
     if col == "fCF4":
         continue
     ratio_scint = (scCF4["all"] + scAr["all"]) / scCF3[col]
+    print(ratio_scint)
     plt.plot(fCF4*100, ratio_scint, marker=',', linestyle='-', label=f"Scint {col}")
 
 # === 5. Y_uv / Y_vis para cada columna común ===
@@ -39,7 +40,7 @@ for col in yield_uv.columns:
     if col != "fCF4" and col in yield_vis.columns:
         ratio_yield = yield_uv[col] / yield_vis[col]
         plt.plot(fCF4_yield, ratio_yield, marker='s', linestyle='--',linewidth=2, label=f"Yield {col}")
-        print(ratio_yield)
+        #print(ratio_yield)
 
 # === 6. Formato del gráfico ===
 plt.title("Comparación: (CF4 + Ar) / CF3  y  Y_uv / Y_vis", fontsize=13)
@@ -48,7 +49,7 @@ plt.ylabel("Razón (adimensional)", fontsize=12)
 plt.xscale("log")  # útil si fCF4 varía logarítmicamente
 plt.yscale("log")  # útil si fCF4 varía logarítmicamente
 plt.grid(True, which="both", ls="--", alpha=0.5)
-plt.ylim(0,100)
+plt.ylim(0.0,100)
 plt.legend(title="Curvas", fontsize=8)
 plt.tight_layout()
-plt.savefig("raw_data.pdf")
+plt.savefig("output/raw_data.pdf")
