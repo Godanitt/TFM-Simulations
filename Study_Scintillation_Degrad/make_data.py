@@ -67,7 +67,8 @@ yield_vis      = pd.DataFrame()
 # Además las indexaciones se hacen a mano (lineas 120-140)
 name_CF4         =  np.array(["all"])
 name_CF3         =  np.array([">11.5",">12.5",">14.5"])
-name_Ar_dbleStar =  np.array(["all",">2o Resonante"])
+#name_Ar_dbleStar =  np.array(["all", ">2o Resonante"])
+name_Ar_dbleStar =  np.array(["Ar** 2exc"])
 name_Ar_3rd      =  np.array(["all"])
 name_uv          =  np.array(["fCF4","1bar","2bar","2.5bar","3bar","4bar","5bar"])
 name_vis         =  np.array(["fCF4","1bar","2bar","2.5bar","3bar","4bar","5bar"])
@@ -75,9 +76,13 @@ name_vis         =  np.array(["fCF4","1bar","2bar","2.5bar","3bar","4bar","5bar"
 presion = np.array([1,1,2,2.5,3,4,5])
 presiones = pd.DataFrame({"Presion":presion})
 
-name_SP_CF3      =  np.array([">11.5 all",">11.5 >2o Resonante",
-                              ">12.5 all",">12.5 >2o Resonante",
-                              ">14.5 all",">14.5 >2o Resonante"])
+#name_SP_CF3      =  np.array([">11.5 all",">11.5 >2o Resonante",
+ #                             ">12.5 all",">12.5 >2o Resonante",
+ #                             ">14.5 all",">14.5 >2o Resonante"])
+
+name_SP_CF3      =  np.array([">11.5 Ar** 2exc",
+                              ">12.5 Ar** 2exc",
+                              ">14.5 Ar** 2exc"])
 
 name_SP_CF4      =  np.array(["all"])
 name_SP_Ar3rd    =  np.array(["all"])
@@ -127,12 +132,13 @@ for i in range(len(archives)):
     poblations_CF4.loc[i, "all"] = cf4.loc[cf4['Proceso'].str.contains("ION CF3 +"), 'Eventos'].sum()
     poblations_Ar_3rd.loc[i, "all"] = ar.loc[ar['Proceso'].str.contains("CHARGE STATE =2"), 'Eventos'].sum()
 
-    poblations_CF3.loc[i, ">11.5"] = cf4.loc[cf4['Proceso'].str.contains("NEUTRAL DISS")  & (cf4['Energia'] > 11.5), 'Eventos'].sum()
-    poblations_CF3.loc[i, ">12.5"] = cf4.loc[cf4['Proceso'].str.contains("NEUTRAL DISS")  & (cf4['Energia'] > 12.5), 'Eventos'].sum()
-    poblations_CF3.loc[i, ">14.5"] = cf4.loc[cf4['Proceso'].str.contains("NEUTRAL DISS")  & (cf4['Energia'] > 14.5), 'Eventos'].sum()
-    
-    poblations_Ar_dbleStar.loc[i, "all"]=ar.loc[(ar['Proceso'].str.contains("EXC")),'Eventos'].iloc[:].sum()
-    poblations_Ar_dbleStar.loc[i, ">2o Resonante"]=ar.loc[(ar['Proceso'].str.contains("EXC")) & (ar['Energia'] > 11.8),'Eventos'].iloc[:].sum()    
+    poblations_CF3.loc[i, ">11.5"] = cf4.loc[cf4['Proceso'].str.contains("NEUTRAL DISS")  & (cf4['Energia'] >= 11.5), 'Eventos'].sum()
+    poblations_CF3.loc[i, ">12.5"] = cf4.loc[cf4['Proceso'].str.contains("NEUTRAL DISS")  & (cf4['Energia'] >= 12.5), 'Eventos'].sum()
+    poblations_CF3.loc[i, ">14.5"] = cf4.loc[cf4['Proceso'].str.contains("NEUTRAL DISS")  & (cf4['Energia'] >= 14.5), 'Eventos'].sum()
+        
+    poblations_Ar_dbleStar.loc[i, "Ar** 2exc"]=ar.loc[(ar['Proceso'].str.contains("EXC")) & (ar['Energia'] < 11.8),'Eventos'].iloc[:].sum()    
+    #poblations_Ar_dbleStar.loc[i, "all"]=ar.loc[(ar['Proceso'].str.contains("EXC")),'Eventos'].iloc[:].sum()
+    #poblations_Ar_dbleStar.loc[i, ">2o Resonante"]=ar.loc[(ar['Proceso'].str.contains("EXC")) & (ar['Energia'] > 11.8),'Eventos'].iloc[:].sum()    
     
 print("-"*60)
 print(poblations_CF3)
@@ -199,7 +205,7 @@ print(yield_uv)
     
 # ------------------------------------------
 # Generamos los dataframes de scintillation
-
+autoQ
 for i in name_SP_CF3:
     #a = np.zeros_like(name_CF3)
     #b = np.zeros_like(name_Ar_dbleStar)

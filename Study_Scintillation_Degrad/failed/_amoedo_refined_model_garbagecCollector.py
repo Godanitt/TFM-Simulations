@@ -1,5 +1,5 @@
 import numpy as np
-from amoedo_refined_model_simple import Pgamma_Ar3rd_refined,Pgamma_CF4_refined,Pgamma_CF3_refined
+from _amoedo_refined_model import Pgamma_Ar3rd_refined,Pgamma_CF4_refined,Pgamma_CF3_refined
 # ------------------------------------------------------------------------------
 
 def Pgamma_vis_refined_GC(f_cf4, Pgamma_CF3_star_dir, P_Ar_dblstar,autoQ,C):
