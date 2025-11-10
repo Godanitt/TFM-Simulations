@@ -8,7 +8,7 @@ def run_fatGemC(args, dir_output="build"):
 ###############################
 # Ejemplo de parámetros
 n = 1                         # Este es para limitar los electrones que se siu
-npe = [10]                    # numero de electrones primarios que se lanzan
+npe = [50]                    # numero de electrones primarios que se lanzan
 pressure = [1]                # bar
 gas1 = ["ar"]                 # gas2 nombre -> debe ser el código para Magboltz
 mixture1 = [99.0]             # % del gas2

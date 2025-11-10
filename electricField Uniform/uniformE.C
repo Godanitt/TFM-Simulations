@@ -279,7 +279,7 @@ int main(int argc, char *argv[]){
 	TTree *tree= new TTree("DataCharge","DataCharge");
 	tree->Branch("eventNumber", &eventNumber,"eventNumber/I");  
 	tree->Branch("PrimaryElectrons", &ne,"ne/I");  
-	tree->Branch("ie", &ie,"ie/I");								// Numero de electrones generados
+	tree->Branch("ie", &ie,"ie/I");								// Numero de electrones generados 
 	tree->Branch("nExc", &nExcitation, "nExc/I");
 	tree->Branch("nIon", &nIonising, "nIon/I");
 	tree->Branch("x0", &x0,"x0/D");  
@@ -337,7 +337,7 @@ int main(int argc, char *argv[]){
 			e0=0.1;}
 
 		else{
-				e0 = histen->GetRandom(); // generate energy randomly accordingly to previous collisions
+				e0 = histen->GetRandom(); // generate energy randomly accordingly to previous collisions -> CarlosAzevedo Idea
 			}				
 
 	
@@ -349,11 +349,10 @@ int main(int argc, char *argv[]){
 
 		std::cout << eventNumber + 1 << " finished " << npe << endl;
 
-		// Get the number of electrons and ions in the avalanche.
+		// Gbtenemos el número de electrones e iones producidos en la avalancha
 
 		aval->GetAvalancheSize (ne, ni);
 
-		//ep.ne = ne;
 
 		nelec_total = nelec_total + ne;
 
@@ -366,14 +365,11 @@ int main(int argc, char *argv[]){
 			
 			aval->GetElectronEndpoint (ie, x0, y0, z0, t0, e0, x1, y1, z1, t1, e1, status);
 			gas->GetNumberOfElectronCollisions(nElastic, nIonising, nAttachment, nInelastic, nExcitation, nSuperelastic);
-			
-			// Fill the tree
+	
 			tree->Fill ();
 
 			cout << "Electron " << ie << " drifting time was " << (t1 - t0) <<" ns, with the status " << status << endl;
 
-			//std::cout<<"electron "<<ie<<" xf "<< x1 <<" yf "<<y1 << " zf "<< z1<<" status= "<<status<<endl;
-			//std::cout << "electron " << ie << " rf " << sqrt (pow (x1, 2) +  pow (y1,2)) << " zf " << z1 << " status= " << status << endl;
 
 			hEstarty->Fill (y0);
 
