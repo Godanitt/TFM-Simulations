@@ -42,3 +42,7 @@ Simulación de electrones derivando en **campo eléctrico uniforme** para cualqu
 
 Estudio del centelleo de Ar-CF4 según el modelo de Pablo Amedo (https://doi.org/10.3389/fdest.2023.1282854). Nos centramos en su refinamiento y mejora, comparándo resultados con poblaciones de Degrad.
 
+### version1
+
+Versión en la que actualmente se está trabajando. Incluye barras de errores, más datos de Degrad, estudio de poblaciones de Degrad vs concentración de CF4 y su fit lineal para la obtención de parámetros autoquenching y relajación, así como tasa de emisión del CF3 directo. 
+
