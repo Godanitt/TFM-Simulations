@@ -1,7 +1,6 @@
 # Simulación de Campo Eléctrico Uniforme
 
-Este módulo realiza la simulación de avalanchas electrónicas en un **campo eléctrico uniforme** mediante el uso de **Garfield++** y **Magboltz**.  
-Incluye un programa principal en C++ (`uniformE.C`) que efectúa la simulación física, y un script auxiliar en Python (`runUniform.py`) que automatiza la compilación y ejecución del código. Está diseñado para hacerse en **UBUNTU 24.04.3 LTS**. 
+Este módulo realiza la simulación de avalanchas electrónicas en un **campo eléctrico uniforme** mediante el uso de **Garfield++** y **Magboltz**. Incluye un programa principal en C++ (`uniformE.C`) que efectúa la simulación física, y un script auxiliar en Python (`runUniform.py`) que automatiza la compilación y ejecución del código. Está diseñado para hacerse en **UBUNTU 24.04.3 LTS**. 
 
 Si no se quiere ejecutar con python, desde la carpeta principal electricFieldUniform: 
 
@@ -27,8 +26,7 @@ Las condiciones de la simulación se cambian dentro del propio archivo.
 
 ## 📂 Estructura del directorio
 
-
-
+```
 electricFieldUniform/
 │
 ├── build/ # Carpeta de compilación generada con CMake
@@ -37,6 +35,7 @@ electricFieldUniform/
 ├── CMakeLists.txt # Configuración de compilación del código C++
 ├── runUniform.py # Script en Python para compilar y ejecutar las simulaciones
 └── uniformE.C # Código fuente en C++ que realiza la simulación principal
+```
 
 ## ⚙️ Dependencias
 
