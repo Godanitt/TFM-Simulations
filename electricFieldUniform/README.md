@@ -25,12 +25,9 @@ Las condiciones de la simulación se cambian dentro del propio archivo.
 ---
 
 ## 📂 Estructura del directorio
-
+ 
 ```
 electricFieldUniform/
-│
-├── build/ # Carpeta de compilación generada con CMake
-├── rootArchives/ # Archivos .root con los resultados de las simulaciones
 │
 ├── CMakeLists.txt # Configuración de compilación del código C++
 ├── runUniform.py # Script en Python para compilar y ejecutar las simulaciones
@@ -52,13 +49,15 @@ Asegúrate de que las bibliotecas de Garfield++ y ROOT estén correctamente inst
 
 ### `uniformE.C`
 Código principal en C++ que:
-- Configura el gas o mezcla de gases mediante **MediumMagboltz**.  
-- Define un **campo eléctrico uniforme** usando `ComponentUser`.  
+- Configura el gas o mezcla de gases, presión y temperatura mediante **MediumMagboltz**.  
+- Define un **campo eléctrico uniforme** para lo cual necesitamos un gap y un valor del campo usando `ComponentUser`.  
 - Simula avalanchas microscópicas de electrones mediante `AvalancheMicroscopic`.  
 - Registra los resultados en un archivo **ROOT**, con información de:
   - Niveles de excitación,
   - Energías electrónicas,
-  - Número de electrones e iones producidos.  
+  - Datos por electrón
+  - Datos por electrón primario (ej: Número de electrones e iones producidos).
+  - Dato de las excitaciones (posiciones donde se producen e intante temporal, número de ellas). 
 
 ### `runUniform.py`
 

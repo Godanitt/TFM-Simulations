@@ -107,9 +107,9 @@ archives_cf4=np.array(["input/cf4_degrad_output_99.9Ar_0.1CF4.txt",
                    "input/cf4_degrad_output_PureCF4.txt"])
 
 
-########################################################################
+######################## Inicialización de dataframe ################################################
 
-fCF4            = np.array([0.001,0.01,0.1,1])   # concentraciones
+fCF4 = np.array([0.001,0.002,0.005,0.01,0.02,0.05,0.1,0.2,0.5,1])   # concentraciones
 
 poblations_CF4 = pd.DataFrame({"fCF4":fCF4})
 poblations_CF3 = pd.DataFrame({"fCF4":fCF4})
@@ -121,3 +121,41 @@ name_CF4         =  np.array(["all"])
 name_CF3         =  np.array([">11.5",">12.5",">14.5"])
 name_Ar_dbleStar =  np.array(["Ar** all", "Ar** 2exc"])
 name_Ar_3rd      =  np.array(["all"])
+
+
+
+################ Lectura y guardado en dataframe ##############################################
+
+for i in range(len(archives)):
+    df = read_input(
+        archives[i],
+        archivo_salida_Ar=archives_ar[i],      
+        archivo_salida_CF4=archives_cf4[i])
+    
+    ar  = df.loc[lambda df: df['Gas'] == "ARGON", :]
+    cf4 = df.loc[lambda df: df['Gas'] == "CF4", :]
+    
+    poblations_CF4.loc[i, "all"] = cf4.loc[cf4['Proceso'].str.contains("ION CF3 +"), 'Eventos'].sum()
+    poblations_Ar_3rd.loc[i, "all"] = ar.loc[ar['Proceso'].str.contains("CHARGE STATE =2"), 'Eventos'].sum()
+
+    poblations_CF3.loc[i, ">11.5"] = cf4.loc[cf4['Proceso'].str.contains("NEUTRAL DISS")  & (cf4['Energia'] > 11.5), 'Eventos'].sum()
+    poblations_CF3.loc[i, ">12.5"] = cf4.loc[cf4['Proceso'].str.contains("NEUTRAL DISS")  & (cf4['Energia'] > 12.5), 'Eventos'].sum()
+    poblations_CF3.loc[i, ">14.5"] = cf4.loc[cf4['Proceso'].str.contains("NEUTRAL DISS")  & (cf4['Energia'] > 14.5), 'Eventos'].sum()
+    
+    poblations_Ar_dbleStar.loc[i, "all"]=ar.loc[(ar['Proceso'].str.contains("EXC")),'Eventos'].iloc[2:].sum()
+    poblations_Ar_dbleStar.loc[i, ">2o Resonante"]=ar.loc[(ar['Proceso'].str.contains("EXC")) & (ar['Energia'] > 11.8),'Eventos'].iloc[2:].sum()    
+    
+
+########################## Guardado en Pickle/CSV ##############################################
+
+# Diccionario con todas las variables que quieres guarda
+to_save = {
+    "poblations_CF4": poblations_CF4,
+    "poblations_CF3": poblations_CF3,
+    "poblations_Ar_dbleStar": poblations_Ar_dbleStar,
+    "poblations_Ar_3rd": poblations_Ar_3rd,
+}
+# Recorremos y guardamos cada uno como .pkl
+for name, df in to_save.items():
+    df.to_pickle(f"pickle_data/{name}.pkl")
+    print(f"✅ Guardado: {name}.pkl")
