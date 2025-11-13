@@ -1,6 +1,12 @@
 
 
 import numpy as np
+""" 
+Modelo de pablo para poblaciones de Degrad
+"""
+
+
+
 # ------------------------------------------------------------------------------
 # Datos del paper: 
 # Observation of strong wavelength-shifting in the argon-tetraﬂuoromethane system 
@@ -19,15 +25,15 @@ K_Ar_dblstar_to_Ar_star     = 1     # ns-1
 
 # ------------------------------------------------------------------------------
 
-def Pgamma_CF3_refined(f_cf4, Pgamma_CF3_star_dir, P_Ar_dblstar,alpha):
+def Pgamma_CF3_refined(f_cf4, Pgamma_CF3_star_dir, P_Ar_dblstar):
     f_cf4       = np.asarray(f_cf4, dtype=float)
     denom       = K_Ar_dblstar_to_CF3_star*f_cf4 + ((1 - f_cf4)) * K_Ar_dblstar_to_Ar_star
     frac        = K_Ar_dblstar_to_CF3_star*f_cf4 / denom
     
-    return  Pgamma_CF3_star_dir*alpha +  P_Ar_dblstar * frac
+    return  Pgamma_CF3_star_dir +  P_Ar_dblstar * frac
 
 
-def Pgamma_CF4_refined(f_cf4, Pgamma_CF4_plus_star_dir, P_Ar_3rd, n,kcool,kdis):
+def Pgamma_CF4_refined(f_cf4, Pgamma_CF4_plus_star_dir, P_Ar_3rd, n):
     
     f_cf4       = np.asarray(f_cf4, dtype=float)
     
@@ -37,10 +43,8 @@ def Pgamma_CF4_refined(f_cf4, Pgamma_CF4_plus_star_dir, P_Ar_3rd, n,kcool,kdis):
     numer       = f_cf4 * n * K_Ar3rd_to_CF4_plus_star
     frac        = np.where(denom == 0, 0, numer / denom)  # evitar divisiones por cero
     
-    relajacion  = (n*f_cf4)/(n*f_cf4+kcool)
-    disociacion = 1/(1+kdis)
     
-    return  Pgamma_CF4_plus_star_dir * relajacion * disociacion +  P_Ar_3rd * frac
+    return  Pgamma_CF4_plus_star_dir +  P_Ar_3rd * frac
 
 
 def Pgamma_Ar3rd_refined(f_cf4, P_Ar_3rd, n):
@@ -52,21 +56,4 @@ def Pgamma_Ar3rd_refined(f_cf4, P_Ar_3rd, n):
     
     return  P_Ar_3rd * frac
 
-
-
-def Pgamma_vis_Cociente(f_cf4, Pgamma_CF3_star_dir, P_Ar_dblstar,values0,alpha):
-    f_cf40,Pgamma_CF3_star_dir0,P_Ar_dblstar0=values0 
-    a=Pgamma_CF3_refined(f_cf4, Pgamma_CF3_star_dir, P_Ar_dblstar,alpha)
-    b=Pgamma_CF3_refined(f_cf40, Pgamma_CF3_star_dir0, P_Ar_dblstar0,alpha)
-    return  a/b
-
-
-def Pgamma_UV_Cociente(f_cf4, Pgamma_CF4_plus_star_dir, P_Ar_3rd, n,values0,kcool,kdis):
-    f_cf40,Pgamma_CF4_plus_star_dir0,P_Ar_3rd0=values0
-    
-    a=Pgamma_CF4_refined(f_cf4, Pgamma_CF4_plus_star_dir, P_Ar_3rd, n,kcool,kdis)
-    b=Pgamma_CF4_refined(f_cf40, Pgamma_CF4_plus_star_dir0, P_Ar_3rd0, n,kcool,kdis)
-    c=Pgamma_Ar3rd_refined(f_cf4, P_Ar_3rd, n)
-    d=Pgamma_Ar3rd_refined(f_cf40, P_Ar_3rd0, n)
-    return  (a+c)/(b+d)
 

@@ -5,6 +5,7 @@ import dill
 import scipy.special
 import importlib
 import matplotlib.pyplot as plt 
+import os 
 
 """
 Script que nos permite visualizar los ajustes lineales de poblacion-%mezcla
@@ -23,5 +24,6 @@ lineal_poblations_CF4 = pd.read_pickle(os.path.join(DATA_DIR, "linealFun_poblati
 lineal_poblations_CF3 = pd.read_pickle(os.path.join(DATA_DIR,  "linealFun_poblations_CF3.pkl"))
 lineal_poblations_Ar_dbleStar  = pd.read_pickle(os.path.join(DATA_DIR,  "linealFun_poblations_Ar_dbleStar.pkl"))
 lineal_poblations_Ar_3rd  = pd.read_pickle(os.path.join(DATA_DIR,  "linealFun_poblations_Ar_3rd.pkl"))
+
 
 

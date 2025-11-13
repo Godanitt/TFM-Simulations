@@ -91,8 +91,8 @@ for i in range(0,len(presion)):
     s_uv = df_pressure.set_index("concentracion")["yields_zonas"].apply(lambda d: d["UV"])
     s_vis = df_pressure.set_index("concentracion")["yields_zonas"].apply(lambda d: d["vis"])
                                                                          
-    err_s_uv = df_pressure.set_index("concentracion")["yields_zonas"].apply(lambda d: d["UV"])*0.01
-    err_s_vis = df_pressure.set_index("concentracion")["yields_zonas"].apply(lambda d: d["vis"])*0.01
+    err_s_uv = df_pressure.set_index("concentracion")["yields_zonas"].apply(lambda d: d["UV"])*0.1
+    err_s_vis = df_pressure.set_index("concentracion")["yields_zonas"].apply(lambda d: d["vis"])*0.1
 
     # Si las concentraciones son floats con posibles decimales “sucios”, puedes redondear:
     # s_uv.index  = np.round(s_uv.index.astype(float), 8)

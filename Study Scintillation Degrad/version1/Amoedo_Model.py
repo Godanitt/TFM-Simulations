@@ -1,4 +1,9 @@
 import numpy as np
+
+""" 
+Modelo de pablo puro.
+"""
+
 # ------------------------------------------------------------------------------
 # Datos del paper: 
 # Observation of strong wavelength-shifting in the argon-tetraﬂuoromethane system 

@@ -1,6 +1,12 @@
 
 
 import numpy as np
+
+""" 
+Modelo de pablo para el ajuste del cociente
+"""
+
+
 # ------------------------------------------------------------------------------
 # Datos del paper: 
 # Observation of strong wavelength-shifting in the argon-tetraﬂuoromethane system 

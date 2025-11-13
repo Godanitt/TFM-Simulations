@@ -97,16 +97,18 @@ for i in range(len(poblations)):
         ax.set_xlabel("fCF4")
         ax.set_ylabel("Poblation Degrad")
         ax.legend()
+        print("=="*40)
         
+        print("a=",a,"\t b=",b)
+        print("=="*40)
         
     fig.savefig("output/"+names[i]+".pdf",bbox_inches="tight",dpi=300)
 
-    
     linealFun_poblations[i] = linealFun
     
 
-linealFun_poblations_CF4 = linealFun_poblations[0]
-linealFun_poblations_CF3 = linealFun_poblations[1]
+linealFun_poblations_CF4 = linealFun_poblations[1]
+linealFun_poblations_CF3 = linealFun_poblations[0]
 linealFun_poblations_Ar_dlbeStar = linealFun_poblations[2]
 linealFun_poblations_Ar_3rd = linealFun_poblations[3]
 
@@ -115,7 +117,7 @@ linealFun_poblations_Ar_3rd = linealFun_poblations[3]
 to_save = {
     "linealFun_poblations_CF4": linealFun_poblations_CF4,
     "linealFun_poblations_CF3": linealFun_poblations_CF3,
-    "linealFun_poblations_Ar_dlbeStar": linealFun_poblations_Ar_dlbeStar,
+    "linealFun_poblations_Ar_dbleStar": linealFun_poblations_Ar_dlbeStar,
     "linealFun_poblations_Ar_3rd": linealFun_poblations_Ar_3rd,
 }
 
