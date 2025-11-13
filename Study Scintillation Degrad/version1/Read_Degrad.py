@@ -1,6 +1,12 @@
 import re
 import pandas as pd
 from pathlib import Path
+import numpy as np 
+
+
+"""
+Script que nos permite leer los datos de las poblaciones de Degrad CF3/Ar**/CF4/Ar3rd, sacándolos en formato pickle y csv.
+"""
 
 #############################################################################################################
 ########################## FUNCION QUE LE UN ARCHIVO DE DEGRAD ##############################################
@@ -84,27 +90,27 @@ archives=np.array(["input/output_99.9Ar_0.1CF4.txt",
                    "input/output_50Ar_50CF4.txt",
                    "input/output_PureCF4.txt"])
 
-archives_ar=np.array(["input/ar_degrad_output_99.9Ar_0.1CF4.txt",
-                   "input/ar_degrad_output_99.8Ar_0.2CF4.txt",
-                   "input/ar_degrad_output_99.5Ar_0.5CF4.txt",
-                   "input/ar_degrad_output_99Ar_1CF4.txt",
-                   "input/ar_degrad_output_98Ar_2CF4.txt",
-                   "input/ar_degrad_output_95Ar_5CF4.txt",
-                   "input/ar_degrad_output_90Ar_10CF4.txt",
-                   "input/ar_degrad_output_80Ar_20CF4.txt",
-                   "input/ar_degrad_output_50Ar_50CF4.txt",
-                   "input/ar_degrad_output_PureCF4.txt"])
+archives_ar=np.array(["input/ar_degrad_output_99.9Ar_0.1CF4.csv",
+                   "input/ar_degrad_output_99.8Ar_0.2CF4.csv",
+                   "input/ar_degrad_output_99.5Ar_0.5CF4.csv",
+                   "input/ar_degrad_output_99Ar_1CF4.csv",
+                   "input/ar_degrad_output_98Ar_2CF4.csv",
+                   "input/ar_degrad_output_95Ar_5CF4.csv",
+                   "input/ar_degrad_output_90Ar_10CF4.csv",
+                   "input/ar_degrad_output_80Ar_20CF4.csv",
+                   "input/ar_degrad_output_50Ar_50CF4.csv",
+                   "input/ar_degrad_output_PureCF4.csv"])
 
-archives_cf4=np.array(["input/cf4_degrad_output_99.9Ar_0.1CF4.txt",
-                   "input/cf4_degrad_output_99.8Ar_0.2CF4.txt",
-                   "input/cf4_degrad_output_99.5Ar_0.5CF4.txt",
-                   "input/cf4_degrad_output_99Ar_1CF4.txt",
-                   "input/cf4_degrad_output_98Ar_2CF4.txt",
-                   "input/cf4_degrad_output_95Ar_5CF4.txt",
-                   "input/cf4_degrad_output_90Ar_10CF4.txt",
-                   "input/cf4_degrad_output_80Ar_20CF4.txt",
-                   "input/cf4_degrad_output_50Ar_50CF4.txt",
-                   "input/cf4_degrad_output_PureCF4.txt"])
+archives_cf4=np.array(["input/cf4_degrad_output_99.9Ar_0.1CF4.csv",
+                   "input/cf4_degrad_output_99.8Ar_0.2CF4.csv",
+                   "input/cf4_degrad_output_99.5Ar_0.5CF4.csv",
+                   "input/cf4_degrad_output_99Ar_1CF4.csv",
+                   "input/cf4_degrad_output_98Ar_2CF4.csv",
+                   "input/cf4_degrad_output_95Ar_5CF4.csv",
+                   "input/cf4_degrad_output_90Ar_10CF4.csv",
+                   "input/cf4_degrad_output_80Ar_20CF4.csv",
+                   "input/cf4_degrad_output_50Ar_50CF4.csv",
+                   "input/cf4_degrad_output_PureCF4.csv"])
 
 
 ######################## Inicialización de dataframe ################################################
@@ -117,34 +123,61 @@ poblations_Ar_dbleStar  = pd.DataFrame({"fCF4":fCF4})
 poblations_Ar_3rd  = pd.DataFrame({"fCF4":fCF4})
 
 
-name_CF4         =  np.array(["all"])
-name_CF3         =  np.array([">11.5",">12.5",">14.5"])
+name_CF4         =  np.array(["CF4 all"])
+name_CF3         =  np.array(["CF3 >11.5","CF3 >12.5","CF3 >14.5"])
 name_Ar_dbleStar =  np.array(["Ar** all", "Ar** 2exc"])
-name_Ar_3rd      =  np.array(["all"])
+name_Ar_3rd      =  np.array(["Ar3rd all"])
 
+"""
+for col in name_CF4:
+    poblations_CF4[col] = np.nan
 
-
+for col in name_CF3:
+    poblations_CF3[col] = np.nan
+    
+for col in name_Ar_dbleStar:
+    poblations_Ar_dbleStar[col] = np.nan
+    
+for col in name_Ar_3rd:
+    poblations_Ar_3rd[col] = np.nan
+""" 
 ################ Lectura y guardado en dataframe ##############################################
-
 for i in range(len(archives)):
     df = read_input(
         archives[i],
-        archivo_salida_Ar=archives_ar[i],      
-        archivo_salida_CF4=archives_cf4[i])
-    
-    ar  = df.loc[lambda df: df['Gas'] == "ARGON", :]
-    cf4 = df.loc[lambda df: df['Gas'] == "CF4", :]
-    
-    poblations_CF4.loc[i, "all"] = cf4.loc[cf4['Proceso'].str.contains("ION CF3 +"), 'Eventos'].sum()
-    poblations_Ar_3rd.loc[i, "all"] = ar.loc[ar['Proceso'].str.contains("CHARGE STATE =2"), 'Eventos'].sum()
+        archivo_salida_Ar=archives_ar[i],
+        archivo_salida_CF4=archives_cf4[i]
+    )
 
-    poblations_CF3.loc[i, ">11.5"] = cf4.loc[cf4['Proceso'].str.contains("NEUTRAL DISS")  & (cf4['Energia'] > 11.5), 'Eventos'].sum()
-    poblations_CF3.loc[i, ">12.5"] = cf4.loc[cf4['Proceso'].str.contains("NEUTRAL DISS")  & (cf4['Energia'] > 12.5), 'Eventos'].sum()
-    poblations_CF3.loc[i, ">14.5"] = cf4.loc[cf4['Proceso'].str.contains("NEUTRAL DISS")  & (cf4['Energia'] > 14.5), 'Eventos'].sum()
-    
-    poblations_Ar_dbleStar.loc[i, "all"]=ar.loc[(ar['Proceso'].str.contains("EXC")),'Eventos'].iloc[2:].sum()
-    poblations_Ar_dbleStar.loc[i, ">2o Resonante"]=ar.loc[(ar['Proceso'].str.contains("EXC")) & (ar['Energia'] > 11.8),'Eventos'].iloc[2:].sum()    
-    
+    ar  = df.loc[df['Gas'] == "ARGON", :]
+    cf4 = df.loc[df['Gas'] == "CF4", :]
+
+    # --- CF4 ---
+    mask_cf4_all = cf4['Proceso'].str.contains("ION CF3 +")
+    poblations_CF4.loc[i, "CF4 all"] = cf4.loc[mask_cf4_all, 'Eventos'].sum()
+    poblations_CF4.loc[i, "Err CF4 all"] =  np.sqrt((cf4.loc[mask_cf4_all, 'Eventos']**2 * cf4.loc[mask_cf4_all, 'Error%']**2).sum())/100
+
+    # --- Ar 3rd ---
+    mask_ar3rd = ar['Proceso'].str.contains("CHARGE STATE =2")
+    poblations_Ar_3rd.loc[i, "Ar3rd all"] = ar.loc[mask_ar3rd, 'Eventos'].sum()
+    poblations_Ar_3rd.loc[i, "Err Ar3rd all"] =  np.sqrt((ar.loc[mask_ar3rd, 'Eventos']**2 * ar.loc[mask_ar3rd, 'Error%']**2).sum())/100
+
+    # --- CF3 ---
+    for E in [11.5, 12.5, 14.5]:
+        mask_cf3 = cf4['Proceso'].str.contains("NEUTRAL DISS") & (cf4['Energia'] > E)
+        colname = f"CF3 >{E}"
+        poblations_CF3.loc[i, colname] = cf4.loc[mask_cf3, 'Eventos'].sum()
+        poblations_CF3.loc[i, f"Err {colname}"] =  np.sqrt((cf4.loc[mask_cf3, 'Eventos']**2 * cf4.loc[mask_cf3, 'Error%']**2).sum())/100
+
+    # --- Ar** ---
+    mask_ardbl = ar['Proceso'].str.contains("EXC")
+    poblations_Ar_dbleStar.loc[i, "Ar** all"] = ar.loc[mask_ardbl, 'Eventos'].iloc[2:].sum()
+    poblations_Ar_dbleStar.loc[i, "Err Ar** all"] = np.sqrt((ar.loc[mask_ardbl, 'Eventos'].iloc[2:]**2 * ar.loc[mask_ardbl, 'Error%'].iloc[2:]**2).sum())/100
+
+    mask_ardbl2 = ar['Proceso'].str.contains("EXC") & (ar['Energia'] < 11.8)
+    poblations_Ar_dbleStar.loc[i, "Ar** 2exc"] = ar.loc[mask_ardbl2, 'Eventos'].iloc[2:].sum()
+    poblations_Ar_dbleStar.loc[i, "Err Ar** 2exc"] =  np.sqrt((ar.loc[mask_ardbl2, 'Eventos'].iloc[2:]**2 * ar.loc[mask_ardbl2, 'Error%'].iloc[2:]**2).sum())/100
+
 
 ########################## Guardado en Pickle/CSV ##############################################
 
@@ -159,3 +192,8 @@ to_save = {
 for name, df in to_save.items():
     df.to_pickle(f"pickle_data/{name}.pkl")
     print(f"✅ Guardado: {name}.pkl")
+    
+# Recorremos y guardamos cada uno como .csv
+for name, df in to_save.items():
+    df.to_csv(f"csv_data/{name}.csv", index=False)
+    print(f"✅ Guardado: {name}.csv")

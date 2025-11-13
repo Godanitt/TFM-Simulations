@@ -1,139 +1,19 @@
-from read_Degrad_input import read_input
-from amoedo_model import Pgamma_Ar3rd,Pgamma_CF3,Pgamma_CF4
+
 import numpy as np 
 import pandas as pd 
 import dill
 import scipy.special
 import importlib
 
-
-archives=np.array(["input/output_99.9Ar_0.1CF4.txt",
-                   "input/output_99Ar_1CF4.txt",
-                   "input/output_90Ar10CF4.txt",
-                   "input/output_PureCF4.txt"])
-
-archives_ar=np.array(["input/ar_input_90Ar10CF4.csv",
-                   "input/ar_input_99.9Ar_0.1CF4.csv",
-                   "input/ar_input_99Ar_1CF4.csv",
-                   "input/ar_input_PureCF4.csv"])
-
-archives_cf4=np.array(["input/cf4_input_90Ar10CF4.csv",
-                   "input/cf4_input_99.9Ar_0.1CF4.csv",
-                   "input/cf4_input_99Ar_1CF4.csv",
-                   "input/cf4_input_PureCF4.csv"])
-
-# ------------------------------------------------------------------------------
-# Arrays para guardar la información 
-
-#ar_eventos      = np.array([0,0,0,0],dtype=object)
-#cf4_eventos     = np.array([0,0,0,0],dtype=object)
-
-#ar_proceso      = np.array([0,0,0,0],dtype=object)
-#cf4_proceso     = np.array([0,0,0,0],dtype=object)
-
-#ar_error        = np.array([0,0,0,0],dtype=object)
-#cf4_error       = np.array([0,0,0,0],dtype=object)
+"""
+Script que nos permite leer los datos de los yields de visible/ultravioleta, sacándolos en formato pickle y csv.
+"""
 
 
-# ------------------------------------------------------------------------------
-# Valores por archivo (concentraciones, temperaturas, presión)
+#############################################################################################################
+########################## FUNCION PARA LEER LOS PICKLES ##############################################
+#############################################################################################################
 
-fCF4            = np.array([0.001,0.01,0.1,1])   # concentraciones
-n               = 1                              # P/P0
-#pressure       = 760                            # torr
-#temperature    = 20                             # grados centigrados
-
-# ------------------------------------------------------------------------------
-# Creamos los dataframes que contendrán toda la información
-
-poblations_CF4 = pd.DataFrame({"fCF4":fCF4})
-poblations_CF3 = pd.DataFrame({"fCF4":fCF4})
-poblations_Ar_dbleStar  = pd.DataFrame({"fCF4":fCF4})
-poblations_Ar_3rd  = pd.DataFrame({"fCF4":fCF4})
-
-
-# PA = PabloAmoedo
-
-scintillationProbability_PAModel_CF3 = pd.DataFrame({"fCF4":fCF4})
-scintillationProbability_PAModel_CF4 = pd.DataFrame({"fCF4":fCF4})
-scintillationProbability_PAModel_Ar3rd  = pd.DataFrame({"fCF4":fCF4})
-
-yield_uv       = pd.DataFrame()
-yield_vis      = pd.DataFrame()
-
-# ------------------------------------------------------------------------------
-# Creamos los nombres de las columnas 
-# Cambiar el nombre aquí va a dar error, también hay que cambiarlo cuando se indexa.
-# Además las indexaciones se hacen a mano (lineas 120-140)
-name_CF4         =  np.array(["all"])
-name_CF3         =  np.array([">11.5",">12.5",">14.5"])
-name_Ar_dbleStar =  np.array(["all",">2o Resonante"])
-name_Ar_3rd      =  np.array(["all"])
-name_uv          =  np.array(["fCF4","1bar","2bar","2.5bar","3bar","4bar","5bar"])
-name_vis         =  np.array(["fCF4","1bar","2bar","2.5bar","3bar","4bar","5bar"])
-
-presion = np.array([1,1,2,2.5,3,4,5])
-
-name_SP_CF3      =  np.array([">11.5 all",">11.5 >2o Resonante",
-                              ">12.5 all",">12.5 >2o Resonante",
-                              ">14.5 all",">14.5 >2o Resonante"])
-
-name_SP_CF4      =  np.array(["all"])
-name_SP_Ar3rd    =  np.array(["all"])
-
-# ------------------------------------------------------------------------------
-# Inicializamos los nombres de las columnas de los dataFrames
-
-for col in name_CF4:
-    poblations_CF4[col] = np.nan
-
-for col in name_CF3:
-    poblations_CF3[col] = np.nan
-    
-for col in name_Ar_dbleStar:
-    poblations_Ar_dbleStar[col] = np.nan
-    
-for col in name_Ar_3rd:
-    poblations_Ar_3rd[col] = np.nan
-    
-for col in name_uv:
-    yield_uv[col] = [np.nan]*9
-    
-for col in name_vis:
-    yield_vis[col] = [np.nan]*9
-
-for col in name_SP_CF3:
-    scintillationProbability_PAModel_CF3[col] = np.nan
-    
-for col in name_SP_CF4:
-    scintillationProbability_PAModel_CF4[col] = np.nan
-    
-for col in name_SP_Ar3rd:
-    scintillationProbability_PAModel_Ar3rd[col] = np.nan
-    
-# ------------------------------------------------------------------------------
-# Bucle que recorra los diferentes puntos: 
-
-for i in range(len(archives)):
-    df = read_input(
-        archives[i],
-        archivo_salida_Ar=archives_ar[i],      
-        archivo_salida_CF4=archives_cf4[i])
-    
-    ar  = df.loc[lambda df: df['Gas'] == "ARGON", :]
-    cf4 = df.loc[lambda df: df['Gas'] == "CF4", :]
-    
-    poblations_CF4.loc[i, "all"] = cf4.loc[cf4['Proceso'].str.contains("ION CF3 +"), 'Eventos'].sum()
-    poblations_Ar_3rd.loc[i, "all"] = ar.loc[ar['Proceso'].str.contains("CHARGE STATE =2"), 'Eventos'].sum()
-
-    poblations_CF3.loc[i, ">11.5"] = cf4.loc[cf4['Proceso'].str.contains("NEUTRAL DISS")  & (cf4['Energia'] > 11.5), 'Eventos'].sum()
-    poblations_CF3.loc[i, ">12.5"] = cf4.loc[cf4['Proceso'].str.contains("NEUTRAL DISS")  & (cf4['Energia'] > 12.5), 'Eventos'].sum()
-    poblations_CF3.loc[i, ">14.5"] = cf4.loc[cf4['Proceso'].str.contains("NEUTRAL DISS")  & (cf4['Energia'] > 14.5), 'Eventos'].sum()
-    
-    poblations_Ar_dbleStar.loc[i, "all"]=ar.loc[(ar['Proceso'].str.contains("EXC")),'Eventos'].iloc[2:].sum()
-    poblations_Ar_dbleStar.loc[i, ">2o Resonante"]=ar.loc[(ar['Proceso'].str.contains("EXC")) & (ar['Energia'] > 11.8),'Eventos'].iloc[2:].sum()    
-    
-# ----------------------------------------------------------------
 # no se que demonios pasaba aqui, chatgpt es el puto amo
 # Cargar el módulo compilado de bajo nivel
 _special_ufuncs = importlib.import_module("scipy.special._special_ufuncs")
@@ -149,24 +29,70 @@ for name in funcs:
 
 with open("input/resultados_4picos.pkl", "rb") as f:
     df = dill.load(f)
+
+#############################################################################################################
+########################## PROGRAMA PRINCIPAL ##############################################
+#############################################################################################################
+
+######################## Inicialización de dataframe ################################################
+
+
+yield_uv       = pd.DataFrame()
+yield_vis      = pd.DataFrame()
+
+presion = np.array([1,2,2.5,3,4,5])
+concetraciones_reales = np.array([0,0.096 , 0.28 , 0.434 , 0.929 , 1.64 , 5.55 , 10.25 , 100])
+error_concetraciones_reales = np.array([0,0.015, 0.024,  0.026,  0.071, 0.14, 0.21,  0.39, 0])
+name_uv = ["fCF4","fCF4 real", "Err fCF4 real"]
+name_vis = ["fCF4","fCF4 real", "Err fCF4 real"]
+
+for i in presion:
+    name_uv += ["%.1fbar"%i]
+    name_uv += ["Err %.1fbar"%i]
+    name_vis += ["%.1fbar"%i]
+    name_vis += ["Err %.1fbar"%i]
     
+for col in name_uv:
+    yield_uv[col] = [np.nan]*9
     
-# ----------------------------------------------------------------
+for col in name_vis:
+    yield_vis[col] = [np.nan]*9
+
+    
+################ Lectura y guardado en dataframe ##############################################
+
 # concentraciones objetivo (de la primera presión, por ejemplo)
 df_pressure0 = df[df["presion"] == presion[0]].copy()
 concentraciones_og = df_pressure0["concentracion"].to_numpy()
 
-# Inicializa las tablas destino alineadas por fCF4
-yield_uv  = pd.DataFrame({"fCF4": concentraciones_og})
-yield_vis = pd.DataFrame({"fCF4": concentraciones_og})
+print(concentraciones_og)
+print(concetraciones_reales)
 
-for i in range(1,len(name_uv)):
+# Inicializa las tablas destino alineadas por fCF4
+yield_uv  = pd.DataFrame({"fCF4": concentraciones_og,
+                          "fCF4 real": concetraciones_reales,
+                          "Err fCF4 real": error_concetraciones_reales})
+
+yield_vis = pd.DataFrame({"fCF4": concentraciones_og,
+                          "fCF4 real": concetraciones_reales,
+                          "Err fCF4 real": error_concetraciones_reales})
+
+print(yield_uv)
+
+
+
+
+for i in range(0,len(presion)):
     # OJO: i y presion alineados 1:1
     df_pressure = df[df["presion"] == presion[i]].copy()
+    
 
     # Extrae UV y vis como Series indexadas por concentracion
     s_uv = df_pressure.set_index("concentracion")["yields_zonas"].apply(lambda d: d["UV"])
     s_vis = df_pressure.set_index("concentracion")["yields_zonas"].apply(lambda d: d["vis"])
+                                                                         
+    err_s_uv = df_pressure.set_index("concentracion")["yields_zonas"].apply(lambda d: d["UV"])*0.01
+    err_s_vis = df_pressure.set_index("concentracion")["yields_zonas"].apply(lambda d: d["vis"])*0.01
 
     # Si las concentraciones son floats con posibles decimales “sucios”, puedes redondear:
     # s_uv.index  = np.round(s_uv.index.astype(float), 8)
@@ -175,70 +101,35 @@ for i in range(1,len(name_uv)):
     # Luego reindexar con conc_idx
 
     # Reindexa para alinear por concentración objetivo
-    col_uv  = name_uv[i]
-    col_vis = name_vis[i]
+    col_uv  = name_uv[i*2+3]
+    col_vis = name_vis[i*2+3]
+    err_col_uv  = name_uv[i*2+1+3]
+    err_col_vis = name_vis[i*2+1+3]
 
     yield_uv[col_uv]  = pd.Series(s_uv).reindex(concentraciones_og).to_numpy()
     yield_vis[col_vis]= pd.Series(s_vis).reindex(concentraciones_og).to_numpy()
+    yield_uv[err_col_uv]  = pd.Series(err_s_uv).reindex(concentraciones_og).to_numpy()
+    yield_vis[err_col_vis]= pd.Series(err_s_vis).reindex(concentraciones_og).to_numpy()
+
+
 
 # Rellena faltantes con -1 si quieres ese marcador
 yield_uv  = yield_uv.fillna(0)
 yield_vis = yield_vis.fillna(0)
-print(yield_uv)
     
-# ------------------------------------------
-# Generamos los dataframes de scintillation
-
-for i in name_SP_CF3:
-    #a = np.zeros_like(name_CF3)
-    #b = np.zeros_like(name_Ar_dbleStar)
-    for j in range(len(name_CF3)):
-        if name_CF3[j] in i: 
-            a = poblations_CF3[name_CF3[j]].to_numpy()
-            
-        for k in range(len(name_Ar_dbleStar)):
-            if name_Ar_dbleStar[k] in i: 
-                b = poblations_Ar_dbleStar[name_Ar_dbleStar[k]].to_numpy()
-
-        #print(a)
-        #print(b)
-        scintillationProbability_PAModel_CF3[i]=Pgamma_CF3(fCF4,a,b)
-
-for i in name_SP_CF4:
-    for j in range(len(name_CF4)):
-        if name_CF4[j] in i: 
-            a = poblations_CF4[name_CF4[j]].to_numpy()
-        for k in range(len(name_Ar_3rd)):
-            if name_Ar_3rd[k] in i: 
-                b = poblations_Ar_dbleStar[name_Ar_3rd[k]].to_numpy()
-        scintillationProbability_PAModel_CF4[i]=Pgamma_CF4(fCF4,a,b,n)
-    
-for i in name_SP_Ar3rd:
-    for j in range(len(name_Ar_3rd)):
-        if name_Ar_3rd[j] in i: 
-            a = poblations_Ar_dbleStar[name_Ar_3rd[j]].to_numpy()
-        
-        scintillationProbability_PAModel_Ar3rd[i]=Pgamma_Ar3rd(fCF4,a,n)  
-    
-# ------------------------------------------
-# Guardamos los dataframes en pickles para su posterior análisis
-
-
-# --- Guardado automático en pickle ---
+########################## Guardado en Pickle/CSV ##############################################
 # Diccionario con todas las variables que quieres guardar
 to_save = {
-    "poblations_CF4": poblations_CF4,
-    "poblations_CF3": poblations_CF3,
-    "poblations_Ar_dbleStar": poblations_Ar_dbleStar,
-    "poblations_Ar_3rd": poblations_Ar_3rd,
-    "scintillationProbability_PAModel_CF3": scintillationProbability_PAModel_CF3,
-    "scintillationProbability_PAModel_CF4": scintillationProbability_PAModel_CF4,
-    "scintillationProbability_PAModel_Ar3rd": scintillationProbability_PAModel_Ar3rd,
     "yield_uv": yield_uv,
     "yield_vis": yield_vis,
 }
-
+    
 # Recorremos y guardamos cada uno como .pkl
 for name, df in to_save.items():
     df.to_pickle(f"pickle_data/{name}.pkl")
     print(f"✅ Guardado: {name}.pkl")
+    
+# Recorremos y guardamos cada uno como .csv
+for name, df in to_save.items():
+    df.to_csv(f"csv_data/{name}.csv", index=False)
+    print(f"✅ Guardado: {name}.csv")

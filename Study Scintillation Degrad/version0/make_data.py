@@ -205,7 +205,7 @@ print(yield_uv)
     
 # ------------------------------------------
 # Generamos los dataframes de scintillation
-autoQ
+
 for i in name_SP_CF3:
     #a = np.zeros_like(name_CF3)
     #b = np.zeros_like(name_Ar_dbleStar)

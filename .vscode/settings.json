@@ -21,6 +21,7 @@
     "CMAKE_PREFIX_PATH": "/home/daniel/garfield/install"
   },
 
-  "cSpell.language": "es,en"
+  "cSpell.language": "es,en",
+  "python.defaultInterpreterPath": "/home/daniel/.venv/bin/python"
 
 }
