@@ -5,9 +5,12 @@ import pandas as pd
 import dill
 import matplotlib.pyplot as plt
 import os
-from Amoedo_Model_DivisionFit import Pgamma_UV_Cociente, Pgamma_vis_Cociente,Pgamma_CF3_refined,Pgamma_CF4_refined,Pgamma_Ar3rd_refined
 import matplotlib.cm as cm
+import sys
 
+PARENT_DIR = os.path.abspath(os.path.join(".."))    # proyecto/
+sys.path.append(PARENT_DIR)
+from Amoedo_Model_DivisionFit import Pgamma_UV_Cociente, Pgamma_vis_Cociente,Pgamma_CF3_refined,Pgamma_CF4_refined,Pgamma_Ar3rd_refined
 
 """
 Script que leyendo:
@@ -40,12 +43,14 @@ with open(os.path.join(DATA_DIR, "linealFun_poblations_CF3.pkl"), "rb") as f:
 
 
 # === Leer yields experimentales ===
+DATA_DIR = os.path.join("..", "pickle_data")
 yield_uv  = pd.read_pickle(os.path.join(DATA_DIR, "yield_uv.pkl"))
 yield_vis = pd.read_pickle(os.path.join(DATA_DIR, "yield_vis.pkl"))
 
 
 # === Leer parámetros ajustados ===
 df_alpha = pd.read_pickle(os.path.join(FIT_DIR, "alpha_results.pkl"))
+df_beta  = pd.read_pickle(os.path.join(FIT_DIR, "beta_results.pkl"))
 df_kcool = pd.read_pickle(os.path.join(FIT_DIR, "kcool_results.pkl"))
 df_kdis  = pd.read_pickle(os.path.join(FIT_DIR, "kdis_results.pkl"))
 
@@ -53,6 +58,7 @@ df_kdis  = pd.read_pickle(os.path.join(FIT_DIR, "kdis_results.pkl"))
 # ============================
 # Variables útiles
 # ============================
+
 name_CF4         = lineal_CF4.columns.to_numpy()[::2]
 name_CF3         = lineal_CF3.columns.to_numpy()[::2]
 name_Ar_dbleStar = lineal_pAr_dbleStar.columns.to_numpy()[::2]
@@ -105,6 +111,7 @@ cmap_exp_ref = plt.colormaps["viridis"]
 i_fit = 0
 i_exp = 0
 
+
 for nameCF3 in name_CF3:
     for nameAr in name_Ar_dbleStar:
 
@@ -115,6 +122,13 @@ for nameCF3 in name_CF3:
         alpha = df_alpha.loc[0, colname]
         if pd.isna(alpha):
             continue
+        beta = df_beta.loc[0, colname]
+        if pd.isna(beta):
+            continue
+        
+        #alpha = 0.13
+        #beta  = 0.2
+        
         # --- poblaciones ---
         f_CF3   = lineal_CF3[nameCF3].to_numpy()[0]
         f_Ardbl = lineal_pAr_dbleStar[nameAr].to_numpy()[0]
@@ -128,7 +142,9 @@ for nameCF3 in name_CF3:
             f_range/100,
             PCF3_range,
             PArdbl_range,
-            alpha
+            1.0,            # bar
+            alpha,
+            beta
         )
 
         # --- Modelo UV para misma combinación? NO existe ---
@@ -161,7 +177,7 @@ for nameCF3 in name_CF3:
                 if pd.isna(kcool_tmp) or pd.isna(kdis_tmp):
                     continue
                 
-                #kcool_tmp,kdis_tmp=0,0
+                #kcool_tmp,kdis_tmp=0.3,0.5
 
                 f_CF4   = lineal_CF4[nameCF4].to_numpy()[0]
                 f_Ar3rd = lineal_pAr_3rd[nameAr3rd].to_numpy()[0]
@@ -172,7 +188,8 @@ for nameCF3 in name_CF3:
                 UV_model_ref = Pgamma_CF4_refined(
                     f_range/100, PCF4_range, PAr3_range,
                     1.0, kcool_tmp, kdis_tmp
-                ) 
+                ) + Pgamma_Ar3rd_refined(f_range/100, PAr3_range,1.0)
+                
                 break
             if UV_model_ref is not None:
                 break
@@ -181,8 +198,10 @@ for nameCF3 in name_CF3:
             continue
 
         # --- normalización correcta por modelo propio ---
-        norm_den_fit = VIS_model_ref[-1] + UV_model_ref[-1]
-
+        
+        norm_den_fit = VIS_model_ref[index_ref] + UV_model_ref[index_ref]
+        print(UV_model_ref[index_ref])
+        print(VIS_model_ref[index_ref])
         VIS_model_norm = VIS_model_ref / norm_den_fit
 
         # --- Plot model ---
@@ -193,6 +212,7 @@ for nameCF3 in name_CF3:
             color=color_fit,
             label=f"modelo VIS {colname}"
         )
+        
         i_fit += 1
 
 
@@ -242,10 +262,12 @@ for nameCF4 in name_CF4:
 
         kcool = df_kcool.loc[0, colname]
         kdis  = df_kdis.loc[0, colname]
+        
+        
         if pd.isna(kcool) or pd.isna(kdis):
             continue
         
-        #kcool,kdis=0,0
+        #kcool,kdis=0.3,0.5
 
         f_CF4   = lineal_CF4[nameCF4].to_numpy()[0]
         f_Ar3rd = lineal_pAr_3rd[nameAr3rd].to_numpy()[0]
@@ -268,7 +290,10 @@ for nameCF4 in name_CF4:
                 for nameAr in name_Ar_dbleStar:
                     if f"{nameCF3}_{nameAr}" in df_alpha.columns:
                         alpha_tmp = df_alpha.loc[0, f"{nameCF3}_{nameAr}"]
-                        #alpha_tmp = 1
+                        beta_tmp = df_beta.loc[0, f"{nameCF3}_{nameAr}"]
+                        
+                        #alpha,beta = 0.13,0.3
+                        
                         f_CF3   = lineal_CF3[nameCF3].to_numpy()[0]
                         f_Ardbl = lineal_pAr_dbleStar[nameAr].to_numpy()[0]
 
@@ -277,7 +302,8 @@ for nameCF4 in name_CF4:
 
                         VIS_model_ref = Pgamma_CF3_refined(
                             f_range/100, PCF3_range, PArdbl_range,
-                            alpha_tmp
+                            1.0, # bar
+                            alpha_tmp,beta_tmp
                         )
                         break
                 if VIS_model_ref is not None:

@@ -27,7 +27,7 @@ K_Ar_dblstar_to_Ar_star     = 1     # ns-1
 
 def Pgamma_CF3_refined(f_cf4, Pgamma_CF3_star_dir, P_Ar_dblstar):
     f_cf4       = np.asarray(f_cf4, dtype=float)
-    denom       = K_Ar_dblstar_to_CF3_star*f_cf4 + ((1 - f_cf4)) * K_Ar_dblstar_to_Ar_star
+    denom       = K_Ar_dblstar_to_CF3_star*f_cf4 + ((1 - f_cf4)/f_cf4) * K_Ar_dblstar_to_Ar_star
     frac        = K_Ar_dblstar_to_CF3_star*f_cf4 / denom
     
     return  Pgamma_CF3_star_dir +  P_Ar_dblstar * frac
@@ -54,6 +54,6 @@ def Pgamma_Ar3rd_refined(f_cf4, P_Ar_3rd, n):
     numer       = 1 / tau_3rd
     frac        = np.where(denom == 0, 0, numer / denom)
     
-    return  P_Ar_3rd * frac
+    return  P_Ar_3rd * frac * 0.4866
 
 

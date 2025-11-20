@@ -160,6 +160,8 @@ for i in range(len(archives)):
     # --- Ar 3rd ---
     mask_ar3rd = ar['Proceso'].str.contains("CHARGE STATE =2")
     poblations_Ar_3rd.loc[i, "Ar3rd all"] = ar.loc[mask_ar3rd, 'Eventos'].sum()
+    mask_ar3rd = ar['Proceso'].str.contains("CHARGE STATE =3")
+    poblations_Ar_3rd.loc[i, "Ar3rd all"] += ar.loc[mask_ar3rd, 'Eventos'].sum()
     poblations_Ar_3rd.loc[i, "Err Ar3rd all"] =  np.sqrt((ar.loc[mask_ar3rd, 'Eventos']**2 * ar.loc[mask_ar3rd, 'Error%']**2).sum())/100+0.01
 
     # --- CF3 ---

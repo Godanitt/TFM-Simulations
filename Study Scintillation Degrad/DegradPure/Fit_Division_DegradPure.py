@@ -1,13 +1,17 @@
 
 
 
-from Amoedo_Model_DivisionFit import Pgamma_UV_Cociente,Pgamma_vis_Cociente
 import pandas as pd 
 import numpy as np 
 import matplotlib.pyplot as plt 
 import scipy.optimize as opt
 import os 
 import dill
+import sys
+
+PARENT_DIR = os.path.abspath(os.path.join(".."))    # proyecto/
+sys.path.append(PARENT_DIR)
+from Amoedo_Model_DivisionFit import Pgamma_UV_Cociente, Pgamma_vis_Cociente,Pgamma_CF3_refined,Pgamma_CF4_refined,Pgamma_Ar3rd_refined
 
 """ 
 Ajuste del cociente con datos de Degrad con ajuste lineal
@@ -17,29 +21,24 @@ Ajuste del cociente con datos de Degrad con ajuste lineal
 ######################## Lectura de las poblaciones de Degrad ################################################
 
 # === Carpeta donde están los pickles ===
-DATA_DIR = "pickle_data"
-
-with open(os.path.join(DATA_DIR, "linealFun_poblations_Ar_3rd.pkl"), "rb") as f:
-    lineal_pAr_3rd = dill.load(f)
-
-with open(os.path.join(DATA_DIR, "linealFun_poblations_Ar_dbleStar.pkl"), "rb") as f:
-    lineal_pAr_dbleStar = dill.load(f)
-
-with open(os.path.join(DATA_DIR, "linealFun_poblations_CF4.pkl"), "rb") as f:
-    lineal_CF4 = dill.load(f)
-
-with open(os.path.join(DATA_DIR, "linealFun_poblations_CF3.pkl"), "rb") as f:
-    lineal_CF3 = dill.load(f)
-
+DATA_DIR = os.path.join("..", "pickle_data")
 yield_uv  = pd.read_pickle(os.path.join(DATA_DIR, "yield_uv.pkl"))
 yield_vis = pd.read_pickle(os.path.join(DATA_DIR, "yield_vis.pkl"))
 
+DATA_DIR = os.path.join("..", "pickle_data")
+pCF4         = pd.read_pickle(os.path.join(DATA_DIR, "poblations_CF4.pkl"))
+pCF3         = pd.read_pickle(os.path.join(DATA_DIR, "poblations_CF3.pkl"))
+pArDbleStar  = pd.read_pickle(os.path.join(DATA_DIR, "poblations_Ar_dbleStar.pkl"))
+pAr3rd       = pd.read_pickle(os.path.join(DATA_DIR, "poblations_Ar_3rd.pkl"))
+
 ######################## Lectura de las poblaciones de Degrad ################################################
 
-name_CF4            =  lineal_CF4.columns.to_numpy()[::2]
-name_CF3            =  lineal_CF3.columns.to_numpy()[::2]
-name_Ar_dbleStar    =  lineal_pAr_dbleStar.columns.to_numpy()[::2]
-name_Ar_3rd         =  lineal_pAr_3rd.columns.to_numpy()[::2]
+fCF4            =  pCF4["fCF4"].to_numpy()
+
+name_CF4            =  pCF4.columns.to_numpy()[1::2]
+name_CF3            =  pCF3.columns.to_numpy()[1::2]
+name_Ar_dbleStar    =  pArDbleStar.columns.to_numpy()[1::2]
+name_Ar_3rd         =  pAr3rd.columns.to_numpy()[1::2]
 
 name_yield_uv       =  yield_uv.columns.to_numpy()
 name_yield_vis      =  yield_vis.columns.to_numpy()
@@ -69,6 +68,8 @@ df_alpha = pd.DataFrame(columns=columns_alpha, index=[0])
 df_kcool = pd.DataFrame(columns=columns_kcool, index=[0])
 df_kdis  = pd.DataFrame(columns=columns_kdis,  index=[0])
 
+index = -1
+
 ###################### Funciones para minimizar ################################################
 
 
@@ -81,7 +82,7 @@ def minimize_vis(x,PCF3, PAr_dbleStar, y_vis, values0, values0_yield):
     for col in y_vis.columns:
         if not("fCF4" in col) and not("Err" in col):
 
-            index=-1
+            
             values0_yield = y_vis[col].to_numpy()[index]
             err =  y_vis["Err " + col].to_numpy()[index]
             
@@ -116,8 +117,7 @@ def minimize_uv(x, Pgamma_CF4_plus_star_dir, P_Ar_3rd, y_uv, values0, values0_yi
                 kcool,
                 kdis
             )
-
-            index=-1
+            
             B  = y_uv[col].to_numpy()
                     
             values0_yield = y_uv[col].to_numpy()[index]
@@ -140,15 +140,33 @@ def minimize_uv(x, Pgamma_CF4_plus_star_dir, P_Ar_3rd, y_uv, values0, values0_yi
 
 for nameCF3 in name_CF3:
     for nameArdbleStar in ["Ar** all"]:
-            f = lineal_CF3[nameCF3].to_numpy()[0]
-            g = lineal_pAr_dbleStar[nameArdbleStar].to_numpy()[0]
             
-            PCF3 = f(fCF4_real/100)
-            PAr_dbleStar = g(1-fCF4_real/100)
+            PCF3 = np.array([])
+            PAr_dbleStar = np.array([])
             
-            
+            for i in fCF4_real/100:
+                # Encuentra el índice j tal que fCF4[j] <= i < fCF4[j+1]
+                for j in range(len(fCF4)-1):
+                    if i == fCF4[j] or i == fCF4[j+1] or (fCF4[j] < i < fCF4[j+1]) or (0 <= i < fCF4[j]):
+                        
+                        # Valores en j y j+1
+                        y1_CF3 = pCF3[nameCF3].loc[j]
+                        y2_CF3 = pCF3[nameCF3].loc[j+1]
+                        y1_Ar  = pArDbleStar[nameArdbleStar].loc[j]
+                        y2_Ar  = pArDbleStar[nameArdbleStar].loc[j+1]
+
+                        # Interpolación lineal (vale también para los casos "i == fCF4[j]")
+                        frac = (i - fCF4[j]) / (fCF4[j+1] - fCF4[j])
+
+                        PCF3         = np.append(PCF3, y1_CF3 + frac * (y2_CF3 - y1_CF3))
+                        PAr_dbleStar = np.append(PAr_dbleStar, y1_Ar  + frac * (y2_Ar  - y1_Ar))
+
+                        break
+
+
+            print(fCF4)      
+            print(fCF4_real/100)           
             # Seleccionando -1 seleccionamos 100% CF4
-            index = -1
             values0_vis = (fCF4_real[index]/100,PCF3[index],PAr_dbleStar[index])
             values0_yield = yield_vis["1.0bar"].to_numpy()[index]
             
@@ -167,9 +185,7 @@ for nameCF3 in name_CF3:
             print("chi²=",chi2)
             print("="*60) 
             
-            fCF4_range=np.linspace(min(fCF4_real),max((fCF4_real)),1000)
-            PCF3 = f(fCF4_range/100)
-            PAr_dbleStar = g(1-fCF4_range/100)
+            
            
             colname = f"{nameCF3}_{nameArdbleStar}"
             df_alpha.loc[0, colname] = float(alpha)
@@ -179,15 +195,38 @@ for nameCF3 in name_CF3:
 
 for nameCF4 in name_CF4:
     for nameAr3rd in name_Ar_3rd:
-        f = lineal_CF4[nameCF4].to_numpy()[0]
-        g = lineal_pAr_3rd[nameAr3rd].to_numpy()[0]
-        
-        # Poblaciones / probabilidades en los puntos experimentales
-        PCF4   = f(fCF4_real/100)
-        PAr_3rd = g(1-fCF4_real/100)
 
+            
+        PCF4 = np.array([])
+        PAr_3rd = np.array([])
+            
+        for i in fCF4_real/100:
+            for j in range(len(fCF4)-1):
+
+                if (
+                    i == fCF4[j] or
+                    i == fCF4[j+1] or
+                    (fCF4[j] < i < fCF4[j+1]) or
+                    (0 <= i < fCF4[j])
+                ):
+                    # Valores en j y j+1
+                    y1_CF4 = pCF4[nameCF4].loc[j]
+                    y2_CF4 = pCF4[nameCF4].loc[j+1]
+
+                    y1_Ar  = pAr3rd[nameAr3rd].loc[j]
+                    y2_Ar  = pAr3rd[nameAr3rd].loc[j+1]
+
+                    # Interpolación lineal (cubriendo todos los casos)
+                    frac = (i - fCF4[j]) / (fCF4[j+1] - fCF4[j])
+
+                    PCF4      = np.append(PCF4,      y1_CF4 + frac * (y2_CF4 - y1_CF4))
+                    PAr_3rd   = np.append(PAr_3rd,   y1_Ar  + frac * (y2_Ar  - y1_Ar))
+
+                    break
+
+                        
         # Valores de referencia para el cociente (punto 100% CF4, mismo criterio que en el visible)
-        index =  -1
+        
         n0    =  1
         values0_uv     = (fCF4_real[index]/100, PCF4[index], PAr_3rd[index],n0)
         values0_yield  = yield_uv["%.1fbar"%n0].to_numpy()[index]
@@ -199,8 +238,8 @@ for nameCF4 in name_CF4:
             bounds=[(0.0, 1000.0),   # límites para kcool (ajusta)
                     (0.0, 1000.0)],  # límites para kdis  (ajusta)
             args=args_uv,
-            maxiter=100,
-            popsize=100
+            maxiter=200,
+            popsize=200
         )
 
         kcool_fit, kdis_fit = result_uv.x
@@ -211,6 +250,7 @@ for nameCF4 in name_CF4:
         print("kdis  =", kdis_fit)
         print("chi2  =", result_uv.fun)
         print("="*60)
+        
         
         colname = f"{nameCF4}_{nameAr3rd}"
         df_kcool.loc[0, colname] = float(kcool_fit)

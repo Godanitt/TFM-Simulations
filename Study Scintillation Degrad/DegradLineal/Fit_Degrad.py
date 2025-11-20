@@ -14,7 +14,8 @@ Script que ajusta las poblaciones de Degrad a una función lineal dependiente de
 #############################################################################################################
 ######################## Lectura de las poblaciones de Degrad ################################################
 
-DATA_DIR = "pickle_data"
+
+DATA_DIR = os.path.join("..", "pickle_data")
 poblations_CF4 = pd.read_pickle(os.path.join(DATA_DIR, "poblations_CF4.pkl"))
 poblations_CF3 = pd.read_pickle(os.path.join(DATA_DIR,  "poblations_CF3.pkl"))
 poblations_Ar_dbleStar  = pd.read_pickle(os.path.join(DATA_DIR,  "poblations_Ar_dbleStar.pkl"))

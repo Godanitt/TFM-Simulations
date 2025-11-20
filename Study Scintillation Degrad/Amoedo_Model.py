@@ -43,5 +43,5 @@ def Pgamma_Ar3rd(f_cf4, P_Ar_3rd, n):
     denom = (1 / tau_3rd) + f_cf4 * n * (K_Ar3rd_to_CF4_plus_star + K_Ar3rd_to_Ar)
     numer = 1 / tau_3rd
     frac = np.where(denom == 0, 0, numer / denom)
-    return P_Ar_3rd * frac
+    return P_Ar_3rd * frac * 0.4866
 

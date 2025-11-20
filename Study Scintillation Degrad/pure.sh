@@ -9,8 +9,10 @@ echo "-----------------------------------"
 
 # Aquí defines el orden de ejecución manualmente
 # (puedes comentar o descomentar según necesites)
-python3 Read_Degrad.py
-python3 Read_Experimental_Yield.py
-bash lineal.sh
+cd DegradPure/
+python3 Fit_Division_DegradPure.py
+python3 Make_Plot_Cociente_Normalizacion_VisUV.py
+python3 Make_Plot_Cociente_Normalizacion_100CF4.py
+cd ..
 echo "-----------------------------------"
 echo "Ejecución completada correctamente ✅"

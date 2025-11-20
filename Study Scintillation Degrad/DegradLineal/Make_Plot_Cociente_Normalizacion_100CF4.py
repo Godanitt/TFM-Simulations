@@ -5,8 +5,12 @@ import pandas as pd
 import dill
 import matplotlib.pyplot as plt
 import os
-from Amoedo_Model_DivisionFit import Pgamma_UV_Cociente, Pgamma_vis_Cociente
 import matplotlib.cm as cm
+import sys, os
+
+PARENT_DIR = os.path.abspath(os.path.join(".."))    # proyecto/
+sys.path.append(PARENT_DIR)
+from Amoedo_Model_DivisionFit import Pgamma_UV_Cociente, Pgamma_vis_Cociente
 
 
 """
@@ -40,12 +44,14 @@ with open(os.path.join(DATA_DIR, "linealFun_poblations_CF3.pkl"), "rb") as f:
 
 
 # === Leer yields experimentales ===
+DATA_DIR = os.path.join("..", "pickle_data")
 yield_uv  = pd.read_pickle(os.path.join(DATA_DIR, "yield_uv.pkl"))
 yield_vis = pd.read_pickle(os.path.join(DATA_DIR, "yield_vis.pkl"))
 
 
 # === Leer parámetros ajustados ===
 df_alpha = pd.read_pickle(os.path.join(FIT_DIR, "alpha_results.pkl"))
+df_beta = pd.read_pickle(os.path.join(FIT_DIR, "beta_results.pkl"))
 df_kcool = pd.read_pickle(os.path.join(FIT_DIR, "kcool_results.pkl"))
 df_kdis  = pd.read_pickle(os.path.join(FIT_DIR, "kdis_results.pkl"))
 
@@ -86,9 +92,12 @@ for nameCF3 in name_CF3:
             continue
 
         alpha = df_alpha.loc[0, colname]
+        beta = df_beta.loc[0, colname]
         if pd.isna(alpha):
             continue
-
+        if pd.isna(beta):
+            continue
+        
         # === Recuperar funciones originales ===
         f = lineal_CF3[nameCF3].to_numpy()[0]
         g = lineal_pAr_dbleStar[nameAr].to_numpy()[0]
@@ -96,7 +105,7 @@ for nameCF3 in name_CF3:
         PCF3         = f(fCF4_real / 100)
         PAr_dbleStar = g(1 - fCF4_real / 100)
 
-        values0_vis   = (fCF4_real[index_ref]/100, PCF3[index_ref], PAr_dbleStar[index_ref])
+        values0_vis   = (fCF4_real[index_ref]/100, PCF3[index_ref], PAr_dbleStar[index_ref],1.0)
         values0_yield = yield_vis["1.0bar"].to_numpy()[index_ref]
 
         # === Curva suave ===
@@ -108,8 +117,10 @@ for nameCF3 in name_CF3:
             fCF4_range / 100,
             PCF3_range,
             PAr_range,
+            1.0,
             values0_vis,
-            alpha
+            alpha,
+            beta
         )
 
         color_fit = cmap_fit(i_fit / 10)
@@ -126,7 +137,9 @@ for nameCF3 in name_CF3:
             fCF4_range / 100,
             PCF3_range,
             PAr_range,
+            1.0,
             values0_vis,
+            1,
             1
         )
 
@@ -153,9 +166,9 @@ for b in bars:
         )
     """
     yerr = np.sqrt(
-            (yield_vis["Err " + b] / yield_vis[b])**2 +
+            (yield_vis["Err " + b] / yield_vis[b].to_numpy()[index_ref])**2 +
             (yield_vis["Err "+  b] * yield_vis[b].to_numpy() /
-            yield_vis[b].to_numpy()[index_ref]**2)**2
+           (yield_vis[b].to_numpy()[index_ref])**2)**2
         )
     
     color_exp = cmap_exp(i_exp / len(bars))
@@ -213,6 +226,7 @@ for nameCF4 in name_CF4:
         if pd.isna(kcool) or pd.isna(kdis):
             continue
 
+        #kcool,kdis=0.5,1
         # === Recuperar funciones originales ===
         f = lineal_CF4[nameCF4].to_numpy()[0]
         g = lineal_pAr_3rd[nameAr].to_numpy()[0]
@@ -264,10 +278,12 @@ for b in bars:
          yield_uv["1.0bar"].to_numpy()[index_ref]**2)**2
     )
     """
+    b0 = "1.0bar"
+    b0 = b
     yerr = np.sqrt(
-        (yield_uv["Err " + b] / yield_uv[b])**2 +
-        (yield_uv["Err " + b] * yield_uv[b].to_numpy() /
-         yield_uv[b].to_numpy()[index_ref]**2)**2
+        (yield_uv["Err " + b].to_numpy() / yield_uv[b0].to_numpy()[index_ref])**2 +
+        (yield_uv["Err " + b0].to_numpy() * yield_uv[b].to_numpy() /
+         yield_uv[b0].to_numpy()[index_ref]**2)**2
     )
 
     color_exp = cmap_exp(i_exp / len(bars))
@@ -276,7 +292,7 @@ for b in bars:
     if yield_uv[b].to_numpy()[index_ref] == 0.0:
         plt.errorbar(
             fCF4_real[:-1],
-            yield_uv[b].to_numpy()[:-1] / yield_uv[b].to_numpy()[index_ref],
+            yield_uv[b].to_numpy()[:-1] / yield_uv[b0].to_numpy()[index_ref],
             yerr=yerr[:-1],
             fmt="o",
             capsize=5,
@@ -286,7 +302,7 @@ for b in bars:
     else:
         plt.errorbar(
             fCF4_real,
-            yield_uv[b].to_numpy() / yield_uv[b].to_numpy()[index_ref],
+            yield_uv[b].to_numpy() / yield_uv[b0].to_numpy()[index_ref],
             yerr=yerr,
             fmt="o",
             capsize=5,
