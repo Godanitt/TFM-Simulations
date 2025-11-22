@@ -1,36 +1,45 @@
-import pandas as pd 
-import os 
+import os
+import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
 from ScintillationClass import Scintillation
 from ArCF4_model import *
 
+#######################################################################
+# ======================= 1) LECTURA DE DATOS =========================
+#######################################################################
 
-DATA_DIR    = os.path.join("pickle_data")
+DATA_DIR = "pickle_data"
 
-yield_uv    = pd.read_pickle(os.path.join(DATA_DIR, "yield_uv.pkl"))
-yield_vis   = pd.read_pickle(os.path.join(DATA_DIR, "yield_vis.pkl"))
+yield_uv  = pd.read_pickle(os.path.join(DATA_DIR, "yield_uv.pkl"))
+yield_vis = pd.read_pickle(os.path.join(DATA_DIR, "yield_vis.pkl"))
 
 PCF3        = pd.read_pickle(os.path.join(DATA_DIR, "poblations_CF3.pkl"))
 PCF4        = pd.read_pickle(os.path.join(DATA_DIR, "poblations_CF4.pkl"))
 PArDbleStar = pd.read_pickle(os.path.join(DATA_DIR, "poblations_Ar_dbleStar.pkl"))
 PAr3rd      = pd.read_pickle(os.path.join(DATA_DIR, "poblations_Ar_3rd.pkl"))
 
+# ------------------------------------------------------------
+# Preprocesado
+# ------------------------------------------------------------
 fCF4_real   = yield_uv["fCF4 real"].to_numpy()
 fCF4        = PCF3["fCF4"]
+
 PCF3        = PCF3[["CF3 >11.5","Err CF3 >11.5"]]
 PCF4        = PCF4[["CF4 all","Err CF4 all"]]
 PArDbleStar = PArDbleStar[["Ar** all","Err Ar** all"]]
 PAr3rd      = PAr3rd[["Ar3rd all","Err Ar3rd all"]]
 
-# Diccionarios iniciales
+# Diccionario Yields
 yields = {
-    "fCF4": yield_uv["fCF4 real"].to_numpy(),
+    "fCF4": fCF4_real,
     "sCF4": yield_uv["Err fCF4 real"].to_numpy(),
-    "vis": yield_vis.drop(columns=["fCF4", "fCF4 real", "Err fCF4 real"]),  
-    "uv": yield_uv.drop(columns=["fCF4", "fCF4 real", "Err fCF4 real"])  
+    "vis": yield_vis.drop(columns=["fCF4", "fCF4 real", "Err fCF4 real"]),
+    "uv":  yield_uv.drop(columns=["fCF4", "fCF4 real", "Err fCF4 real"]),
 }
 
+# Diccionario poblaciones de degradación
 poblation_degrad_data = {
     "fCF4": fCF4.to_numpy(),
     "CF3": PCF3,
@@ -39,29 +48,32 @@ poblation_degrad_data = {
     "Ar 3rd": PAr3rd,
 }
 
+# Diccionario modelos físicos
 scintillation_theory_models = {
-    "CF3 dir": Pgamma_CF3dir,
-    "CF3 Ar dbleStar": Pgamma_CF3ArDbleStar,
-    "CF4 dir": Pgamma_CF4dir,
-    "CF4 Ar 3rd": Pgamma_CF4Ar3rd,
-    "Ar 3rd": Pgamma_Ar3rd
+    "CF3 dir":          Pgamma_CF3dir,
+    "CF3 Ar dbleStar":  Pgamma_CF3ArDbleStar,
+    "CF4 dir":          Pgamma_CF4dir,
+    "CF4 Ar 3rd":       Pgamma_CF4Ar3rd,
+    "Ar 3rd":           Pgamma_Ar3rd
 }
 
-# Inicializamos el contenedor con los datos
+#######################################################################
+# =========== 2) CONSTRUCCIÓN DEL OBJETO PRINCIPAL ====================
+#######################################################################
+
 ArCF4 = Scintillation(
-    yields = yields,
+    yields=yields,
     poblation_degrad=poblation_degrad_data,
     scintillation_models=scintillation_theory_models
 )
 
-#################################################################
-#################################################################
-#################################################################
+# Se puede comentar
+ArCF4.plotPoblationInterpolation("CF3", savefig="InterpolacionPoblationCF3.pdf")
 
-ArCF4.plotPoblationInterpolation("CF3",savefig="plot.pdf")
 
-# Hacemos el ajuste: 
-
+#######################################################################
+# ======================== 3) DEFINO TEORÍA ===========================
+#######################################################################
 
 scintillation_vis = {
     "CF3 dir": ["Probabilidad"],
@@ -69,28 +81,74 @@ scintillation_vis = {
 }
 
 scintillation_uv = {
-    "CF4 dir": ["Relajacion","Centelleo"],
+    "CF4 dir": ["Relajacion", "Centelleo"],
     "CF4 Ar 3rd": [""],
     "Ar 3rd": [""],
 }
 
-scintillation= {
+scintillation = {
     "vis": scintillation_vis,
     "uv": scintillation_uv,
 }
 
-# 1) Construyo teoría
 ArCF4.build_theory_functions(scintillation)
 
-# 2) Ajusto visible
-x0_vis = [0.1,0.2]
-res = ArCF4.fit_parameters_chooseNorma("vis", x0_vis, n0=1.0, idx_ref=-1)
+#######################################################################
+# =================== 4) AJUSTE DEL VISIBLE (VIS) =====================
+#######################################################################
 
-# 3) Configuración de gráficos
-ArCF4.choosePlotNormalization("vis", mode="N0", value=1.0)
+x0_vis = [0.10826166, 0.19710833]
+params_vis = ArCF4.fit_parameters_chooseNorma("vis", x0_vis, n0=1.0, idx_ref=-1)
+print("\n=== Parámetros ajustados VIS ===")
+print(params_vis)
+
+ArCF4.choosePlotNormalization("vis", mode="index", idx_ref=-1)
 ArCF4.EnableExperimentalData("vis", 1.0)
+ArCF4.EnableExperimentalData("vis", 4.0)
 ArCF4.EnableTeoCurve("vis", 1.0)
-ArCF4.EnableTeoCurve("vis", 2.0)
 
-# 4) Plot
-ArCF4.plot_teoCurve("vis")
+ArCF4.plot_teoCurve("vis", savefig="AjusteVis.pdf")
+
+
+#######################################################################
+# =================== 5) AJUSTE DEL ULTRAVIOLETA (UV) =================
+#######################################################################
+
+x0_uv = [0.43153474, 2.30165488]
+params_uv = ArCF4.fit_parameters_chooseNorma("uv", x0_uv, n0=1.0, idx_ref=-1)
+print("\n=== Parámetros ajustados UV ===")
+print(params_uv)
+
+ArCF4.choosePlotNormalization("uv", mode="index", idx_ref=-1)
+ArCF4.EnableExperimentalData("uv", 1.0)
+ArCF4.EnableExperimentalData("uv", 4.0)
+ArCF4.EnableTeoCurve("uv", 1.0)
+ArCF4.EnableTeoCurve("uv", 4.0)
+
+ArCF4.plot_teoCurve("uv", savefig="AjusteUV.pdf")
+
+
+#######################################################################
+# ======= 6) PLOT GLOBAL VIS + UV NORMALIZADOS CONJUNTAMENTE ==========
+#######################################################################
+
+# Nueva función de normalización global:
+ArCF4.choosePlotNormalizationGlobal(
+    bands=["vis", "uv"],
+    mode="index",
+    idx_ref=-1
+)
+
+# Activo las curvas teóricas VIS + UV juntas
+ArCF4.EnableTeoCurve("vis", 1.0)
+ArCF4.EnableTeoCurve("uv", 1.0)
+
+# Activo datos experimentales VIS + UV (opcional)
+ArCF4.EnableExperimentalData("vis", 1.0)
+ArCF4.EnableExperimentalData("uv", 1.0)
+
+# Plot combinado profesional
+ArCF4.plot_teoCurveGlobal(
+    bands=["vis", "uv"],
+    savefig="Ajuste_VIS_UV_Global.pdf"
+)

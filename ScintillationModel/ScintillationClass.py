@@ -7,7 +7,7 @@ import inspect
 import re
 
 
-
+cmap = plt.get_cmap("viridis")
 
 def normalize_tokens(s):
     """Convierte 'Ar dble Star' → ['ar','dble','star']."""
@@ -37,6 +37,15 @@ def match_param_to_species(param, species):
     # Condición correcta: todos los tokens de param están en species
     return all(tok in species_tokens for tok in param_tokens)
 
+def darken(color, factor=0.9):
+    """
+    Mezcla el color con negro.
+    factor=0 → negro
+    factor=1 → color original
+    """
+    r, g, b, a = color
+    return (factor*r, factor*g, factor*b, a)
+
 
 ###################################################################################
 ###################################################################################
@@ -59,7 +68,8 @@ class Scintillation:
     - Comparaión entre modelos de centelleo con poblaciones de Degrad y datos experimentales
     - Ajuste a nuevos modelos de poblaciones de Degrad
     - Expansión de poblaciones de Degrad a diferentes concentraciones a través de interpolación.
-    - Grafica de modelos de Centelleo a parámetros dados 
+    - Grafica de modelos de Centelleo a parámetros dados o ajustados, a presión elegida, con datos experimentales. 
+    - Diferentes opciones a la hora de graficar.
     """
 
     def __init__(
@@ -377,7 +387,7 @@ class Scintillation:
                     err_ref = df_yield[ec].to_numpy()
                     break
 
-            # Recorremos todas las columnas físicas
+            # Recorremos todas las columnas físicas -> Datos Experimentales 
             for col in cols_phys:
                 y_exp = df_yield[col].to_numpy()
 
@@ -422,9 +432,10 @@ class Scintillation:
 
         if not hasattr(self, "fit_results"):
             self.fit_results = {}
-        self.fit_results[f"{band}_N0={n0}"] = result
-
-        return result
+    
+        popt = result.x
+        self.fit_results[band] = popt
+        return popt
     
     ##########################################################################
     ######################### GRAFICA ###########################
@@ -439,15 +450,47 @@ class Scintillation:
 
         if band not in self.plot_settings["show_teo"]:
             self.plot_settings["show_teo"][band] = []
-            
-    def choosePlotNormalization(self, band, mode="N0", value=1.0, idx_ref=-1):
+    def choosePlotNormalization(self, band, mode="index", value=1.0, idx_ref=-1, global_bands=None):
         """
-        Configura la normalización de una curva teórica o experimental.
+        Configura la normalización de un canal específico.
 
-        mode:
-            "none"  → no normalizar
-            "N0"    → normalizar a f(variable) en presión = value (default 1 bar)
-            "index" → normalizar usando índice idx_ref
+        Existen los siguientes modos de normalización:
+
+        - **mode = "none"**
+            → No se aplica ningún tipo de normalización.
+
+        - **mode = "N0"**
+            → Se normaliza usando el valor de la curva teórica evaluada 
+              a la presión indicada en `value`.
+              (Por ejemplo: value = 1.0 → normaliza a 1 bar)
+
+        - **mode = "index"**
+            → Se normaliza usando el valor del array en la posición `idx_ref`.
+              (Por defecto idx_ref = -1, que normalmente corresponde a la 
+               concentración fCF4 = 100%)
+
+        - **mode = "global"**
+            → Normalización conjunta entre varias bandas. Debes pasar 
+              `global_bands=[...]` con las bandas involucradas. 
+              El valor de referencia se calcula sumando los valores de estas bandas 
+              en el índice `idx_ref`.
+
+        Parámetros
+        ----------
+        band : str
+            Nombre del canal (banda) a normalizar.
+
+        mode : {"none", "N0", "index", "global"}
+            Tipo de normalización deseada.
+
+        value : float
+            Presión (en bar) usada únicamente cuando mode="N0".
+
+        idx_ref : int
+            Índice de referencia usado en mode="index" o mode="global".
+
+        global_bands : list[str], opcional
+            Lista de bandas para normalización conjunta cuando mode="global".
         """
 
         # --- Validación general correcta ----
@@ -460,12 +503,16 @@ class Scintillation:
                 "normalization": {},
                 "show_exp": {},
                 "show_teo": {},
+                "global_norm": {},     # NUEVO
             }
 
+        # Guardar siempre algo
         if band not in self.plot_settings["normalization"]:
             self.plot_settings["normalization"][band] = ("none", None)
 
-        # --- Aplicar modo ---
+        # -----------------------------
+        #  MODO 1: normalización normal
+        # -----------------------------
         if mode == "none":
             self.plot_settings["normalization"][band] = ("none", None)
 
@@ -475,8 +522,25 @@ class Scintillation:
         elif mode == "index":
             self.plot_settings["normalization"][band] = ("index", idx_ref)
 
+        # -----------------------------
+        #  MODO 2: normalización GLOBAL
+        # -----------------------------
+        elif mode == "global":
+            if global_bands is None:
+                raise ValueError("Debes proporcionar global_bands=[...] en modo global")
+
+            # Guardamos SOLO UNA vez — solo se usa cuando se grafique
+            self.plot_settings["global_norm"][band] = {
+                "bands": global_bands,
+                "mode": "index",   # siempre por índice (fácil y lógico)
+                "idx": idx_ref
+            }
+
+            # Y marcamos al canal como normalización global
+            self.plot_settings["normalization"][band] = ("global", None)
+
         else:
-            raise ValueError("mode debe ser: 'none', 'N0', 'index'")
+            raise ValueError("mode debe ser: 'none', 'N0', 'index', 'global'")  
 
         
     def EnableExperimentalData(self, band, n):
@@ -488,6 +552,7 @@ class Scintillation:
         self._ensure_band_in_settings(band)
         if n not in self.plot_settings["show_teo"][band]:
             self.plot_settings["show_teo"][band].append(n)
+            
     def plot_teoCurve(self, band, n=1.0, figsize=(7,5), savefig=None):
         # Asegurar que el canal existe
         if band not in self.theory_functions:
@@ -500,39 +565,80 @@ class Scintillation:
 
         # Normalización seleccionada
         norm_mode, norm_val = self.plot_settings["normalization"][band]
-
+        
         def normalize(arr):
             if norm_mode == "none":
-                return arr
-            elif norm_mode == "N0":
-                ref = f_th(x=self.fit_results[band], fCF4=fCF4, n=norm_val)[-1]
-                return arr/ref
+                return arrç
             elif norm_mode == "index":
                 return arr / arr[norm_val]
             return arr
+       
+        def normalize_pair(y, sy):
+            if norm_mode == "none":
+                return y, sy
+
+            elif norm_mode == "index":
+                ref = y[norm_val]
+                sref = sy[norm_val]
+                
+                sy = np.sqrt((sy/ref)**2+(sref*y/ref**2)**2)
+                
+                return y/ref, sy
+
+            return y, sy
+
 
         plt.figure(figsize=figsize)
+        
+        # -------------------------------
+        # Elegimos colores bonitos
+        # -------------------------------    
+        n,m    = len(self.plot_settings["show_teo"][band]),len(self.plot_settings["show_exp"][band])
+        
+        maxima = max(n,m)
+        colors = cmap(np.linspace(0.2,0.8,maxima))
 
         # -------------------------------
         # Curvas teóricas seleccionadas
-        # -------------------------------
+        # -------------------------------           
+        
+        k_color=0
         for n_plot in self.plot_settings["show_teo"][band]:
-            y = f_th(x=self.fit_results[band], fCF4=fCF4, n=n_plot)
-            y = normalize(y)
-            plt.plot(fCF4, y, label=f"Theory {band}, {n_plot} bar", lw=2)
 
+            fCF4_array = np.logspace(-3,0,num=100,base=10)
+            y = f_th(x=self.fit_results[band], fCF4=fCF4_array, n=n_plot)
+            y = normalize(y)
+            plt.plot(fCF4_array, 
+                    y,
+                    label=f"Theory {band}, {n_plot} bar", 
+                    lw=2,
+                    color=darken(colors[k_color],factor=0.6))
+            k_color+=1
         # -------------------------------
         # Datos experimentales
         # -------------------------------
         dfY = self.yields[band]
+        k_color=0
         for n_plot in self.plot_settings["show_exp"][band]:
             col = f"{n_plot}bar"
+            scol = f"Err {n_plot}bar"
+
             if col not in dfY:
                 print(f"[WARN] No hay datos experimentales para {col}")
                 continue
+
             y = dfY[col].to_numpy()
-            y = normalize(y)
-            plt.scatter(fCF4, y, marker="o", label=f"Exp {band}, {n_plot} bar")
+            sy = dfY[scol].to_numpy()
+
+            # Normalización simultánea
+            y, sy = normalize_pair(y, sy)
+
+            plt.errorbar(fCF4, y, yerr=sy, marker="o",
+                        linestyle="none",
+                        label=f"Exp {band}, {n_plot} bar",
+                        color=colors[k_color])
+            
+            k_color+=1
 
         plt.xscale("log")
         plt.yscale("log")
