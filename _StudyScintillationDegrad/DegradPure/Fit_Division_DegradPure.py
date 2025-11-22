@@ -157,7 +157,7 @@ for nameCF3 in name_CF3:
 
                         # Interpolación lineal (vale también para los casos "i == fCF4[j]")
                         frac = (i - fCF4[j]) / (fCF4[j+1] - fCF4[j])
-
+                                        
                         PCF3         = np.append(PCF3, y1_CF3 + frac * (y2_CF3 - y1_CF3))
                         PAr_dbleStar = np.append(PAr_dbleStar, y1_Ar  + frac * (y2_Ar  - y1_Ar))
 
