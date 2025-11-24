@@ -67,7 +67,7 @@ concentraciones_og = df_pressure0["concentracion"].to_numpy()
 
 print(concentraciones_og)
 concentraciones_og2 = concentraciones_og.copy()
-concentraciones_og2[0] = 1e-3
+#concentraciones_og2[0] = 1e-3
 
 # Inicializa las tablas destino alineadas por fCF4
 yield_uv  = pd.DataFrame({"fCF4": concentraciones_og,
@@ -121,6 +121,9 @@ yield_vis = yield_vis.fillna(0)
     
 ########################## Guardado en Pickle/CSV ##############################################
 # Diccionario con todas las variables que quieres guardar
+yield_uv = yield_uv.drop(index=0)
+yield_vis = yield_vis.drop(index=0)
+
 to_save = {
     "yield_uv": yield_uv,
     "yield_vis": yield_vis,

@@ -93,17 +93,12 @@ class Scintillation:
         self.poblation_degrad_corr=self._compute_poblation_degrad_corr() 
         
         # Inicializamos donde se guardan los resultados de los fits
-        self.fit_results = {}
-
-        # Por si queremos meter parámetros a mano
-        self.manual_parameters = {}  
+        self.fit_results        = {}
+        self.fit_results_global = {}
         
-        # Flags para elegir entre parámetros del fit o manuales
-        self.use_manual = {}   # band -> True/False
-
-        # Nos permite dibujar las diferentes contribuciones
-        self.enabled_components = {}   # p.ej: { "vis": ["Direct","Transf"] }
-
+        # Inicializamos donde se guardan los resultados de los fits
+        self.contributions        = {}
+        self.contributions_global = {}
 
         # Para las gráficas de los fits
         self.plot_settings = {
@@ -213,7 +208,7 @@ class Scintillation:
     ###########################################################################################
         
        
-    def build_theory_functions(self, scintillation_definition):
+    def buildTheoryFunction(self, scintillation_definition):
         """
         Construye funciones teóricas combinando modelos físicos y pesos.
         Guarda las funciones resultantes en self.theory_functions.
@@ -317,19 +312,112 @@ class Scintillation:
                         contribs[model_name] = weight * model_func(**params)
 
                     #return total
-                    if kwargs.get("return_components", False):
+                    if kwargsfitParamtersWithNormalization.get("return_components", False):
                         return total, contribs
                     return total
 
                 return theory_func
 
             self.theory_functions[band_name] = make_theory_func(comp)
+            
+    ##########################################################################
+    ######################### FUNCIONES GLOBALES ###########################
+    ##########################################################################
+
+    # Dentro de class Scintillation:  ---------------------------------
+    def buildYieldFunctionsFromRaw(self, scintillation_raw):
+        """
+        Recibe un diccionario de funciones 'crudas' que dependen explícitamente
+        de las poblaciones de Degrad, por ejemplo:
+
+            def theory_yield_vis(x, fCF4, n, P_CF3, P_Ar_dbleStar, P_CF4, P_Ar_3rd): ...
+
+        y devuelve un diccionario de funciones efectivas:
+
+            f_vis(x, fCF4, n), f_uv(x, fCF4, n)
+
+        donde las poblaciones P_* se obtienen automáticamente de
+        self.poblation_degrad_corr en función de fCF4.
+        """
+
+        result = {}
+
+        for band, func in scintillation_raw.items():
+            sig = inspect.signature(func)
+            params = list(sig.parameters.values())
+
+            # Esperamos algo tipo: x, fCF4, n, P_CF3, P_Ar_dbleStar, ...
+            if len(params) < 3:
+                raise ValueError(
+                    f"La función '{func.__name__}' de banda '{band}' debe "
+                    "tener al menos argumentos (x, fCF4, n, ...)."
+                )
+
+            # Nombres de parámetros de poblaciones: desde el 4.º en adelante
+            pop_param_names = [p.name for p in params[3:]]
+
+            def make_wrapper(func, pop_param_names):
+                def wrapped(x, fCF4, n):
+                    fCF4_arr = np.asarray(fCF4, dtype=float)
+
+                    pop_kwargs = {}
+
+                    for pname in pop_param_names:
+                        # Buscamos la especie correspondiente usando el helper
+                        found = False
+
+                        for species, df in self.poblation_degrad_corr.items():
+
+                            if species == "fCF4":
+                                continue
+
+                            if match_param_to_species(pname, species):
+                                # Elegimos primera columna sin "err"
+                                valid_cols = [
+                                    c for c in df.columns
+                                    if "err" not in c.lower()
+                                ]
+                                if not valid_cols:
+                                    continue
+
+                                col = valid_cols[0]
+                                y_old = df[col].to_numpy(dtype=float)
+
+                                # self.fCF4 es la malla nueva sobre la que está y_old
+                                # Interpolamos a los fCF4 que nos pasen
+                                y_new = np.interp(
+                                    fCF4_arr,
+                                    self.fCF4,   # eje ya corregido
+                                    y_old
+                                )
+
+                                pop_kwargs[pname] = y_new
+                                found = True
+                                break
+
+                        if not found:
+                            raise ValueError(
+                                f"No se encontró población adecuada para el "
+                                f"parámetro '{pname}' en la banda '{band}'."
+                            )
+
+                    # Llamamos a la función original metiéndole las poblaciones ya calculadas
+                    return func(x, fCF4_arr, n, **pop_kwargs)
+
+                return wrapped
+
+            result[band] = make_wrapper(func, pop_param_names)
+
+        # opcional: guardarlo en self.theory_functions para el flujo estándar
+        self.theory_functions = result
+
+        return result
 
     ##########################################################################
     ######################### AJUSTE DE PARÁMETROS ###########################
     ##########################################################################
 
-    def fit_parameters_chooseNorma(
+    def fitParamtersWithNormalization(
         self,
         band: str,
         x0: np.ndarray,
@@ -439,7 +527,6 @@ class Scintillation:
 
                 # normalizamos errores (simplificado)
                 sigma_norm = sigma / abs(y0_exp)
-
                 mask = sigma_norm > 0
                 chi2_val += np.sum(((y_th_norm[mask] - y_exp_norm[mask]) / sigma_norm[mask]) ** 2)
 
@@ -454,38 +541,116 @@ class Scintillation:
         self.fit_results[band] = popt
         return popt
     
-    def set_manual_parameters(self, band, params):
-        """
-        Establece parámetros manuales para una banda.
-        """
-        if band not in self.theory_functions:
-            raise ValueError(f"No existe función teórica para banda '{band}'.")
 
-        # guardar parámetros manuales
-        self.fit_results[band] = np.array(params, dtype=float)
-
-        # activar uso de parámetros manuales
-        if not hasattr(self, "use_manual"):
-            self.use_manual = {}
-        self.use_manual[band] = True
-
-
-    def use_fit_parameters(self, band):
-        """
-        Hace que la banda use los parámetros del fit.
-        """
-        if not hasattr(self, "use_manual"):
-            self.use_manual = {}
-        self.use_manual[band] = False
-
+    ###################################################################################
+    ######################### AJUSTE DE PARÁMETROS GLOBALES ###########################
+    ###################################################################################
     
-    def ensure_manual_flag(self, band):
+    def fitParametersGlobalRaw_residuals(self, bands, x0, bounds):
         """
-        Asegura que existe self.use_manual[band].
-        Si no existe, lo inicializa a False.
+        Ajuste global de parámetros usando least_squares y un vector de residuos:
+
+            r = (Y_exp - Y_th) / sigma
+
+        El objetivo es minimizar ||r||^2, equivalente a minimizar chi².
+
+        Parameters
+        ----------
+        bands : list[str]
+            Lista de bandas a ajustar, por ejemplo ["vis", "uv"]
+        x0 : ndarray
+            Vector inicial de parámetros (N_global en x[0], etc)
+        bounds : (lower, upper)
+            Límites inferiores y superiores para cada parámetro
+
+        Guarda:
+        -------
+        self.fit_results["global"]  → parámetros ajustados
+        self.global_fit_info        → objeto result de least_squares
         """
-        if band not in self.use_manual:
-            self.use_manual[band] = False
+
+        
+
+        #------------------------------------------
+        # Comprobaciones mínimas
+        #------------------------------------------
+        for band in bands:
+            if band not in self.theory_functions:
+                raise ValueError(f"No existe teoría para banda '{band}'.")
+            if band not in self.yields:
+                raise ValueError(f"No hay datos experimentales para banda '{band}'.")
+
+        fCF4_data = self.fCF4   # eje de yield experimental
+
+        #------------------------------------------
+        # Construcción del vector de residuos
+        #------------------------------------------
+        def residuals(x):
+            res_list = []
+
+            for band in bands:
+                dfY = self.yields[band]
+
+                # columnas físicas (p.ej., "1bar", "4bar", ...)
+                cols_phys = [
+                    c for c in dfY.columns
+                    if ("err" not in c.lower() and "fcf4" not in c.lower())
+                ]
+
+                for col in cols_phys:
+                    # experimental
+                    y_exp = dfY[col].to_numpy(dtype=float)
+
+                    # errores experimentales
+                    err_col_candidates = [
+                        f"Err {col}", f"Err_{col}", f"{col} Err", f"{col}_Err"
+                    ]
+                    s_exp = None
+                    for ec in err_col_candidates:
+                        if ec in dfY.columns:
+                            s_exp = dfY[ec].to_numpy(dtype=float)
+                            break
+
+                    if s_exp is None:
+                        s_exp = np.ones_like(y_exp)
+
+                    # Evitar σ = 0
+                    s_exp_eff = s_exp.copy()
+                    mask0 = (s_exp_eff == 0)
+                    if np.any(mask0):
+                        s_exp_eff[mask0] = 1e+12
+
+                    # presión
+                    try:
+                        n_val = float(col.replace("bar", ""))
+                    except:
+                        n_val = 1.0
+
+                    # teoría
+                    y_th = self.theory_functions[band](x, fCF4_data, n_val)
+
+                    # residuo
+                    res = (y_exp - y_th) / s_exp_eff
+                    res_list.append(res)
+
+            return np.concatenate(res_list)
+
+        #------------------------------------------
+        # Ajuste least_squares
+        #------------------------------------------
+        result = opt.least_squares(
+            residuals,
+            x0,
+            bounds=bounds,
+            method="trf",  # método estable para problemas con bounds
+            verbose=2      # si quieres texto de diagnóstico
+        )
+
+        # Guardar resultado
+        self.fit_results["global"] = result.x
+        self.global_fit_info = result
+
+        return result.x
 
 
     ##########################################################################
@@ -508,7 +673,12 @@ class Scintillation:
 
         Existen los siguientes modos de normalización:
 
-        - **mode = "none"**
+        - **mode =
+
+        # -----------------------------
+        #  MODO 2: normalización GLOBAL
+        # -----------------------------
+        "none"**
             → No se aplica ningún tipo de normalización.
 
         - **mode = "N0"**
@@ -573,6 +743,11 @@ class Scintillation:
 
         elif mode == "index":
             self.plot_settings["normalization"][band] = ("index", idx_ref)
+        
+        elif mode == "handle_global":
+            # No normaliza exp, divide teoría entre N_global
+            self.plot_settings["normalization"][band] = ("handle_global", None)
+
 
         # -----------------------------
         #  MODO 2: normalización GLOBAL
@@ -595,24 +770,17 @@ class Scintillation:
             raise ValueError("mode debe ser: 'none', 'N0', 'index', 'global'")  
 
         
-    def EnableExperimentalData(self, band, n):
+    def enableExperimentalData(self, band, n):
         self._ensure_band_in_settings(band)
         if n not in self.plot_settings["show_exp"][band]:
             self.plot_settings["show_exp"][band].append(n)
             
-    def EnableTeoCurve(self, band, n):
+    def enableTeoCurve(self, band, n):
         self._ensure_band_in_settings(band)
         if n not in self.plot_settings["show_teo"][band]:
             self.plot_settings["show_teo"][band].append(n)
             
-    def EnableComponent(self, band, name):
-        if band not in self.enabled_components:
-            self.enabled_components[band] = []
-        if name not in self.enabled_components[band]:
-            self.enabled_components[band].append(name)
-
-                
-    def plot_teoCurve(self, band, n=1.0, figsize=(7,5), savefig=None):
+    def plotTeoCurve(self, band, n=1.0, figsize=(7,5), savefig=None):
         # Asegurar que el canal existe
         if band not in self.theory_functions:
             raise ValueError(f"No existe función teórica para el canal '{band}'.")
@@ -670,6 +838,12 @@ class Scintillation:
             elif norm_mode == "global":
                 ref_sum = compute_global_reference(norm_val,mode=mode)
                 return arr / ref_sum
+            
+            elif norm_mode == "handle_global":
+                x = self.fit_results["global"]
+                N_global = x[0]
+                return arr
+
 
             return arr
 
@@ -687,6 +861,9 @@ class Scintillation:
             elif norm_mode == "global":
                 ref_sum = compute_global_reference(norm_val,mode=mode)
                 return y / ref_sum, sy / ref_sum
+            
+            elif norm_mode == "handle_global":
+                return y, sy   # sin normalización para exp
 
             return y, sy
 
@@ -703,8 +880,18 @@ class Scintillation:
         k = 0
         for n_plot in self.plot_settings["show_teo"][band]:
             fCF4_array = np.logspace(self.min_fCF4_10log, self.max_fCF4_10log, num=100)
+            # Selección de parámetros de ajuste
             
-            y = f_th(x=self.fit_results[band], fCF4=fCF4_array, n=n_plot)
+            if norm_mode == "handle_global":
+                if "global" not in self.fit_results:
+                    raise ValueError("No se ha encontrado el ajuste global en self.fit_results['global']")
+                x_fit = self.fit_results["global"]   # usa el vector global
+            else:
+                x_fit = self.fit_results[band]       # modo clásico (por banda)
+
+            # Evaluación teórica
+            y = f_th(x=x_fit, fCF4=fCF4_array, n=n_plot)
+
             
             y = normalize(y)
             plt.plot(

@@ -14,7 +14,7 @@ python3 Read_Experimental_Yield.py
 echo "==============================="
 echo " Ejecutando main.py"
 echo "==============================="
-cd main/
+cd NewModel/
 python3 main.py
 cd ..
 echo "==============================="

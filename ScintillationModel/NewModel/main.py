@@ -2,9 +2,14 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import sys
 
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(parent_dir)
 from ScintillationClass import Scintillation
-from ArCF4_model import *
+from ArCF4_Completed import *
+from ArCF4_PabloModel import *
+
 
 #######################################################################
 # ======================= 1) LECTURA DE DATOS =========================
@@ -76,97 +81,62 @@ ArCF4.plotPoblationInterpolation("CF3", savefig="InterpolacionPoblationCF3.pdf")
 # ======================== 3) DEFINO TEORÍA ===========================
 #######################################################################
 
-scintillation_vis = {
-    "CF3 dir": ["Probabilidad"],
-    "CF3 Ar dbleStar": ["Probabilidad"]
-}
-
-scintillation_uv = {
-    "CF4 dir": ["Relajacion", "Centelleo"],
-    "CF4 Ar 3rd": [""],
-    "Ar 3rd": [""],
-}
-
 scintillation = {
-    "vis": scintillation_vis,
-    "uv": scintillation_uv,
+    "vis": theory_yield_vis,
+    "uv": theory_yield_uv,
 }
 
-ArCF4.build_theory_functions(scintillation)
+ArCF4.buildYieldFunctionsFromRaw(scintillation)
 
 #######################################################################
-# =================== 4) AJUSTE DEL VISIBLE (VIS) =====================
+# ======================== 4) AJUSTAMOS ===========================
 #######################################################################
 
-x0_vis = [0.10826166, 0.19710833]
-params_vis = ArCF4.fit_parameters_chooseNorma("vis", x0_vis, n0=1.0, idx_ref=-1)
-print("\n=== Parámetros ajustados VIS ===")
-print(params_vis)
 
-ArCF4.choosePlotNormalization("vis", mode="index", idx_ref=-1)
-ArCF4.EnableExperimentalData("vis", 1.0)
-ArCF4.EnableExperimentalData("vis", 4.0)
-ArCF4.EnableTeoCurve("vis", 1.0)
+x0 = np.array([0.01, 0.16, 0.29, 1/30,    # parámetros VIS
+               1, 1, 0.99, 49, 4.0])  # parámetros UV
 
-ArCF4.plot_teoCurve("vis", savefig="AjusteVis.pdf")
+lower = [0.0, 0.0, 0.0, 0.0,   0.0, 0.0, 0.0, 0.0, 0.0]
+upper = [1.0, 1.0, 1.0, 10.0, 10.0, 10.0, 1.0, 100.0, 10.0]
+
+#lower = [    0.001,    0.15,    0.15,    1/31,    0.9,    0.9,    0.99,    48,    3.9,]
+#upper = [    0.1,    0.2,    0.3,    1/29,    1.1,   1.1,    1.0,    49.1,    4.1,]
 
 
-#######################################################################
-# =================== 5) AJUSTE DEL ULTRAVIOLETA (UV) =================
-#######################################################################
 
-x0_uv = [0.43153474, 2.30165488]
-params_uv = ArCF4.fit_parameters_chooseNorma("uv", x0_uv, n0=1.0, idx_ref=-1)
-print("\n=== Parámetros ajustados UV ===")
-print(params_uv)
 
-ArCF4.choosePlotNormalization("uv", mode="index", idx_ref=-1)
-ArCF4.EnableExperimentalData("uv", 1.0)
-ArCF4.EnableExperimentalData("uv", 4.0)
-ArCF4.EnableTeoCurve("uv", 1.0)
-ArCF4.EnableTeoCurve("uv", 4.0)
+bounds=(lower, upper)
 
-ArCF4.plot_teoCurve("uv", savefig="AjusteUV.pdf")
+popt = ArCF4.fitParametersGlobalRaw_residuals(bands=["vis", "uv"], x0=x0, bounds=bounds)
+
+print("Parámetros globales:", popt)
 
 #######################################################################
-# ======= 6) PLOT GLOBAL VIS + UV NORMALIZADOS CONJUNTAMENTE ==========
+# ======================== 5) GRAFICAMOS ===========================
 #######################################################################
 
-#ArCF4.set_manual_parameters("vis", [0.15,0.3,0.43153474, 2.30165488])
+ArCF4.choosePlotNormalization("vis", mode="handle_global")
+ArCF4.choosePlotNormalization("uv", mode="handle_global")
+
+ArCF4.enableExperimentalData("vis", 1.0)
+ArCF4.enableTeoCurve("vis", 1.0)
+
+ArCF4.enableExperimentalData("uv", 1.0)
+ArCF4.enableTeoCurve("uv", 1.0)
 
 
-ArCF4.use_fit_parameters("uv")
+ArCF4.enableExperimentalData("vis", 3.0)
+ArCF4.enableTeoCurve("vis", 3.0)
 
-ArCF4.choosePlotNormalization(
-    band="vis",
-    mode="global",
-    idx_ref=-1,
-    global_bands=["vis", "uv"]
-)
-
-ArCF4.choosePlotNormalization(
-    band="uv",
-    mode="global",
-    idx_ref=-1,
-    global_bands=["vis", "uv"]
-)
-
-# 2) Activar datos experimentales y teoría (VIS + UV)
-ArCF4.EnableExperimentalData("vis", 1.0)
-ArCF4.EnableTeoCurve("vis", 1.0)
+ArCF4.enableExperimentalData("uv", 3.0)
+ArCF4.enableTeoCurve("uv", 3.0)
 
 
-ArCF4.EnableExperimentalData("uv", 1.0)
-ArCF4.EnableTeoCurve("uv", 1.0)
+ArCF4.enableExperimentalData("vis", 5.0)
+ArCF4.enableTeoCurve("vis", 5.0)
 
-# 3) Plot VIS con normalización global
-ArCF4.plot_teoCurve(
-    band="vis",
-    savefig="Ajuste_VIS_GlobalNorm.pdf"
-)
+ArCF4.enableExperimentalData("uv", 5.0)
+ArCF4.enableTeoCurve("uv", 5.0)
 
-# 4) Plot UV con normalización global
-ArCF4.plot_teoCurve(
-    band="uv",
-    savefig="Ajuste_UV_GlobalNorm.pdf"
-)
+ArCF4.plotTeoCurve("vis", savefig="Ajuste_VIS_GlobalNorm.pdf")
+ArCF4.plotTeoCurve("uv",  savefig="Ajuste_UV_GlobalNorm.pdf")
