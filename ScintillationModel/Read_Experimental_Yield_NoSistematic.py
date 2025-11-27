@@ -80,18 +80,18 @@ yield_vis = pd.DataFrame({"fCF4": concentraciones_og,
 
 
 
-
 for i in range(0,len(presion)):
     # OJO: i y presion alineados 1:1
     df_pressure = df[df["presion"] == presion[i]].copy()
     
-
+    
+    #'uyields_cal', 'uyields_estadistico'
     # Extrae UV y vis como Series indexadas por concentracion
     s_uv = df_pressure.set_index("concentracion")["yields_zonas"].apply(lambda d: d["UV"])
     s_vis = df_pressure.set_index("concentracion")["yields_zonas"].apply(lambda d: d["vis"])
     
-    err_s_uv  = df_pressure.set_index("concentracion")["u_yields_zonas"].apply(lambda d: d["UV"])
-    err_s_vis = df_pressure.set_index("concentracion")["u_yields_zonas"].apply(lambda d: d["vis"])
+    err_s_uv  = df_pressure.set_index("concentracion")["uyields_estadistico"].apply(lambda d: d["UV"])
+    err_s_vis = df_pressure.set_index("concentracion")["uyields_estadistico"].apply(lambda d: d["vis"])
 
 
     # Si las concentraciones son floats con posibles decimales “sucios”, puedes redondear:
@@ -128,15 +128,13 @@ to_save = {
     "yield_uv": yield_uv,
     "yield_vis": yield_vis,
 }
-        
-        
-    
+            
 # Recorremos y guardamos cada uno como .pkl
 for name, df in to_save.items():
-    df.to_pickle(f"pickle_data/{name}.pkl")
-    print(f"✅ Guardado: {name}.pkl")
+    df.to_pickle(f"pickle_data/{name}_cal.pkl")
+    print(f"✅ Guardado: {name}_cal.pkl")
     
 # Recorremos y guardamos cada uno como .csv
 for name, df in to_save.items():
-    df.to_csv(f"csv_data/{name}.csv", index=False)
-    print(f"✅ Guardado: {name}.csv")
+    df.to_csv(f"csv_data/{name}_cal.csv", index=False)
+    print(f"✅ Guardado: {name}_cal.csv")

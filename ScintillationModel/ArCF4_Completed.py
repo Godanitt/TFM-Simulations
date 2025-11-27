@@ -7,9 +7,6 @@ import numpy as np
 tau_3rd                      = 5.02               
 tercer_continuo              = 0.4866
 
-# ------------------------------------------------------------------------------
-tau_3rd = 5.0          # o el valor que quieras fijar
-tercer_continuo = 0.4866
 
 def theory_yield_vis(x, fCF4, n, P_CF3, P_Ar_dbleStar, P_CF4, P_Ar_3rd):
     f_cf4 = np.asarray(fCF4, dtype=float)
@@ -25,7 +22,7 @@ def theory_yield_vis(x, fCF4, n, P_CF3, P_Ar_dbleStar, P_CF4, P_Ar_3rd):
     
 
     # OJO: aquí faltaba un "*" en tu ejemplo: p_CF3(P_CF3 + ...) → p_CF3 * (...)
-    return N * p_CF3 * (P_CF3 + frac * p_DbleStar * P_Ar_dbleStar)
+    return N *(p_CF3 * P_CF3 + frac * p_DbleStar * P_Ar_dbleStar)
 
 
 def theory_yield_uv(x, fCF4, n, P_CF3, P_Ar_dbleStar, P_CF4, P_Ar_3rd):
@@ -51,16 +48,51 @@ def theory_yield_uv(x, fCF4, n, P_CF3, P_Ar_dbleStar, P_CF4, P_Ar_3rd):
     frac2 = np.where(denom == 0, 0.0, numer / denom)
 
     # frac3
-    denom = (1.0 / tau_3rd) + f_cf4 * n * (K3 + K4)
-    numer = f_cf4 * n * K3
+    denom = (1.0 / tau_3rd) + f_cf4 * n * (K3)
+    numer = f_cf4 * n * K3 
     frac3 = np.where(denom == 0, 0.0, numer / denom)
 
     # frac4
-    denom = (1.0 / tau_3rd) + f_cf4 * n * (K3 + K4)
+    denom = (1.0 / tau_3rd) + f_cf4 * n * (K3)
     numer = 1.0 / tau_3rd
     frac4 = np.where(denom == 0, 0.0, numer / denom)
 
-    return N * (
-        (frac1 * frac2) * (p_CF3 * P_CF4 + frac3 * P_Ar_3rd)
-        + tercer_continuo * frac4 * P_Ar_3rd
-    )
+    return N * ((frac1 * frac2) * (p_CF3 * P_CF4 + frac3 * P_Ar_3rd * K4)
+        + tercer_continuo * frac4 * P_Ar_3rd )
+
+############### Eliminamos el parámetro K4 #################################
+
+def theory_yield_uv_noP(x, fCF4, n, P_CF3, P_Ar_dbleStar, P_CF4, P_Ar_3rd):
+    f_cf4 = np.asarray(fCF4, dtype=float)
+
+    
+
+    N      = x[0]
+    K1     = x[4]
+    K2     = x[5]
+    p_CF3  = x[6]
+    K3     = x[7]
+    
+
+    # frac1 = nf / (nf + K1)
+    numer = f_cf4 * n
+    denom = f_cf4 * n + K1
+    frac1 = np.where(denom == 0, 0.0, numer / denom)
+
+    # frac2 = 1 / (1 + K2 n f_cf4)
+    numer = 1.0
+    denom = 1.0 + K2 * n * f_cf4
+    frac2 = np.where(denom == 0, 0.0, numer / denom)
+
+    # frac3
+    denom = (1.0 / tau_3rd) + f_cf4 * n * (K3)
+    numer = f_cf4 * n * K3 
+    frac3 = np.where(denom == 0, 0.0, numer / denom)
+
+    # frac4
+    denom = (1.0 / tau_3rd) + f_cf4 * n * (K3)
+    numer = 1.0 / tau_3rd
+    frac4 = np.where(denom == 0, 0.0, numer / denom)
+
+    return N * ((frac1 * frac2) * (p_CF3 * P_CF4 + frac3 * P_Ar_3rd)
+        + tercer_continuo * frac4 * P_Ar_3rd )

@@ -629,6 +629,10 @@ class Scintillation:
                     # teoría
                     y_th = self.theory_functions[band](x, fCF4_data, n_val)
 
+                    if len(y_th) > len(y_exp):
+                        n = len(y_th)  -len(y_exp)
+                        y_th = y_th[n:]
+                            
                     # residuo
                     res = (y_exp - y_th) / s_exp_eff
                     res_list.append(res)
@@ -650,8 +654,228 @@ class Scintillation:
         self.fit_results["global"] = result.x
         self.global_fit_info = result
 
-        return result.x
+        return result
+    
 
+    ###################################################################################
+    ######################### Exprotamos a csv ###########################
+    ###################################################################################
+    
+    def exportParamsToCSV(self, archive="params.csv", names=None, band="global"):
+        """
+        Exporta parámetros ajustados y 
+print("Total de residuos usados =", N_res)
+print("Puntos de datos por banda:")
+
+for band in ["vis", "uv"]:
+    dfY = ArCF4.yields[band]
+    cols_phys = [c for c in dfY.columns if ("err" not in c.lower() and "fcf4" not in c.lower())]
+
+    print(f"  Banda {band}:")
+    for col in cols_phys:
+        print(f"    {col}: {len(dfY[col])} puntos")sus incertidumbres a un CSV usando pandas.
+        Además, para el ajuste global exporta un segundo CSV con la matriz de correlaciones.
+
+        CSV 1 (archive):
+            FILA 1 → valores
+            FILA 2 → incertidumbres
+            Columnas → nombres de parámetros
+
+        CSV 2 (archive + '_corrMatrix.csv'):
+            Matriz de correlación entre parámetros
+        """
+
+        import pandas as pd
+        import numpy as np
+
+        cov = None  # matriz de covarianza
+        corr = None # matriz de correlación
+
+        # ============================================================
+        # 1. Global o banda
+        # ============================================================
+        if band == "global":
+            if "global" not in self.fit_results:
+                raise ValueError("No se ha ejecutado un ajuste global todavía.")
+
+            x = np.asarray(self.fit_results["global"], dtype=float)
+            info = self.global_fit_info
+
+            J = info.jac
+            P = len(x)
+            N = len(info.fun)
+
+            # χ² reducido
+            dof = max(1, N - P)
+            cost_factor = 2 * info.cost / dof
+
+            # Covarianza
+            try:
+                JTJ_inv = np.linalg.inv(J.T @ J)
+                cov = JTJ_inv * cost_factor
+                sigma = np.sqrt(np.diag(cov))
+
+                # ------------------------------------------------------------
+                # Construir matriz de correlación
+                # ------------------------------------------------------------
+                denom = np.outer(sigma, sigma)
+                corr = cov / denom
+
+            except Exception:
+                cov = None
+                corr = None
+                sigma = np.full_like(x, np.nan)
+
+        else:
+            # _______________________________________________
+            # Ajuste no global (no hay covarianzas)
+            # _______________________________________________
+            if band not in self.fit_results:
+                raise ValueError(f"No se encontró ajuste para banda '{band}'.")
+
+            x = np.asarray(self.fit_results[band], dtype=float)
+            sigma = np.full_like(x, np.nan)
+            corr = None   # no disponible
+
+        # ============================================================
+        # 2. Nombres de parámetros
+        # ============================================================
+        if names is None:
+            names = [f"param_{i}" for i in range(len(x))]
+        if len(names) != len(x):
+            raise ValueError("La longitud de 'names' no coincide con el nº de parámetros.")
+
+        # ============================================================
+        # 3. Exportar parámetros + incertidumbres
+        # ============================================================
+        df = pd.DataFrame([x, sigma], index=["value", "uncertainty"], columns=names)
+        df.to_csv(archive)
+
+        print(f"[OK] Parámetros exportados a '{archive}'.")
+
+        # ============================================================
+        # 4. Exportar matriz de correlaciones (solo global)
+        # ============================================================
+        if band == "global":
+            if corr is None:
+                print("[WARN] No se pudo calcular la matriz de correlaciones.")
+                return
+
+            df_corr = pd.DataFrame(corr, columns=names, index=names)
+            archive_corr = archive.replace(".csv", "") + "_corrMatrix.csv"
+            df_corr.to_csv(archive_corr)
+
+            print(f"[OK] Matriz de correlaciones exportada a '{archive_corr}'.")
+ 
+
+        import numpy as np
+
+        # ------------------------------------------------------------
+        # Helper: formateo científico en LaTeX: a.bcd × 10^{n}
+        # ------------------------------------------------------------
+    def exportParamsToTeX(
+        self,
+        archive: str = "params.tex",
+        names=None,
+        band: str = "global",
+        caption: str = "Parámetros del ajuste",
+        label: str = "tab:fit_params",
+        precision: int = 3,
+    ):
+        """
+        Exporta parámetros ajustados y sus incertidumbres a una tabla LaTeX.
+        - Usa siunitx (\num{}) para los valores numéricos.
+        - Columnas numéricas con S (siunitx).
+        - Tres columnas numéricas: Valor, Error (%), Error (abs.).
+        - NO modifica los 'names' (pueden llevar $...$ y _ tal cual).
+        """
+
+        import numpy as np
+
+        # -----------------------------
+        # Helper: formateo para \num{}
+        # -----------------------------
+        def _format_num(x, prec=precision):
+            if x is None or (isinstance(x, float) and np.isnan(x)):
+                return r"\text{--}"
+            if x == 0:
+                return r"\num{0}"
+            # usamos notación científica estilo 1.234e-03, que siunitx entiende bien
+            s = f"{x:.{prec}e}"
+            return fr"\num{{{s}}}"
+
+        # -----------------------------
+        # obtener parámetros y sigmas
+        # -----------------------------
+        if band == "global":
+            x = np.asarray(self.fit_results["global"], dtype=float)
+            info = self.global_fit_info
+            J = info.jac
+
+            P = len(x)
+            N = len(info.fun)
+            dof = max(1, N - P)
+            cost_factor = 2 * info.cost / dof
+
+            try:
+                JTJ_inv = np.linalg.inv(J.T @ J)
+                cov = JTJ_inv * cost_factor
+                sigma = np.sqrt(np.diag(cov))
+            except Exception:
+                sigma = np.full_like(x, np.nan)
+        else:
+            x = np.asarray(self.fit_results[band], dtype=float)
+            sigma = np.full_like(x, np.nan)
+
+        if names is None:
+            names = [f"$x_{i}$" for i in range(len(x))]
+
+        # -----------------------------
+        # error %
+        # -----------------------------
+        error_percent = np.zeros_like(x, dtype=float)
+        for i in range(len(x)):
+            if x[i] == 0:
+                error_percent[i] = np.nan
+            else:
+                error_percent[i] = abs(sigma[i] / abs(x[i])) * 100.0
+
+        # -----------------------------
+        # construir tabla LaTeX
+        # -----------------------------
+        lines = []
+        lines.append(r"\begin{table}[h!]")
+        lines.append(r"    \centering")
+        # l para el nombre del parámetro, SSS para las tres columnas numéricas
+        lines.append(r"    \begin{tabular}{lSSS}")
+        lines.append(r"        \hline")
+        lines.append(r"        Parámetro & {Valor} & {Error (\%)} & {Error (abs.)} \\")
+        lines.append(r"        \hline")
+
+        for name, val, sig, errp in zip(names, x, sigma, error_percent):
+            val_tex  = _format_num(val)
+            sig_tex  = _format_num(sig)
+            errp_tex = _format_num(errp)
+
+            # name se escribe TAL CUAL (puede llevar $...$ y _)
+            lines.append(
+                f"        {name} & {val_tex} & {errp_tex} & {sig_tex} \\\\"
+            )
+
+        lines.append(r"        \hline")
+        lines.append(r"    \end{tabular}")
+        lines.append(f"    \\caption{{{caption}}}")
+        lines.append(f"    \\label{{{label}}}")
+        lines.append(r"\end{table}")
+        lines.append("")
+
+        # -----------------------------
+        # guardar archivo
+        # -----------------------------
+        with open(archive, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines))
+
+        print(f"[OK] Tabla LaTeX exportada a '{archive}'. Usa siunitx para los números.")
 
     ##########################################################################
     ######################### GRAFICA ###########################
@@ -920,8 +1144,14 @@ class Scintillation:
 
             y, sy = normalize_pair(y, sy)
 
+            fCF4_aux=fCF4[:]
+            if len(fCF4)>len(y):
+                n=len(fCF4)-len(y)
+                fCF4_aux=fCF4[n:]
+            
+            
             plt.errorbar(
-                fCF4*100, y, yerr=sy,
+                fCF4_aux*100, y, yerr=sy,
                 marker="o",
                 linestyle="none",
                 color=colors[k],
@@ -930,6 +1160,8 @@ class Scintillation:
             k += 1
 
         # --- Opciones comunes ---
+        
+        plt.xlim(fCF4_aux[0]*0.9*100,fCF4_aux[-1]*1.1*100)
         plt.xscale("log")
         plt.yscale("log")
         plt.xlabel("fCF4 %")
