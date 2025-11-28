@@ -82,9 +82,9 @@ int main(int argc, char *argv[]){
 
 
 	// Pasamos el pitch a float (pitch == gap, tamaño del cámpo eléctrico)
-	TString pitchInputString=argv[3];//input im mm
-	Int_t pitch_mm=pitchInputString.Atoi();
-	const double pitch = double(pitch_mm)*0.1; //convert to mm
+	TString pitchInputString=argv[3]; //input im mm
+	double_t pitch_mm = pitchInputString.Atof();
+	const double pitch = double(pitch_mm)*0.1; //convert to cm
 
 
 	// Pasamos la presión a float

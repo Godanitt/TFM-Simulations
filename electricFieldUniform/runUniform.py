@@ -8,14 +8,15 @@ def run_fatGemC(args, dir_output="build"):
 ###############################
 # Ejemplo de parámetros
 n = 1                         # Este es para limitar los electrones que se siu
-npe = [20]                    # numero de electrones primarios que se lanzan
+npe = [10]                    # numero de electrones primarios que se lanzan
 pressure = [1]                # bar
-gap = [1]                     # mm
-gas1 = ["ar"]                 # gas2 nombre -> debe ser el código para Magboltz
-mixture1 = [99.0]             # % del gas2
-gas2 = ["cf4"]                # gas2 nombre -> debe ser el código para Magboltz
-mixture2 = [1.0]              # % del gas2
-fieldE = [15000]              # eV/cm
+gap = [0.57]                     # mm
+#####
+gas1 = ["cf4"]                 # gas2 nombre -> debe ser el código para Magboltz
+mixture1 = [100.0]             # % del gas2
+gas2 = ["ar"]                # gas2 nombre -> debe ser el código para Magboltz
+mixture2 = [0.0]              # % del gas2
+fieldE = [42000]              # eV/cm
  
  
 
@@ -25,13 +26,13 @@ subprocess.run(["mkdir", "build"])
 subprocess.run(["cmake", ".."], cwd=dir_output)
 subprocess.run("make -j$Nproc", shell=True, cwd=dir_output)
 for i in range(n):
-    rootFileName = f"../rootArchives/{gas1[i]}{mixture2[i]:.1f}{gas2[i]}_{fieldE[i]/pressure[i]/gap[i]/1000:.1f}kVcmbar_{npe[i]}npe.root"
+    rootFileName = f"../rootArchives/{gas1[i]}{mixture2[i]:.1f}{gas2[i]}_{fieldE[i]/pressure[i]/1000:.1f}kVcmbar_{gap[i]:.2f}cm_{npe[i]}npe.root"
 
     # Construimos la lista de argumentos exactamente como espera fatGem:
     args = [
         rootFileName,             # name del .root
         fieldE[i],                # campo eléctrico
-        "%.2f"%gap[i],               # gap en mm
+        "%.2f"%gap[i],            # gap en mm
         pressure[i],              # presion en bar
         npe[i],                   # numero de electrones primarios
         gas1[i],                  # gas primario
