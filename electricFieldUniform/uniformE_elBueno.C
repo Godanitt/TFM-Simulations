@@ -280,7 +280,7 @@ int main(int argc, char *argv[]){
 	Int_t nelec_total = 0;
 
 	// Nos dice la posición-nivel de la excitacion producida y la guarda en el tree dataExc
-	aval->SetUserHandleInelastic(userHandle);
+	aval->SetUserHandleCollision(userHandle);
 
         int cuentas = 0;
 	bool flag = true;

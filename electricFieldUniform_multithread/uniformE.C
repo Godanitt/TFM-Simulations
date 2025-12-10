@@ -37,7 +37,7 @@ double xExc,yExc,zExc,tExc,levelExc;
 //TTree *dataExc = new TTree("dataExc", "dataExc"); // Luego lo tenemos que rellenar
 TH1D* hLevels = nullptr;   // <<< declaración visible antes del userHandle --> MUCHISIMO CUIDADO 
 
-void userHandle(double x, double y, double z, double t, int type, int level, Medium* m)
+void userHandle(double x, double y, double z, double t, int type, int level, Medium *m, double e0, double e1, double dx0, double dy0, double dz0, double dx1, double dy1, double dz1)
 {
 
     //xExc=x; yExc=y; zExc=z; tExc=t;
@@ -149,8 +149,8 @@ int main(int argc, char *argv[]){
 	gas->SetPressure (pressure);
 
 	// Generamos las secciones eficaces de Magboltz (Steve) para generar el archivo
-        //gas->SetMaxCollisionRate(1.5);  // 150% del nominal
-	gas->SetMaxElectronEnergy(200.0);
+        //gas->SetMaxCollisionRate(10);  // 1000% del nominal
+	gas->SetMaxElectronEnergy(400.0);
 	gas->EnableDebugging ();
 	//gas->PrintGas();
 	gas->Initialise ();
@@ -280,7 +280,7 @@ int main(int argc, char *argv[]){
 	Int_t nelec_total = 0;
 
 	// Nos dice la posición-nivel de la excitacion producida y la guarda en el tree dataExc
-	aval->SetUserHandleInelastic(userHandle);
+	aval->SetUserHandleCollision(userHandle);
 
         int cuentas = 0;
 	bool flag = true;
