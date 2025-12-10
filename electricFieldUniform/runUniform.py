@@ -10,11 +10,11 @@ def run_fatGemC(args, dir_output="build"):
 n = 1                         # Este es para limitar los electrones que se siu
 npe = [10]                    # numero de electrones primarios que se lanzan
 pressure = [1]                # bar
-gap = [0.57]                     # mm
+gap = [0.57]                  # mm
 #####
-gas1 = ["cf4"]                 # gas2 nombre -> debe ser el código para Magboltz
-mixture1 = [100.0]             # % del gas2
-gas2 = ["ar"]                # gas2 nombre -> debe ser el código para Magboltz
+gas1 = ["cf4"]                # gas2 nombre -> debe ser el código para Magboltz
+mixture1 = [100.0]            # % del gas2
+gas2 = ["ar"]                 # gas2 nombre -> debe ser el código para Magboltz
 mixture2 = [0.0]              # % del gas2
 fieldE = [42000]              # eV/cm
  
