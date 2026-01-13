@@ -272,18 +272,35 @@ int main(int argc, char *argv[]){
 	///////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////
 	// Hacemos la simulación, para el número de electrones deseados
+	
+	ViewDrift view;
+	TCanvas* c = new TCanvas("c", "Drift", 900, 700);
+	view.SetCanvas(c);
+	view.SetArea(-pitch, -pitch, -pitch, pitch, pitch, pitch);
 
-	// Usamos AvalancheMicroscopic para simular: 
-	AvalancheMicroscopic * aval = new AvalancheMicroscopic ();
-	aval->SetSensor (sensor);
+	// Si quieres snapshot:
+	//view.SetSnapshotFile("drift.png");
+
+	AvalancheMicroscopic* aval = new AvalancheMicroscopic();
+	aval->SetSensor(sensor);
 	aval->EnableElectronEnergyHistogramming(histen);
-	Int_t nelec_total = 0;
+	aval->EnablePlotting(&view, 100);
 
 	// Nos dice la posición-nivel de la excitacion producida y la guarda en el tree dataExc
+	
+	Int_t nelec_total = 0;
 	aval->SetUserHandleCollision(userHandle);
 
-        int cuentas = 0;
+    int cuentas = 0;
 	bool flag = true;
+
+	// IMPORTANTE Y CRÍTICO. CAMBIAR ENTRE EL DE ARRIBA Y EL DE ABAJO SI NO FUNCIONA. LINEA 347 TMB
+	std::size_t nElastic= 0, nIonising= 0, nAttachment= 0, nInelastic= 0, nExcitation= 0, nSuperelastic = 0;
+	/*
+	unsigned int nElastic = 0, nIonising = 0, nAttachment = 0;
+	unsigned int nInelastic = 0, nExcitation = 0, nSuperelastic = 0;
+	*/
+
 	for (eventNumber = 0; eventNumber < npe; eventNumber++)
 	{
 		// Llevamos a cero el número de colisiones de cada tipo
@@ -322,13 +339,37 @@ int main(int argc, char *argv[]){
 			float timeused = (float) clock () / CLOCKS_PER_SEC;
 			aval->GetElectronEndpoint (ie, x0, y0, z0, t0, e0, x1, y1, z1, t1, e1, status);
 			// Devuelve el número acumulado de colisiones de cada tipo que ha ocurrido en ese electrón
+			
+
+			// Devuelve el número acumulado de colisiones de cada tipo que ha ocurrido en ese electrón. 
+			
+			
+			// IMPORTANTE Y CRÍTICO. CAMBIAR ENTRE EL DE ARRIBA Y EL DE ABAJO SI NO FUNCIONA. LINEA 298 TMB. 
 			gas->GetNumberOfElectronCollisions(nElastic, nIonising, nAttachment, nInelastic, nExcitation, nSuperelastic);
 			
+			/* 
+			gas->GetNumberOfElectronCollisions(
+				nElastic, nIonising, nAttachment, nInelastic, nExcitation, nSuperelastic
+			);
+			*/
+						
 			// Rellenamos la rama
 			dataPerElectron->Fill();
 		}
 		
 	}
+
+	// OJO: pon aquí un volumen razonable para tu geometría (en cm)
+	view.SetArea(-pitch, -pitch, 0, pitch, pitch, pitch);
+	view.SetPlaneXZ();   // X horizontal, Z vertical
+	view.SetPlaneXZ();   // X horizontal, Z vertical
+	view.Plot(true, true, false);
+
+
+	c->Update();
+	c->SaveAs("drift.pdf");
+
+	
 
 	///////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////

@@ -7,7 +7,6 @@ import inspect
 import re
 
 
-cmap = plt.get_cmap("viridis")
 
 def normalize_tokens(s):
     """Convierte 'Ar dble Star' → ['ar','dble','star']."""
@@ -663,17 +662,7 @@ class Scintillation:
     
     def exportParamsToCSV(self, archive="params.csv", names=None, band="global"):
         """
-        Exporta parámetros ajustados y 
-print("Total de residuos usados =", N_res)
-print("Puntos de datos por banda:")
-
-for band in ["vis", "uv"]:
-    dfY = ArCF4.yields[band]
-    cols_phys = [c for c in dfY.columns if ("err" not in c.lower() and "fcf4" not in c.lower())]
-
-    print(f"  Banda {band}:")
-    for col in cols_phys:
-        print(f"    {col}: {len(dfY[col])} puntos")sus incertidumbres a un CSV usando pandas.
+        Exporta parámetros ajustados y sus incertidumbres a un CSV usando pandas.
         Además, para el ajuste global exporta un segundo CSV con la matriz de correlaciones.
 
         CSV 1 (archive):
@@ -877,7 +866,7 @@ for band in ["vis", "uv"]:
 
         print(f"[OK] Tabla LaTeX exportada a '{archive}'. Usa siunitx para los números.")
 
-    ##########################################################################
+    ###################################b",#######################################
     ######################### GRAFICA ###########################
     ##########################################################################
     
@@ -1004,7 +993,7 @@ for band in ["vis", "uv"]:
         if n not in self.plot_settings["show_teo"][band]:
             self.plot_settings["show_teo"][band].append(n)
             
-    def plotTeoCurve(self, band, n=1.0, figsize=(7,5), savefig=None):
+    def plotTeoCurve(self, band, n=1.0, figsize=(7,5),cmap=plt.get_cmap("viridis"), savefig=None):
         # Asegurar que el canal existe
         if band not in self.theory_functions:
             raise ValueError(f"No existe función teórica para el canal '{band}'.")

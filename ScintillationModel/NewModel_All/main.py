@@ -138,9 +138,6 @@ ArCF4.exportParamsToTeX(
     precision=3
 )
 
-
-
-
 J = popt.jac
 m, p = J.shape
 s2 = 2 * popt.cost / (m - p)

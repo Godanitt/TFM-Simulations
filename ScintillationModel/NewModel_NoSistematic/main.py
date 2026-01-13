@@ -104,9 +104,6 @@ upper = [1.0,
          10.0, 10.0, 1.0, 100.0, 1.0]
 
 
-
-
-
 bounds=(lower, upper)
 
 popt = ArCF4.fitParametersGlobalRaw_residuals(bands=["vis", "uv"], x0=x0, bounds=bounds)

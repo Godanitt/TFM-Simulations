@@ -58,17 +58,21 @@ Código principal en C++ que:
   - Datos por electrón
   - Datos por electrón primario (ej: Número de electrones e iones producidos).
   - Dato de las excitaciones (posiciones donde se producen e intante temporal, número de ellas). 
+- Gráfico eje X-Z del seguimiento microscópico de los electrones.
 
-### `runUniform.py`
+### `runUniform_multithread.py`
 
 Script en Python que:
 - Limpia y recompila el proyecto mediante **CMake**.  
 - Define los parámetros de simulación (gases, presión, campo, etc.).  
 - Ejecuta automáticamente el binario `uniformE` con los argumentos apropiados.  
 
-Se puede seleccionar en el archivo de python la presión (bar), gap (mm), campo eléctrico (V/cm), mezcla de gases (2 gases actualmente) y número de eventos/electrones primarios: 
+Se puede seleccionar en el archivo de python la presión (bar), gap (mm), campo eléctrico (V/cm), mezcla de gases (2 gases actualmente) y número de eventos/electrones primarios.
+
+La lista permite que se ejecuten varios procesos a la vez, dependiendo la cantidad de núcleos, ahorrando una gran cantidad de horas al usuario- 
 
 ```python
+npe = [20]          # Nº de electrones primarios
 pressure = [1]      # Presión en bar
 gap = [1]           # Distancia del campo (mm)
 fieldE = [15000]    # Campo eléctrico (V/cm)
@@ -76,5 +80,4 @@ gas1 = ["ar"]       # Gas1 (código Magboltz)
 mixture1 = [99.0]   # % mezcla Gas1
 gas2 = ["cf4"]      # Gas2 (código Magboltz)
 mixture2 = [1.0]    # % mezcla Gas2
-npe = [20]          # Nº de electrones primarios
 ```

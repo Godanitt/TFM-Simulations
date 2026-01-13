@@ -16,6 +16,11 @@ echo "==============================="
 echo " Ejecutando main.py"
 echo "==============================="
 
+cd PabloModel_NoSistematic/
+python3 main.py
+cd ..
+
+
 cd NewModel_All/
 python3 main.py
 cd ..
@@ -32,7 +37,6 @@ cd ..
 cd NewModel_NoSistematic_P1/
 python3 main.py
 cd ..
-
 
 
 

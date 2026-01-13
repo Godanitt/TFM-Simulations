@@ -17,42 +17,35 @@ def run_fatGemC(args):
     print(f"--> Finalizó simulación:\n    ./uniformE {' '.join(args)}")
 
 
-###################################
+######################################################################
 # Parámetros del usuario
-n = 15
 
-npe       = [10000] * n
+# Los parámetros de simulación van en listas. Con n controlamos cuantos elementos de la lista
+#   se ejecutan partiendo del elemento 0. Es decir, si es n=1, solo se ejecutará el primer e-
+#   lemento de todas las listas.
 
-pressure  = [1, 1, 1,
-             0.025, 0.025, 0.025,
-             1, 1, 1,
-             0.025, 0.025, 0.025,
-             1, 1, 1,]
+n = 1
 
-gap       = [0.57] * n
+######################################################################
+# Parametros de la simulación
 
-gas1      = ["cf4","cf4","cf4",
-             "cf4","cf4","cf4",
-             "ar","ar","ar",
-             "ar","ar","ar",
-             "he","he","he"]
+npe       = [10] * n                # e- primarios
 
-mixture1  = [100.0]*6 + [80.0]*9
+pressure  = [1, 1, 1]               # bar
 
-gas2      = ["ar","ar","ar",
-             "ar","ar","ar",
-             "cf4","cf4","cf4",
-             "cf4","cf4","cf4",
-             "cf4","cf4","cf4",]
+gap       = [0.57] * n              # mm
 
-mixture2  = [0.0]*6 + [20.0]*9
+gas1      = ["cf4","cf4","cf4"]   
 
-fieldE    = [38700, 40850, 43000,
-             9500, 9000, 10000,
-             26100, 27550, 29000,
-             6270, 5940, 6600,
-             18700, 16830, 17765,]
-###################################
+mixture1  = [100.0]*n               # % gas
+
+gas2      = ["ar","ar","ar"]
+
+mixture2  = [0.0]*n                 # % gas
+
+fieldE    = [38700, 40850, 43000]   # V/cm
+
+######################################################################
 
 
 # ---------------------------
@@ -78,7 +71,7 @@ for i in range(n):
         f"{gas1[i]}{mixture2[i]:.1f}{gas2[i]}_"
         f"{fieldE[i]/1000:.1f}kVcm_"
         f"{pressure[i]}bar_"
-        f"{gap[i]:.2f}cm_{npe[i]}npe.root"
+        f"{gap[i]:.2f}mm_{npe[i]}npe.root"
     )
 
     args = [
