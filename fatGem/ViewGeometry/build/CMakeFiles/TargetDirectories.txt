@@ -1,3 +1,0 @@
-/home/daniel/Documentos/Master Fisica/TFM/ViewGeometry/build/CMakeFiles/ViewGeometry.dir
-/home/daniel/Documentos/Master Fisica/TFM/ViewGeometry/build/CMakeFiles/edit_cache.dir
-/home/daniel/Documentos/Master Fisica/TFM/ViewGeometry/build/CMakeFiles/rebuild_cache.dir

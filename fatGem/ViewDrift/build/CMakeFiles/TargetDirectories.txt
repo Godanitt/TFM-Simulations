@@ -1,3 +1,0 @@
-/home/daniel/Documentos/Master Fisica/TFM/ViewDrift/build/CMakeFiles/ViewDrift.dir
-/home/daniel/Documentos/Master Fisica/TFM/ViewDrift/build/CMakeFiles/edit_cache.dir
-/home/daniel/Documentos/Master Fisica/TFM/ViewDrift/build/CMakeFiles/rebuild_cache.dir
