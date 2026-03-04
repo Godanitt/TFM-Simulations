@@ -57,6 +57,9 @@ def main():
     # Ejecución
     run([f"./{EXECUTABLE}"], cwd=BUILD_DIR)
 
+    run(["python","graphic_cf4.py"])
+    run(["python","graphic_ar.py"])
+
     print("\n✔ cross_section.cxx compilado y ejecutado correctamente\n")
 
 
