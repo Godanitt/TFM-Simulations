@@ -94,14 +94,18 @@ ArCF4.buildYieldFunctionsFromRaw(scintillation)
 #######################################################################
 
 x0 = np.array([1,
-               0.11352059, 0.00156568 ,0.03740022, 
-               0.01793004 ,0.1, 0.31565123, 50.1, 0.99])
+               0.11352059, 0.00156568 , 999, 
+               0.01793004 ,0.1, 0.31565123, 50.1, 0.99,
+               999 ])
 lower = [0.0,
          0.0, 0.0, 0.0,  
-         0.0, 0.065, 0.0, 50, 0.0,]
+         0.0, 0.065, 0.0, 50, 0.0,
+         0.0]
+
 upper = [1.0, 
-         1.0, 1.0, 10.0, 
-         10.0, 10.0, 1.0, 50.2, 1.0]
+         1.0, 1.0, 10000.0, 
+         10.0, 10.0, 1.0, 50.2, 1.0,
+         10000.0]
 
 
 bounds=(lower, upper)
@@ -110,7 +114,7 @@ popt = ArCF4.fitParametersGlobalRaw_residuals(bands=["vis", "uv"], x0=x0, bounds
 
 ArCF4.exportParamsToCSV(
     archive="Parametros_Globales.csv",
-    names=["N","P1", "P2", "P3", "K1", "K2", "K3", "K4", "K5"],
+    names=["N","P1", "P2", "P3", "K1", "K2", "K3", "K4", "K5", "P4"],
     band="global"
 )
 
@@ -118,12 +122,13 @@ names = [
     "$N_{\\text{norm}}$",
     "$P_{\\mathrm{CF_3}}|_{\\mathrm{dir}}$",
     "$P_{\\mathrm{Ar}^{**}} $",
-    "${K_{\\mathrm{Ar^{**},Q(Ar)}}} / {K_{\\mathrm{Ar^{**},Q(CF_4)}}}$",
+    "${K_{\\mathrm{Ar^{**},Q(Ar)}}} [ns]$",
     "$1 / {\\tau_{\\mathrm{disocc}} K_{\\mathrm{relax}}}$",
     "$\\tau_{\mathrm{uv}} K_{\mathrm{CF_4^(+,*)Q(CF_4)}}$",
     "$P_{\\mathrm{CF_4^{+,*}}}|_{\\mathrm{dir}}$",
     "$K_{\\mathrm{Ar^{++},Q(CF_4)}}$ [ns]",
-    "$P_{\\mathrm{Ar}^{++}}$"
+    "$P_{\\mathrm{Ar}^{++}}$",
+    "${K_{\\mathrm{Ar^{**},Q(CF_4)}}} [ns]$"
 ]
 
 ArCF4.exportParamsToTeX(
@@ -141,7 +146,7 @@ ArCF4.exportParamsToTeX(
 J = popt.jac
 m, p = J.shape
 s2 = 2 * popt.cost / (m - p)
-cov_theta = s2 * np.linalg.inv(J.T @ J)
+cov_theta =  s2 * np.linalg.inv(J.T @ J)
 
 print("Parámetros globales:", popt.x)# ===================== χ² ===========================
 
@@ -219,7 +224,7 @@ corr = cov_theta / outer
 corr = np.clip(corr, -1, 1)
 
 # Etiquetas de parámetros
-param_labels = ["N", "P1", "P2", "P3", "K1", "K2", "K3", "K4", "K5"]
+param_labels = ["N", "P1", "P2", "P3", "K1", "K2", "K3", "K4", "K5", "P4"]
 
 # DataFrame para seaborn
 corr_df = pd.DataFrame(corr, columns=names, index=names)

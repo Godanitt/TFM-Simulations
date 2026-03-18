@@ -1,5 +1,4 @@
 
-
 import numpy as np
 
 
@@ -18,8 +17,13 @@ def ion_potential(f):
     W=np.interp(f_cf4,cf4_pct,ion_pot)
     return W
 
-def theory_yield_vis(x, fCF4, n, P_CF3, P_Ar_dbleStar, P_CF4, P_Ar_3rd):
+def theory_yield_vis(x, degrad_data, fCF4, n):
     f_cf4 = np.asarray(fCF4, dtype=float)
+
+    P_CF3 = degrad_data["CF3"].to_numpy()
+    P_Ar_dbleStar = degrad_data["Ar_dbleStar"].to_numpy()
+    P_CF4 = degrad_data["CF4"].to_numpy()
+    P_Ar_3rd = degrad_data["Ar_3rd"].to_numpy()
 
     N           = x[0]
     p_CF3       = x[1]
@@ -37,10 +41,15 @@ def theory_yield_vis(x, fCF4, n, P_CF3, P_Ar_dbleStar, P_CF4, P_Ar_3rd):
     return (1/ion_potential(f_cf4))*N*(p_CF3 * P_CF3 + frac * p_DbleStar * P_Ar_dbleStar)
 
 
-def theory_yield_uv(x, fCF4, n, P_CF3, P_Ar_dbleStar, P_CF4, P_Ar_3rd):
+def theory_yield_uv(x, degrad_data, fCF4, n):
     f_cf4 = np.asarray(fCF4, dtype=float)
 
     
+    P_CF3 = degrad_data["CF3"].to_numpy()
+    P_Ar_dbleStar = degrad_data["Ar_dbleStar"].to_numpy()
+    P_CF4 = degrad_data["CF4"].to_numpy()
+    P_Ar_3rd = degrad_data["Ar_3rd"].to_numpy()
+
 
     N      = x[0]
     K1     = x[4]
@@ -70,42 +79,4 @@ def theory_yield_uv(x, fCF4, n, P_CF3, P_Ar_dbleStar, P_CF4, P_Ar_3rd):
     frac4 = np.where(denom == 0, 0.0, numer / denom)
 
     return (1/ion_potential(f_cf4))* N * ((frac1 * frac2) * (p_CF3 * P_CF4 + frac3 * P_Ar_3rd * K4)
-        + tercer_continuo * frac4 * P_Ar_3rd )
-
-############################################################################
-############### Eliminamos el parámetro K4 #################################
-
-def theory_yield_uv_noP(x, fCF4, n, P_CF3, P_Ar_dbleStar, P_CF4, P_Ar_3rd):
-    f_cf4 = np.asarray(fCF4, dtype=float)
-
-    
-
-    N      = x[0]
-    K1     = x[4]
-    K2     = x[5]
-    p_CF3  = x[6]
-    K3     = x[7]
-    
-
-    # frac1 = nf / (nf + K1)
-    numer = f_cf4 * n
-    denom = f_cf4 * n + K1
-    frac1 = np.where(denom == 0, 0.0, numer / denom)
-
-    # frac2 = 1 / (1 + K2 n f_cf4)
-    numer = 1.0
-    denom = 1.0 + K2 * n * f_cf4
-    frac2 = np.where(denom == 0, 0.0, numer / denom)
-
-    # frac3
-    denom = (1.0 / tau_3rd) + f_cf4 * n * (K3)
-    numer = f_cf4 * n * K3 
-    frac3 = np.where(denom == 0, 0.0, numer / denom)
-
-    # frac4
-    denom = (1.0 / tau_3rd) + f_cf4 * n * (K3)
-    numer = 1.0 / tau_3rd
-    frac4 = np.where(denom == 0, 0.0, numer / denom)
-
-    return (1/ion_potential(f_cf4)) * N * ((frac1 * frac2) * (p_CF3 * P_CF4 + frac3 * P_Ar_3rd)
         + tercer_continuo * frac4 * P_Ar_3rd )

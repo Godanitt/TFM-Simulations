@@ -151,7 +151,6 @@ for i in range(len(archives)):
 
     ar  = df.loc[df['Gas'] == "ARGON", :]
     cf4 = df.loc[df['Gas'] == "CF4", :]
-
     # --- CF4 ---
     mask_cf4_all = cf4['Proceso'].str.contains("ION CF3 +")
     poblations_CF4.loc[i, "CF4 all"] = cf4.loc[mask_cf4_all, 'Eventos'].sum()
