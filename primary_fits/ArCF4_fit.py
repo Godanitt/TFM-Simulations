@@ -296,4 +296,4 @@ sns.heatmap(
 plt.title("Matriz de Correlación de Parámetros Ajustados", fontsize=14)
 plt.tight_layout()
 
-plt.savefig("CorrelationMatrix_GlobalFit.pdf", dpi=300)
+plt.savefig("plots/ArCF4_CorrelationMatrix_GlobalFit.pdf", dpi=300)
