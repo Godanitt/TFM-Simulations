@@ -15,6 +15,8 @@ from ArCF4 import *
 from read_Degrad import read_degrad
 from read_experimental import read_experimental
 from fiting import fitParameters
+from parameter_export import export_fit_table_latex, export_to_csv
+from ploting import plot_fit_vs_experiment_by_pressure
 
 #########################################################
 ####### CREAMOS LOS ARCHIVOS + LOS CARGAMOS 
@@ -159,13 +161,11 @@ print(f"Chi2 reducido: {chi2_red}")
 print("="*60)
 
 
-
-
 #######################################################################
-# =================== 6) MATRIZ DE CORRELACIÓN ========================
+# =================== LATEX, TYPST, CSV EXPORT ========================
 #######################################################################
 
-names = [
+names_tex = [
     "$N_{\\text{norm}}$",
     "$P_{\\mathrm{CF_3}}|_{\\mathrm{dir}}$",
     "$P_{\\mathrm{Ar}^{**}} $",
@@ -178,6 +178,97 @@ names = [
     "${K_{\\mathrm{Ar^{**},Q(CF_4)}}} [ns]$"
 ]
 
+latex_table, _, perr, rel = export_fit_table_latex(
+    result=popt,
+    names=names_tex,
+    filename="tex_param/fit_table.tex",
+    caption="Parámetros obtenidos del ajuparamste global.",
+    label="tab:fit_params",
+    sigfigs=4
+)
+
+names_csv = [
+    "Nnorm",
+    "PCF3dir$",
+    "PAr**",
+    "KAr**QAr",
+    "1/tauDiscKrelax",
+    "tauUvKCF4QCF4",
+    "PCF4dir",
+    "KAr++QCF4",
+    "PAr++",
+    "KAr**QCF4"
+]
+
+export_to_csv("../data/Parameters/ArCF4_primary.csv",popt,names_csv)
+
+#######################################################################
+# =================== PLOT ========================
+#######################################################################
+
+pressure = [1,3,5]
+
+concentrations = np.logspace(-4, 0, 1000)
+yield_vis_plot = yield_vis["1.0bar"]
+
+fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
+    df_exp=yield_vis,
+    theory_func=theory_yield_vis,
+    fit_params=popt.x,
+    degrad_data=degrad_data,
+    concentration_grid=concentrations,
+    pressures = pressure,
+    x_col="fCF4",
+    x_plot_factor=100,
+    min_positive_x=1e-3,
+    title="Visible",
+    xlabel=r"Concentration of CF$_4$ [%]",
+    ylabel="Normalized Yield",
+    xlim=(0.1 * 0.9, 100 * 1.1),
+    ylim=(0.001, 0.4),
+    xscale="log",
+    yscale="log",
+    cmap="inferno",
+    darken_factor=-0.15,
+    legend=True,
+    legend_kwargs={"ncol": 2, "fontsize": 9},
+    output="plots/ArCF4_visible.pdf",
+    show=False,
+)
+
+
+concentrations = np.logspace(-6, 0, 1000)
+
+fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
+    df_exp=yield_uv,
+    theory_func=theory_yield_uv,
+    fit_params=popt.x,
+    degrad_data=degrad_data,
+    concentration_grid=concentrations,
+    pressures = pressure,
+    x_col="fCF4",
+    x_plot_factor=100,
+    min_positive_x=1e-5,
+    title="Ultraviolet",
+    xlabel=r"Concentration of CF$_4$ [%]",
+    ylabel="Normalized Yield",
+    xlim=(0.001 * 0.9, 100 * 1.1),
+    ylim=None,
+    xscale="log",
+    yscale="log",
+    cmap="plasma",
+    darken_factor=-0.15,
+    legend=True,
+    legend_kwargs={"ncol": 2, "fontsize": 9},
+    output="plots/ArCF4_uv.pdf",
+    show=False,
+)
+
+#######################################################################
+# =================== CORRELATION MATRIX ========================
+#######################################################################
+
+
 # Construimos matriz de correlación a partir de covarianzas
 diag = np.sqrt(np.diag(cov_theta))
 outer = np.outer(diag, diag)
@@ -187,7 +278,7 @@ corr = cov_theta / outer
 corr = np.clip(corr, -1, 1)
 
 # DataFrame para seaborn
-corr_df = pd.DataFrame(corr, columns=names, index=names)
+corr_df = pd.DataFrame(corr, columns=names_tex, index=names_tex)
 
 # --- Plot estilo seaborn ---
 plt.figure(figsize=(10, 8))
