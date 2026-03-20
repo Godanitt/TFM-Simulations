@@ -95,6 +95,13 @@ read_experimental(archivo_entrada, yields, presiones, output_dir, concentracione
 DATA_DIR = "../data/Experimental/ArN2/"
 yield_N2_uv  = pd.read_csv(os.path.join(DATA_DIR, "yield_N2.csv"))
 
+"""
+columns = yield_N2_uv.columns
+for i, column in enumerate(columns):
+    if "Err" in column:
+        yield_N2_uv[column] = 0.3 * yield_N2_uv[columns[i-1]]
+"""
+
 DATA_DIR = "../data/Primary_DegradData"
 degrad_data        = pd.read_csv(os.path.join(DATA_DIR, "ArN2.csv"))
 
@@ -104,12 +111,19 @@ degrad_data        = pd.read_csv(os.path.join(DATA_DIR, "ArN2.csv"))
 
 #[1.00000000e+00 4.85712365e+01 9.00000000e-01 2.43751595e+00
 # 2.89508573e+00 2.39640324e-02]
+"""
+lower = [0.35, 0.8 , 0.0 , 0, 0.0, 0]
 
-x0 = np.array([0.9, 10, 0.99 , 100, 0.1, 10])
+x0 = np.array([0.99, 0.9, 0, 0, 0.9, 0.9])
 
-lower = [0.0, 0.0, 0.0, 10.0, 0.0, 0.0]
+upper = [1, 1, 0.002, 0.001, 20, 25]
 
-upper = [100.0, 10000, 1, 1000, 1, 1000]
+"""
+lower = [0.0, 0.0 , 0.0 , 0, 0.0, 0]
+
+x0 = np.array([0.99, 0.9, 0, 0, 0.9, 0.9])
+
+upper = [1, 1, 100, 100, 100, 100]
 
 bounds=(lower, upper)
 
@@ -147,11 +161,11 @@ print("="*60)
 
 names_tex = [
     "$N_{\\text{norm}}$",
-    "$P_{\\mathrm{CF_3}}|_{\\mathrm{dir}}$",
     "$P_{\\mathrm{Ar}^{**}} $",
-    "${K_{\\mathrm{Ar^{**},Q(Ar)}}} [ns]$",
-    "$1 / {\\tau_{\\mathrm{disocc}} K_{\\mathrm{relax}}}$",
-    "$1 / {\\tau_{\\mathrm{disocc}} K_{\\mathrm{relax}}}$"
+    "$K_{\\mathrm{Ar}^{**}Q(\\mathrm{Ar}^{**})}/K_{\\mathrm{Ar}^{**}Q(\\mathrm{N}_2)} $",
+    "$1 / {\\tau_{\\mathrm{Ar}^{**}} K_{\\mathrm{Ar}Q(\\mathrm{N}_2)}} $",
+    "${\\tau_{\\mathrm{N}_2} K_{\\mathrm{N}_2Q(\\mathrm{N}_2)}}$",
+    "${\\tau_{\\mathrm{N}_2} K_{\\mathrm{N}_2Q(\\mathrm{Ar}^{**})}}$"
 ]
 
 latex_table, _, perr, rel = export_fit_table_latex(
@@ -165,11 +179,11 @@ latex_table, _, perr, rel = export_fit_table_latex(
 
 names_csv = [
     "Nnorm",
-    "PCF3dir$",
-    "PAr**",
-    "KAr**QAr",
-    "1/tauDiscKrelax",
-    "1/tauDiscKrelax"
+    "PAr**dir$",
+    "KArQAr/KArQN2",
+    "1/tau KArQN2",
+    "tau KN2QN2",
+    "tau KN2QAr"
 ]
 
 export_to_csv("../data/Parameters/ArN2_primary.csv",popt,names_csv)

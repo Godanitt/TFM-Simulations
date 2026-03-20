@@ -10,7 +10,7 @@ def read_input(archivo_entrada, archivo_salida_1="collisions_Ar.csv", archivo_sa
     def split_by_gas(block_text: str):
         # Encabezados tipo "ARGON ANISOTROPIC ...\n--------"
         headers = list(re.finditer(
-            r"^\s*(?P<gas>[A-Z0-9]+)\s+ANISOTROPIC[^\n]*\n[-]{8,}\s*",
+            r"^\s*(?P<gas>[A-Z0-9]+)(?:\s+\d{4})?\s+ANISOTROPIC[^\n]*\n[-]{8,}\s*",
             block_text, flags=re.M
         ))
         parts = []

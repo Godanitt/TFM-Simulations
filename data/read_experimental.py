@@ -1,87 +1,294 @@
-
-import numpy as np 
-import pandas as pd 
+import os
+import numpy as np
+import pandas as pd
 import dill
 import scipy.special
 import importlib
 
 """
-Script que nos permite leer los datos de los yields de visible/ultravioleta, sacándolos en formato pickle y csv.
+Script que nos permite leer los datos de los yields de visible/ultravioleta,
+sacándolos en formato pickle y csv.
 """
 
-
 #############################################################################################################
-########################## FUNCION PARA LEER LOS PICKLES ##############################################
+########################## FUNCION PARA LEER LOS PICKLES ####################################################
 #############################################################################################################
 
-# no se que demonios pasaba aqui, chatgpt es el puto amo
 # Cargar el módulo compilado de bajo nivel
 _special_ufuncs = importlib.import_module("scipy.special._special_ufuncs")
 
 # Lista de funciones que pueden faltar
-funcs = ["erf", "erfc", "erfi", "gamma", "lgamma","wofz"]
+funcs = ["erf", "erfc", "erfi", "gamma", "lgamma", "wofz"]
 
 # Inyectarlas si no existen
 for name in funcs:
     if not hasattr(_special_ufuncs, name) and hasattr(scipy.special, name):
         setattr(_special_ufuncs, name, getattr(scipy.special, name))
-        #print(f"🔧 Añadida función faltante: {name}")
 
 
+def _find_first_column(df, candidates, what="columna"):
+    for c in candidates:
+        if c in df.columns:
+            return c
+    raise KeyError(
+        f"No encontré {what}. Probé {candidates}. "
+        f"Columnas disponibles: {list(df.columns)}"
+    )
 
-def read_experimental(archivo_entrada, yields, presiones,output_dir, concentraciones_reales=None, no_sistematic = True):
 
+def _is_nan_like(x):
+    try:
+        return pd.isna(x)
+    except Exception:
+        return False
+
+
+def _extract_item(obj, key):
+    """
+    Extrae obj[key] si obj es dict/list/array/Series.
+    Si no existe, devuelve np.nan.
+    """
+    if obj is None or _is_nan_like(obj):
+        return np.nan
+
+    # dict
+    if isinstance(obj, dict):
+        if key in obj:
+            return obj[key]
+
+        # búsqueda case-insensitive si key es str
+        if isinstance(key, str):
+            lower_map = {str(k).lower(): v for k, v in obj.items()}
+            return lower_map.get(key.lower(), np.nan)
+
+        return np.nan
+
+    # pandas Series u objetos con .get
+    if hasattr(obj, "get") and not isinstance(obj, (list, tuple, np.ndarray)):
+        try:
+            return obj.get(key, np.nan)
+        except Exception:
+            pass
+
+    # lista/tupla/array
+    try:
+        return obj[key]
+    except Exception:
+        pass
+
+    # si key es str pero representa entero
+    if isinstance(key, str) and key.isdigit():
+        try:
+            return obj[int(key)]
+        except Exception:
+            pass
+
+    return np.nan
+
+
+def _first_non_null(values):
+    for v in values:
+        if v is None:
+            continue
+        try:
+            if pd.isna(v):
+                continue
+        except Exception:
+            pass
+        return v
+    return None
+
+
+def _get_series_for_yield(df_pressure, conc_col, yield_name, no_sistematic=True):
+    """
+    Devuelve:
+        s      -> serie de valores
+        err_s  -> serie de errores
+    indexadas por concentración.
+    """
+
+    # =========================
+    # ESQUEMA VIEJO
+    # =========================
+    if "yields_zonas" in df_pressure.columns:
+        value_col = "yields_zonas"
+
+        if no_sistematic:
+            err_col = _find_first_column(
+                df_pressure,
+                ["uyields_estadistico", "u_yields_estadistico"],
+                "columna de error estadístico del esquema viejo"
+            )
+        else:
+            err_col = _find_first_column(
+                df_pressure,
+                ["u_yields_zonas"],
+                "columna de error combinado del esquema viejo"
+            )
+
+        s = df_pressure.set_index(conc_col)[value_col].apply(lambda d: _extract_item(d, yield_name))
+        err_s = df_pressure.set_index(conc_col)[err_col].apply(lambda d: _extract_item(d, yield_name))
+
+        return s, err_s
+
+    # =========================
+    # ESQUEMA NUEVO
+    # =========================
+    yn = str(yield_name).strip().lower()
+
+    # Caso especial: yield total de N2
+    if yn in {"yield_n2", "n2", "total_n2", "yield n2"}:
+        value_col = _find_first_column(
+            df_pressure,
+            ["yield_N2"],
+            "columna yield_N2"
+        )
+
+        if no_sistematic:
+            err_col = _find_first_column(
+                df_pressure,
+                ["u_yield_n2_estadistico"],
+                "columna de error estadístico para yield_N2"
+            )
+        else:
+            err_col = _find_first_column(
+                df_pressure,
+                ["u_yield_n2_combined"],
+                "columna de error combinado para yield_N2"
+            )
+
+        s = df_pressure.set_index(conc_col)[value_col]
+        err_s = df_pressure.set_index(conc_col)[err_col]
+        return s, err_s
+
+    # Resto: asumimos yields_picos
+    value_col = _find_first_column(
+        df_pressure,
+        ["yields_picos"],
+        "columna yields_picos"
+    )
+
+    if no_sistematic:
+        err_col = _find_first_column(
+            df_pressure,
+            ["u_yields_estadistico"],
+            "columna de error estadístico para yields_picos"
+        )
+    else:
+        err_col = _find_first_column(
+            df_pressure,
+            ["u_yields_picos"],
+            "columna de error combinado para yields_picos"
+        )
+
+    s = df_pressure.set_index(conc_col)[value_col].apply(lambda d: _extract_item(d, yield_name))
+    err_s = df_pressure.set_index(conc_col)[err_col].apply(lambda d: _extract_item(d, yield_name))
+
+    # Si no encontró nada, da info útil
+    if s.isna().all():
+        example = _first_non_null(df_pressure[value_col].tolist())
+        if isinstance(example, dict):
+            raise KeyError(
+                f"El yield '{yield_name}' no aparece en '{value_col}'. "
+                f"Claves de ejemplo disponibles: {list(example.keys())}"
+            )
+
+    return s, err_s
+
+
+def read_experimental(
+    archivo_entrada,
+    yields,
+    presiones,
+    output_dir,
+    concentraciones_reales=None,
+    no_sistematic=True,
+    output_concentration_name=None,
+):
     with open(archivo_entrada, "rb") as f:
         df = dill.load(f)
 
+    print("Columnas detectadas:")
+    print(df.columns)
+    dic = df.loc[1,"yields_picos"]
+    print(dic)
 
-    name = ["fCF4","fCF4 real", "Err fCF4 real"]
+    #print(df["u_yield_n2_combined"],df["u_yield_n2_cal"])
 
-    for i in presiones:
-        name += ["%.1fbar"%i]
-        name += ["Err %.1fbar"%i]
-        
-            
-    df_pressure0 = df[df["presion"] == presiones[0]].copy()
-    concentraciones = df_pressure0["concentracion"].to_numpy()
+    # Detectar columnas compatibles con ambos formatos
+    pressure_col = _find_first_column(
+        df,
+        ["presion", "presiones", "P (bar)"],
+        "columna de presión"
+    )
 
-
-    if concentraciones_reales!= None: 
-        concentraciones = concentraciones_reales
-
-
-    for i in yields:
-
-        yield_out = pd.DataFrame({"fCF4": concentraciones})
-
-        for j in range(0,len(presiones)):
-
-            # OJO: i y presion alineados 1:1
-            df_pressure = df[df["presion"] == presiones[j]].copy()
-    
-
-            # Extrae UV y vis como Series indexadas por concentracion
-            s = df_pressure.set_index("concentracion")["yields_zonas"].apply(lambda d: d[i])
-            err_s  = df_pressure.set_index("concentracion")["u_yields_zonas"].apply(lambda d: d[i])
-            if no_sistematic:
-                err_s  = df_pressure.set_index("concentracion")["uyields_estadistico"].apply(lambda d: d[i])
+    conc_col = _find_first_column(
+        df,
+        ["concentracion", "concentraciones", "N2 concentration (%)", "CF4 concentration (%)"],
+        "columna de concentración"
+    )
 
 
-            # Si las concentraciones son floats con posibles decimales “sucios”, puedes redondear:
-            # s_uv.index  = np.round(s_uv.index.astype(float), 8)
-            # s_vis.index = np.round(s_vis.index.astype(float), 8)
-            # conc_idx    = np.round(concentraciones_og.astype(float), 8)
-            # Luego reindexar con conc_idxz
 
-            # Reindexa para alinear por concentración objetivo
-            col  = name[j*2+3]
-            err_col  = name[j*2+1+3]
+    # Nombre de la columna de salida para la concentración
+    if output_concentration_name is None:
+        if conc_col in {"concentracion", "concentraciones"}:
+            output_concentration_name = "fCF4"
+        else:
+            output_concentration_name = conc_col
 
-            yield_out[col] = pd.Series(s).reindex(concentraciones).to_numpy()
-            yield_out[err_col] = pd.Series(err_s).reindex(concentraciones).to_numpy()
+    # Concentraciones base
+    df_pressure0 = df[df[pressure_col] == presiones[0]].copy()
+    concentraciones = df_pressure0[conc_col].to_numpy()
 
+    if concentraciones_reales is not None:
+        concentraciones = np.asarray(concentraciones_reales)
+
+    # Índice redondeado para evitar problemas típicos de floats
+    try:
+        conc_idx = np.round(np.asarray(concentraciones, dtype=float), 8)
+        use_numeric_reindex = True
+    except Exception:
+        conc_idx = np.asarray(concentraciones)
+        use_numeric_reindex = False
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    for y in yields:
+        yield_out = pd.DataFrame({output_concentration_name: concentraciones})
+
+        for p in presiones:
+            df_pressure = df[df[pressure_col] == p].copy()
+
+            if df_pressure.empty:
+                yield_out[f"{p:.1f}bar"] = 0.0
+                yield_out[f"Err {p:.1f}bar"] = 0.0
+                continue
+
+            s, err_s = _get_series_for_yield(
+                df_pressure=df_pressure,
+                conc_col=conc_col,
+                yield_name=y,
+                no_sistematic=no_sistematic,
+            )
+
+            if use_numeric_reindex:
+                try:
+                    s.index = np.round(s.index.astype(float), 8)
+                    err_s.index = np.round(err_s.index.astype(float), 8)
+                    target_idx = conc_idx
+                except Exception:
+                    target_idx = concentraciones
+            else:
+                target_idx = concentraciones
+
+            yield_out[f"{p:.1f}bar"] = pd.Series(s).reindex(target_idx).to_numpy()
+            yield_out[f"Err {p:.1f}bar"] = pd.Series(err_s).reindex(target_idx).to_numpy()
 
         yield_out = yield_out.fillna(0)
-        yield_out.to_csv(f"{output_dir}{i}.csv", index=False)
-        print(f"✅ Guardado: {i}.csv")
-        
+
+        # Por si el nombre del yield lleva barras o cosas raras
+        safe_y = str(y).replace("/", "_")
+        out_path = os.path.join(output_dir, f"{safe_y}.csv")
+        yield_out.to_csv(out_path, index=False)
+        print(f"✅ Guardado: {out_path}")
