@@ -18,6 +18,7 @@ def fitParameters(equations, experimental_data, degrad_data, x0, bounds):
             ]
 
             for col in cols_phys:
+                
                 y_exp = exp_data[col].to_numpy(dtype=float)
 
                 err_col_candidates = [

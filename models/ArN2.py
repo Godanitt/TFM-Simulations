@@ -18,7 +18,7 @@ def ion_potential(f):
     return W
 
 
-def theory_yield_N2_uv(x, degrad_data, fN2, n):
+def theory_yield_N2_uv(x, degrad_data, fN2, n, activate_components = False):
     fN2 = np.asarray(fN2, dtype=float)
 
     concentration = degrad_data["concentration"]
@@ -36,8 +36,8 @@ def theory_yield_N2_uv(x, degrad_data, fN2, n):
         P_N2 = np.interp(fN2,concentration,P_N2)
         P_Ar_dbleStar =  np.interp(fN2,concentration,P_Ar_dbleStar)
 
-    denom = n * fN2  + n * (1.0 - fN2) * K1 +  K2
-    frac1  = np.where(denom == 0, 0.0, n * fN2 / denom)
+    denom = n * fN2 * K1 + n * (1.0 - fN2) * K2 +  1/30
+    frac1  = np.where(denom == 0, 0.0, K1 * n * fN2 / denom)
      
 
     denom = 1 + fN2 * n * tau_emision + (1.0 - fN2) * n * K3
@@ -45,4 +45,9 @@ def theory_yield_N2_uv(x, degrad_data, fN2, n):
     
     W = 1 # (1/ion_potential(fN2))
 
-    return W * N * (P_N2 + P_Ar_dbleStar * p_DbleStar * frac1) * frac2
+    if activate_components:
+        return (W * N * (P_N2 + P_Ar_dbleStar * p_DbleStar * frac1) * frac2, 
+                W * N * P_N2 * frac2,
+                W * N * P_Ar_dbleStar *  p_DbleStar * frac1 * frac2)
+    else:
+        return W * N * (P_N2 + P_Ar_dbleStar * p_DbleStar * frac1) * frac2

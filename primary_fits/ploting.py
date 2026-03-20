@@ -54,6 +54,7 @@ def plot_fit_vs_experiment_by_pressure(
     output=None,
     show=True,
     ax=None,
+    activate_components = False,
 ):
     if err_patterns is None:
         err_patterns = [
@@ -116,18 +117,40 @@ def plot_fit_vs_experiment_by_pressure(
         point_color = darken_color(color, factor=darken_factor)
 
         # teoría
+
         y_fit = np.asarray(
-            theory_func(fit_params, degrad_data, concentration_grid, p),
+            theory_func(fit_params, degrad_data, concentration_grid, p, activate_components = activate_components),
             dtype=float
         )
 
-        ax.plot(
-            x_grid_plot,
-            y_fit,
-            color=darken_color(color,0.3),
-            lw=2,
-            label=line_label_fmt.format(p=p)
-        )
+        if activate_components:
+            for i, y in enumerate(y_fit):
+                if i == 0:
+                    ax.plot(
+                        x_grid_plot,
+                        y,
+                        color=darken_color(color,0.3),
+                        lw=2,
+                        label=line_label_fmt.format(p=p)
+                    )
+                else: 
+                    ax.plot(
+                        x_grid_plot,
+                        y,
+                        color=darken_color(color,0.3),
+                        linestyle = "--",
+                        lw=2,
+                        label=line_label_fmt.format(p=p)
+                    )
+        else: 
+            ax.plot(
+                x_grid_plot,
+                y_fit,
+                color=darken_color(color,0.3),
+                lw=2,
+                label=line_label_fmt.format(p=p)
+            )
+
 
         # error experimental
         err_col = None
