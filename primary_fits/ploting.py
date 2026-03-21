@@ -133,7 +133,7 @@ def plot_fit_vs_experiment_by_pressure(
                         lw=2,
                         label=line_label_fmt.format(p=p)
                     )
-                else: 
+                if i>10: 
                     ax.plot(
                         x_grid_plot,
                         y,

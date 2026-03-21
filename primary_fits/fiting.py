@@ -56,6 +56,8 @@ def fitParameters(equations, experimental_data, degrad_data, x0, bounds):
                     y_exp = y_exp[n:]
                     s_exp_eff = s_exp_eff[n:]
 
+                #mask = (y_exp > 0) & (y_th > 0) & (s_exp_eff > 0)
+                #res = (np.log(y_exp[mask]) - np.log(y_th[mask])) / (s_exp_eff[mask] / y_exp[mask])
                 res = (y_exp - y_th) / s_exp_eff
                 res_list.append(res)
 

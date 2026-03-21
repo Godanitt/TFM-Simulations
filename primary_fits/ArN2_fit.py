@@ -66,8 +66,9 @@ concentration = np.array([0.001,0.005,0.01,0.02,0.05,0.1,0.2,0.5,1])
 
 dataframe = pd.DataFrame(
     {    
-        "Ar**":   [["EXC"],     "ARGON",     0, 100, "Ar_dbleStar"],
-        "N2*":    [[""], "NITROGEN",  13, 14.5, "N2_star"]
+        "Ar*":   [["EXC"],     "ARGON",     0, 11.6, "Ar_Star"],
+        "Ar**":   [["EXC"],     "ARGON",     11.6, 100, "Ar_dbleStar"],
+        "N2*":    [["C 3PI"], "NITROGEN",  0, 100, "N2_star"] #C 3PI
     }, 
     index=["name principal", "gas", "energy low", "energy up", "name output"]
 )
@@ -82,7 +83,7 @@ archivo_entrada = "../data/Experimental/ArN2/N2_primary_data_final.pkl"
 yields = ["yield_N2"]
 presiones = [1,2,2.5,3,4,5]
 concentraciones_reales= None
-no_sistematic = True
+no_sistematic = False
 
 
 output_dir = "../data/Experimental/ArN2/"
@@ -101,7 +102,6 @@ for i, column in enumerate(columns):
     if "Err" in column:
         yield_N2_uv[column] = 0.3 * yield_N2_uv[columns[i-1]]
 """
-
 DATA_DIR = "../data/Primary_DegradData"
 degrad_data        = pd.read_csv(os.path.join(DATA_DIR, "ArN2.csv"))
 
@@ -110,11 +110,18 @@ degrad_data        = pd.read_csv(os.path.join(DATA_DIR, "ArN2.csv"))
 ####### AJUSTE
 
 
-lower = [0.0, 0.0 , 0.0 , 0, 0.0, 0]
+lower = [0.0, 0, 0, 0, 0, 
+         0, 0.0, 0, 0]
 
-x0 = np.array([0.99, 0.9, 0, 0, 0.00001, 0.00001])
+x0 = np.array([0.99, 0.9, 0, 0, 0.00001,
+                0.00001, 0.35, 0.1, 0])
 
-upper = [1, 1, 100, 100, 100, 1000]
+upper = [1, 1, 100, 100, 100, 
+         1000, 1, 1000, 0.00000001]
+
+# para el mejor (n¹)
+# upper = [1, 1, 100, 100, 100, 
+#         1000, 0.4, 1000, 0.00000001]
 
 bounds=(lower, upper)
 
@@ -145,6 +152,69 @@ print(f"Grados de libertad: {dof}")
 print(f"Chi2 reducido: {chi2_red}")
 print("="*60)
 
+
+#######################################################################
+# =================== PLOT ========================
+#######################################################################
+
+pressure = [1,2,3,4,5]
+
+concentrations = np.logspace(-4, 0, 1000)
+
+fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
+    df_exp=yield_N2_uv,
+    theory_func=theory_yield_N2_uv,
+    fit_params=popt.x,
+    degrad_data=degrad_data,
+    concentration_grid=concentrations,
+    pressures = pressure,
+    x_col="N2 concentration (%)",
+    x_plot_factor=100,
+    min_positive_x=1e-3,
+    title="Emission in Ar-N$_2$",
+    xlabel=r"Concentration of N$_2$ [%]",
+    ylabel="Normalized Yield",
+    xlim=(0.1 * 0.9, 100 * 1.1),
+    ylim=(0.01, 4),
+    xscale="log",
+    yscale="log",
+    cmap="viridis",
+    darken_factor=-0.15,
+    legend=True,
+    legend_kwargs={"ncol": 2, "fontsize": 9},
+    output="plots/ArN2_global.pdf",
+    show=False,
+    activate_components = False
+)
+
+
+pressure = [1,2,3,4,5]
+
+fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
+    df_exp=yield_N2_uv,
+    theory_func=theory_yield_N2_uv,
+    fit_params=popt.x,
+    degrad_data=degrad_data,
+    concentration_grid=concentrations,
+    pressures = pressure,
+    x_col="N2 concentration (%)",
+    x_plot_factor=100,
+    min_positive_x=1e-3,
+    title="Emission in Ar-N$_2$",
+    xlabel=r"Concentration of N$_2$ [%]",
+    ylabel="Normalized Yield",
+    xlim=(0.1 * 0.9, 100 * 1.1),
+    ylim=(0.01, 4),
+    xscale="log",
+    yscale="log",
+    cmap="viridis",
+    darken_factor=-0.15,
+    legend=True,
+    legend_kwargs={"ncol": 2, "fontsize": 9},
+    output="plots/ArN2_global_components.pdf",
+    show=False,
+    activate_components = True
+)
 
 #######################################################################
 # =================== LATEX, TYPST, CSV EXPORT ========================
@@ -179,68 +249,6 @@ names_csv = [
 
 export_to_csv("../data/Parameters/ArN2_primary.csv",popt,names_csv)
 
-#######################################################################
-# =================== PLOT ========================
-#######################################################################
-
-pressure = [1,3,5]
-
-concentrations = np.logspace(-4, 0, 1000)
-
-fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
-    df_exp=yield_N2_uv,
-    theory_func=theory_yield_N2_uv,
-    fit_params=popt.x,
-    degrad_data=degrad_data,
-    concentration_grid=concentrations,
-    pressures = pressure,
-    x_col="N2 concentration (%)",
-    x_plot_factor=100,
-    min_positive_x=1e-3,
-    title="Emission in Ar-N$_2$",
-    xlabel=r"Concentration of N$_2$ [%]",
-    ylabel="Normalized Yield",
-    xlim=(0.1 * 0.9, 100 * 1.1),
-    ylim=(0.01, 4),
-    xscale="log",
-    yscale="log",
-    cmap="inferno",
-    darken_factor=-0.15,
-    legend=True,
-    legend_kwargs={"ncol": 2, "fontsize": 9},
-    output="plots/ArN2_global.pdf",
-    show=False,
-    activate_components = False
-)
-
-
-pressure = [1]
-
-fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
-    df_exp=yield_N2_uv,
-    theory_func=theory_yield_N2_uv,
-    fit_params=popt.x,
-    degrad_data=degrad_data,
-    concentration_grid=concentrations,
-    pressures = pressure,
-    x_col="N2 concentration (%)",
-    x_plot_factor=100,
-    min_positive_x=1e-3,
-    title="Emission in Ar-N$_2$",
-    xlabel=r"Concentration of N$_2$ [%]",
-    ylabel="Normalized Yield",
-    xlim=(0.1 * 0.9, 100 * 1.1),
-    ylim=(0.01, 4),
-    xscale="log",
-    yscale="log",
-    cmap="inferno",
-    darken_factor=-0.15,
-    legend=True,
-    legend_kwargs={"ncol": 2, "fontsize": 9},
-    output="plots/ArN2_global_components.pdf",
-    show=False,
-    activate_components = True
-)
 
 
 
