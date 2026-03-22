@@ -66,12 +66,15 @@ concentration = np.array([0.001,0.005,0.01,0.02,0.05,0.1,0.2,0.5,1])
 
 dataframe = pd.DataFrame(
     {    
-        "Ar*":   [["EXC"],     "ARGON",     0, 11.6, "Ar_Star"],
-        "Ar**":   [["EXC"],     "ARGON",     11.6, 100, "Ar_dbleStar"],
-        "N2*":    [["C 3PI"], "NITROGEN",  0, 100, "N2_star"] #C 3PI
+        "Ar Meta":   [["EXC"],     "ARGON",     0, 11.6, "Ar_meta"],
+        "Ar Res":   [["EXC"],     "ARGON",      11.6, 11.7, "Ar_res"],
+        "Ar**":   [["EXC"],     "ARGON",     11., 100, "Ar_dbleStar"],
+        "N2*":    [[""], "NITROGEN",  10, 14.5, "N2_star"] #C 3PI
     }, 
     index=["name principal", "gas", "energy low", "energy up", "name output"]
 )
+
+
 
 output_dir = "../data/Primary_DegradData/ArN2/"
 output_general_name =  "../data/Primary_DegradData/ArN2"
@@ -98,9 +101,10 @@ yield_N2_uv  = pd.read_csv(os.path.join(DATA_DIR, "yield_N2.csv"))
 
 """
 columns = yield_N2_uv.columns
+concentrations = yield_N2_uv["N2 concentration (%)"].to_numpy()
 for i, column in enumerate(columns):
     if "Err" in column:
-        yield_N2_uv[column] = 0.3 * yield_N2_uv[columns[i-1]]
+        yield_N2_uv[column] = yield_N2_uv[columns[i-1]]/10 * np.log10(concentrations*10.5)
 """
 DATA_DIR = "../data/Primary_DegradData"
 degrad_data        = pd.read_csv(os.path.join(DATA_DIR, "ArN2.csv"))
@@ -109,21 +113,62 @@ degrad_data        = pd.read_csv(os.path.join(DATA_DIR, "ArN2.csv"))
 #########################################################3
 ####### AJUSTE
 
+to_m3  = 2.69 * 10**(25) * 10**(-9)
+to_cm3 = 2.69 * 10**(19) * 10**(-9)
 
-lower = [0.0, 0, 0, 0, 0, 
-         0, 0.0, 0, 0]
+x0_semifixed = np.array([
+               0.0,
+               1/(2.6e-2), 7.1e-18*to_m3, 5.6e-13*to_cm3, 
+               0.0, 
+               3.2e-17*to_m3, 2.5e-11*to_cm3, 0.00793,
+               0.0, 0.33e-11*to_cm3, 3.2e3,
+               #0.0, 0.0, 0.0
+               0.000924,
+               0.0, 0.0,
+               0.0, 0.0, 
+               ])
 
-x0 = np.array([0.99, 0.9, 0, 0, 0.00001,
-                0.00001, 0.35, 0.1, 0])
+lower_semifixed = x0_semifixed*0.5
+upper_semifixed = x0_semifixed*2
 
-upper = [1, 1, 100, 100, 100, 
-         1000, 1, 1000, 0.00000001]
 
-# para el mejor (n¹)
-# upper = [1, 1, 100, 100, 100, 
-#         1000, 0.4, 1000, 0.00000001]
+lower       = np.array([
+               0.65, 
+               0.0, 0.0, 0.0, 
+               0.10, 
+               0.0, 0.0, 0.0,
+               0.18, 0.0, 0.0,
+               #0.0, 0.0, 0.0
+               0.0,
+               0.01, 0.1,
+               0.1, 0.1, 
+               ]) + lower_semifixed
 
-bounds=(lower, upper)
+x0          = np.array([
+               0.99, 
+               0.0, 0.0, 0.0, 
+               0.99, 
+               0.0, 0.0, 0.0,
+               0.99, 0.0, 0.0,
+               #0.0, 0.0, 0.0
+               0.0,
+               0.099, 0.99,
+               0.5, 0.5, 
+               ]) + x0_semifixed
+
+upper          = np.array([
+               1.0, 
+               0.0, 0.0, 0.0, 
+               1.0, 
+               0.0, 0.0, 0.0,
+               1.0, 0.0, 0.0,
+               #0.0, 0.0, 0.0
+               0.0,
+               0.1, 1.0,
+               10.0, 10.0, 
+               ]) + upper_semifixed
+
+bounds=(list(lower), list(upper))
 
 equations = {
     "vis": theory_yield_N2_uv,
@@ -135,6 +180,18 @@ experimental_data = {
 
 popt = fitParameters(equations, experimental_data, degrad_data, x0=x0, bounds=bounds)
 
+chi2 = 2 * popt.cost
+N_res = popt.fun.size
+N_par = popt.x.size
+dof   = N_res - N_par
+chi2_red = chi2 / dof
+
+print("="*60)
+print("Parámetros globales:\n", popt.x)
+print(f"Chi2 (real): {chi2}")
+print(f"Chi2 reducido: {chi2_red}")
+print("="*60)
+"""
 J = popt.jac
 m, p = J.shape
 s2 = 2 * popt.cost / (m - p)
@@ -149,9 +206,10 @@ print("="*60)
 print("Parámetros globales:", popt.x)
 print(f"Chi2 (real): {chi2}")
 print(f"Grados de libertad: {dof}")
+print(f"Chi2 (real): {chi2}")
 print(f"Chi2 reducido: {chi2_red}")
 print("="*60)
-
+"""
 
 #######################################################################
 # =================== PLOT ========================
@@ -188,7 +246,7 @@ fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
 )
 
 
-pressure = [1,2,3,4,5]
+pressure = [1,5]
 
 fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
     df_exp=yield_N2_uv,
@@ -215,7 +273,7 @@ fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
     show=False,
     activate_components = True
 )
-
+"""
 #######################################################################
 # =================== LATEX, TYPST, CSV EXPORT ========================
 #######################################################################
@@ -248,8 +306,6 @@ names_csv = [
 ]
 
 export_to_csv("../data/Parameters/ArN2_primary.csv",popt,names_csv)
-
-
 
 
 #######################################################################
@@ -285,3 +341,4 @@ plt.title("Matriz de Correlación de Parámetros Ajustados", fontsize=14)
 plt.tight_layout()
 
 plt.savefig("plots/ArN2_CorrelationMatrix_GlobalFit.pdf", dpi=300)
+"""

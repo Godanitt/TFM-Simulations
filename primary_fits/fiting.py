@@ -48,6 +48,7 @@ def fitParameters(equations, experimental_data, degrad_data, x0, bounds):
 
                 y_th = theory_yield(x, degrad_data, concentration, n_val)
 
+
                 if len(y_th) > len(y_exp):
                     n = len(y_th) - len(y_exp)
                     y_th = y_th[n:]
