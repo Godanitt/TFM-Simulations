@@ -121,7 +121,7 @@ x0 = np.array([1,
                999 ])
 lower = [0.0,
          0.0, 0.0, 0.0,  
-         0.0, 0.065, 0.0, 50, 0.0,
+         0.0, 0.05, 0.0, 50, 0.0,
          0.0]
 
 upper = [1.0, 
@@ -181,7 +181,7 @@ names_tex = [
 latex_table, _, perr, rel = export_fit_table_latex(
     result=popt,
     names=names_tex,
-    filename="tex_param/fit_table.tex",
+    filename="tex_param/ArCF4_param.tex",
     caption="Parámetros obtenidos del ajuparamste global.",
     label="tab:fit_params",
     sigfigs=4

@@ -69,7 +69,7 @@ dataframe = pd.DataFrame(
         "Ar Meta":   [["EXC"],     "ARGON",     0, 11.6, "Ar_meta"],
         "Ar Res":   [["EXC"],     "ARGON",      11.6, 11.7, "Ar_res"],
         "Ar**":   [["EXC"],     "ARGON",     11., 100, "Ar_dbleStar"],
-        "N2*":    [[""], "NITROGEN",  10, 14.5, "N2_star"] #C 3PI
+        "N2*":    [[""], "NITROGEN",  11, 14.5, "N2_star"] #C 3PI
     }, 
     index=["name principal", "gas", "energy low", "energy up", "name output"]
 )
@@ -122,8 +122,8 @@ x0_semifixed = np.array([
                0.0, 
                3.2e-17*to_m3, 2.5e-11*to_cm3, 0.00793,
                0.0, 0.33e-11*to_cm3, 3.2e3,
-               #0.0, 0.0, 0.0
-               0.000924,
+               #0.0, 0.0, 
+               0.0, 4.5e3, 0.000924,
                0.0, 0.0,
                0.0, 0.0, 
                ])
@@ -131,16 +131,15 @@ x0_semifixed = np.array([
 lower_semifixed = x0_semifixed*0.5
 upper_semifixed = x0_semifixed*2
 
-
 lower       = np.array([
-               0.65, 
+               0.6, 
                0.0, 0.0, 0.0, 
-               0.10, 
+               0.1, 
                0.0, 0.0, 0.0,
-               0.18, 0.0, 0.0,
-               #0.0, 0.0, 0.0
-               0.0,
-               0.01, 0.1,
+               0.1, 0.0, 0.0,
+               #0.0, 0.0, 
+               0.2, 0.0, 0.0,
+               0.035, 0.035,
                0.1, 0.1, 
                ]) + lower_semifixed
 
@@ -150,10 +149,10 @@ x0          = np.array([
                0.99, 
                0.0, 0.0, 0.0,
                0.99, 0.0, 0.0,
-               #0.0, 0.0, 0.0
-               0.0,
-               0.099, 0.99,
-               0.5, 0.5, 
+               #0.0, 0.0, 
+               0.99, 0.0, 0.0,
+               0.99, 0.99,
+               0.99, 0.99, 
                ]) + x0_semifixed
 
 upper          = np.array([
@@ -162,9 +161,9 @@ upper          = np.array([
                1.0, 
                0.0, 0.0, 0.0,
                1.0, 0.0, 0.0,
-               #0.0, 0.0, 0.0
-               0.0,
-               0.1, 1.0,
+               #0.0, 0.0, 
+               1.0, 0.0, 0.0,
+               1.0, 1.0,
                10.0, 10.0, 
                ]) + upper_semifixed
 
@@ -180,18 +179,7 @@ experimental_data = {
 
 popt = fitParameters(equations, experimental_data, degrad_data, x0=x0, bounds=bounds)
 
-chi2 = 2 * popt.cost
-N_res = popt.fun.size
-N_par = popt.x.size
-dof   = N_res - N_par
-chi2_red = chi2 / dof
 
-print("="*60)
-print("Parámetros globales:\n", popt.x)
-print(f"Chi2 (real): {chi2}")
-print(f"Chi2 reducido: {chi2_red}")
-print("="*60)
-"""
 J = popt.jac
 m, p = J.shape
 s2 = 2 * popt.cost / (m - p)
@@ -202,14 +190,14 @@ N_par = popt.x.size
 dof   = N_res - N_par
 chi2_red = chi2 / dof
 
+
 print("="*60)
-print("Parámetros globales:", popt.x)
-print(f"Chi2 (real): {chi2}")
+print("Parámetros globales: \n", popt.x)
 print(f"Grados de libertad: {dof}")
 print(f"Chi2 (real): {chi2}")
 print(f"Chi2 reducido: {chi2_red}")
 print("="*60)
-"""
+
 
 #######################################################################
 # =================== PLOT ========================
@@ -246,7 +234,7 @@ fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
 )
 
 
-pressure = [1,5]
+pressure = [1]
 
 fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
     df_exp=yield_N2_uv,
@@ -269,7 +257,45 @@ fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
     darken_factor=-0.15,
     legend=True,
     legend_kwargs={"ncol": 2, "fontsize": 9},
-    output="plots/ArN2_global_components.pdf",
+    line_label_fmt=["{p:g} bar completed",
+                    "{p:g} bar N2 dir",
+                    "{p:g} bar Ar* Meta ",
+                    "{p:g} bar Ar* Res bar",
+                    "{p:g} bar Ar** bar"],
+    output="plots/ArN2_global_components_1bar.pdf",
+    show=False,
+    activate_components = True
+)
+
+pressure = [5]
+
+fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
+    df_exp=yield_N2_uv,
+    theory_func=theory_yield_N2_uv,
+    fit_params=popt.x,
+    degrad_data=degrad_data,
+    concentration_grid=concentrations,
+    pressures = pressure,
+    x_col="N2 concentration (%)",
+    x_plot_factor=100,
+    min_positive_x=1e-3,
+    title="Emission in Ar-N$_2$",
+    xlabel=r"Concentration of N$_2$ [%]",
+    ylabel="Normalized Yield",
+    xlim=(0.1 * 0.9, 100 * 1.1),
+    ylim=(0.01, 4),
+    xscale="log",
+    yscale="log",
+    cmap="viridis",
+    darken_factor=-0.15,
+    legend=True,
+    legend_kwargs={"ncol": 2, "fontsize": 9},
+    line_label_fmt=["{p:g} bar completed",
+                    "{p:g} bar N2 dir",
+                    "{p:g} bar Ar* Meta ",
+                    "{p:g} bar Ar* Res bar",
+                    "{p:g} bar Ar** bar"],
+    output="plots/ArN2_global_components_5bar.pdf",
     show=False,
     activate_components = True
 )
@@ -286,27 +312,48 @@ names_tex = [
     "${\\tau_{\\mathrm{N}_2} K_{\\mathrm{N}_2Q(\\mathrm{Ar}^{**})}}$",
     "${\\tau_{\\mathrm{N}_2} K_{\\mathrm{N}_2Q(\\mathrm{N}_2)}}$"
 ]
-
-latex_table, _, perr, rel = export_fit_table_latex(
-    result=popt,
-    names=names_tex,
-    filename="tex_param/fit_table.tex",
-    caption="Parámetros obtenidos del ajuparamste global.",
-    label="tab:fit_params",
-    sigfigs=4
-)
+"""
 
 names_csv = [
-    "Nnorm",
-    "PAr**dir$",
-    "KArQAr/KArQN2",
-    "1/tau KArQN2",
-    "tau KN2QAr",
-    "tau KN2QN2"
+    "Nnorm",               
+
+    "tau_N2",              
+    "K_N2_Q_N2" ,          
+    "K_N2_Q_Ar" ,          
+
+    "P_N2"    ,            
+
+    "K_ArMeta_Q_N2c"  ,    
+    "K_ArMeta_Q_N2b"   ,   
+    "K_ArMeta_Q_2Ar"    ,  
+
+    "P_Ar2"              , 
+    "K_Ar2_Q_N2"          ,    
+    "tau_Ar2"              ,   
+
+
+    "P_Ar22"               ,
+    "tau_meta_Ar2"          ,
+    "K_ArRes_Q_2Ar"          ,  
+
+    "P_Ar_dbleStar_1"    ,
+    "P_Ar_dbleStar_2"     ,       
+
+    "tau_Ar_dbleStar "    ,
+    "K_Ar_dbleStar_Q_Ar"   ,    
 ]
 
 export_to_csv("../data/Parameters/ArN2_primary.csv",popt,names_csv)
 
+
+latex_table, _, perr, rel = export_fit_table_latex(
+    result=popt,
+    names=names_csv,
+    filename="tex_param/ArN2_param.tex",
+    caption="Parámetros obtenidos del ajuparamste global.",
+    label="tab:fit_params",
+    sigfigs=4
+)
 
 #######################################################################
 # =================== CORRELATION MATRIX ========================
@@ -322,7 +369,7 @@ corr = cov_theta / outer
 corr = np.clip(corr, -1, 1)
 
 # DataFrame para seaborn
-corr_df = pd.DataFrame(corr, columns=names_tex, index=names_tex)
+corr_df = pd.DataFrame(corr, columns=names_csv, index=names_csv)
 
 # --- Plot estilo seaborn ---
 plt.figure(figsize=(10, 8))
@@ -341,4 +388,3 @@ plt.title("Matriz de Correlación de Parámetros Ajustados", fontsize=14)
 plt.tight_layout()
 
 plt.savefig("plots/ArN2_CorrelationMatrix_GlobalFit.pdf", dpi=300)
-"""

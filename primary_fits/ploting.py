@@ -47,7 +47,7 @@ def plot_fit_vs_experiment_by_pressure(
     ylim=None,
     xscale="log",
     yscale="log",
-    line_label_fmt="{p:g} bar fit",
+    line_label_fmt=["{p:g} bar fit"],
     exp_label_fmt="{p:g} bar exp",
     legend=True,
     legend_kwargs=None,
@@ -123,6 +123,18 @@ def plot_fit_vs_experiment_by_pressure(
             dtype=float
         )
 
+        linestyles = [
+            "--",
+            "-.",
+            ":",
+            (0, (1, 1)),
+            (0, (5, 1)),
+            (0, (3, 1, 1, 1)),
+            (0, (5, 2, 1, 2)),
+            (0, (10, 2)),
+            (0, (3, 5, 1, 5)),
+        ]
+        
         if activate_components:
             for i, y in enumerate(y_fit):
                 if i == 0:
@@ -131,16 +143,16 @@ def plot_fit_vs_experiment_by_pressure(
                         y,
                         color=darken_color(color,0.3),
                         lw=2,
-                        label=line_label_fmt.format(p=p)
+                        label=line_label_fmt[0].format(p=p)
                     )
                 elif i<10: 
                     ax.plot(
                         x_grid_plot,
                         y,
                         color=darken_color(color,0.3),
-                        linestyle = "--",
+                        linestyle = linestyles[i],
                         lw=2,
-                        label=line_label_fmt.format(p=p)
+                        label=line_label_fmt[i].format(p=p)
                     )
         else: 
             ax.plot(
@@ -148,7 +160,7 @@ def plot_fit_vs_experiment_by_pressure(
                 y_fit,
                 color=darken_color(color,0.3),
                 lw=2,
-                label=line_label_fmt.format(p=p)
+                label=line_label_fmt[0].format(p=p)
             )
 
 

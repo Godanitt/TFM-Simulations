@@ -210,8 +210,8 @@ def read_experimental(
 
     print("Columnas detectadas:")
     print(df.columns)
-    dic = df.loc[1,"yields_picos"]
-    print(dic)
+    #dic = df.loc[1,"yields_picos"]
+    #print(dic)
 
     #print(df["u_yield_n2_combined"],df["u_yield_n2_cal"])
 

@@ -17,7 +17,7 @@ def ion_potential(f):
     W=np.interp(f_cf4,cf4_pct,ion_pot)
     return W
 
-def theory_yield_vis(x, degrad_data, fCF4, n):
+def theory_yield_vis(x, degrad_data, fCF4, n,activate_components = False):
     f_cf4 = np.asarray(fCF4, dtype=float)
 
     concentration = degrad_data["concentration"]
@@ -49,7 +49,7 @@ def theory_yield_vis(x, degrad_data, fCF4, n):
     return (1/ion_potential(f_cf4))*N*(p_CF3 * P_CF3 + frac * p_DbleStar * P_Ar_dbleStar)
 
 
-def theory_yield_uv(x, degrad_data, fCF4, n):
+def theory_yield_uv(x, degrad_data, fCF4, n, activate_components = False):
     f_cf4 = np.asarray(fCF4, dtype=float)
 
     concentration = degrad_data["concentration"]
