@@ -1,5 +1,11 @@
 
 import numpy as np
+import numpy as np
+from scipy.interpolate import interp1d
+
+
+from scipy.interpolate import PchipInterpolator
+
 
 
 # Santorilli and Diego et al doi 10.1140/epjc/s10052-021-09375-3 (en principio igual que el de Pablo Amoedo)
@@ -21,16 +27,22 @@ def theory_yield_vis(x, degrad_data, fCF4, n,activate_components = False):
     f_cf4 = np.asarray(fCF4, dtype=float)
 
     concentration = degrad_data["concentration"]
-    P_CF3 = degrad_data["CF3"].to_numpy()
-    P_Ar_dbleStar = degrad_data["Ar_dbleStar"].to_numpy()
-    P_CF4 = degrad_data["CF4"].to_numpy()
-    P_Ar_3rd = degrad_data["Ar_3rd"].to_numpy()
 
-    if len(fCF4)>len(P_CF3):
-        P_CF3 = np.interp(f_cf4,concentration,P_CF3)
-        P_Ar_dbleStar =  np.interp(f_cf4,concentration,P_Ar_dbleStar)
-        P_CF4 =  np.interp(f_cf4,concentration,P_CF4)
-        P_Ar_3rd =  np.interp(f_cf4,concentration,P_Ar_3rd)
+    cols = ["CF3", "Ar_dbleStar", "CF4", "Ar_3rd"]
+    Y = degrad_data[cols].to_numpy()   # shape: (n_puntos, 4)
+
+    if len(f_cf4) > len(concentration):
+        # Por si acaso, ordena x e y
+        idx = np.argsort(concentration)
+        xn = concentration[idx]
+        y = Y[idx]
+
+        interp = PchipInterpolator(xn, y, axis=0)
+        Y_new = interp(f_cf4)
+    else:
+        Y_new = Y
+
+    P_CF3, P_Ar_dbleStar, P_CF4, P_Ar_3rd = Y_new.T
 
 
     N           = x[0]
@@ -52,19 +64,24 @@ def theory_yield_vis(x, degrad_data, fCF4, n,activate_components = False):
 def theory_yield_uv(x, degrad_data, fCF4, n, activate_components = False):
     f_cf4 = np.asarray(fCF4, dtype=float)
 
+
     concentration = degrad_data["concentration"]
-    P_CF3 = degrad_data["CF3"].to_numpy()
-    P_Ar_dbleStar = degrad_data["Ar_dbleStar"].to_numpy()
-    P_CF4 = degrad_data["CF4"].to_numpy()
-    P_Ar_3rd = degrad_data["Ar_3rd"].to_numpy()
 
+    cols = ["CF3", "Ar_dbleStar", "CF4", "Ar_3rd"]
+    Y = degrad_data[cols].to_numpy()   # shape: (n_puntos, 4)
 
+    if len(f_cf4) > len(concentration):
+        # Por si acaso, ordena x e y
+        idx = np.argsort(concentration)
+        xn = concentration[idx]
+        y = Y[idx]
 
-    if len(fCF4)>len(P_CF3):
-        P_CF3 = np.interp(f_cf4,concentration,P_CF3)
-        P_Ar_dbleStar =  np.interp(f_cf4,concentration,P_Ar_dbleStar)
-        P_CF4 =  np.interp(f_cf4,concentration,P_CF4)
-        P_Ar_3rd =  np.interp(f_cf4,concentration,P_Ar_3rd)
+        interp = PchipInterpolator(xn, y, axis=0)
+        Y_new = interp(f_cf4)
+    else:
+        Y_new = Y
+
+    P_CF3, P_Ar_dbleStar, P_CF4, P_Ar_3rd = Y_new.T
 
     N      = x[0]
     K1     = x[4]

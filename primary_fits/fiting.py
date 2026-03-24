@@ -1,11 +1,11 @@
 import numpy as np
 import scipy.optimize as opt
 
-def fitParameters(equations, experimental_data, degrad_data, x0, bounds):
+def fitParameters(equations, experimental_data, degrad_data, x0, bounds, is_infrared = False):
 
     concentration = degrad_data["concentration"]
 
-    def residuals(x):
+    def residuals(x, is_infrared = is_infrared):
         res_list = []
 
         for key, theory_yield in equations.items():
@@ -49,9 +49,12 @@ def fitParameters(equations, experimental_data, degrad_data, x0, bounds):
                 y_th = theory_yield(x, degrad_data, concentration, n_val)
 
 
-                if len(y_th) > len(y_exp):
+                if (len(y_th) > len(y_exp) and (not is_infrared)):
                     n = len(y_th) - len(y_exp)
                     y_th = y_th[n:]
+                elif (len(y_th) > len(y_exp) and (is_infrared)):
+                    n = len(y_th) - len(y_exp)
+                    y_th = y_th[:-n]
                 elif len(y_exp) > len(y_th):
                     n = len(y_exp) - len(y_th)
                     y_exp = y_exp[n:]

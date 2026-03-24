@@ -8,10 +8,11 @@ import seaborn as sns
 models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../models'))
 data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data'))
 
-sys.path.append(models_dir)
-sys.path.append(data_dir)
 
+sys.path.append(models_dir)
 from ArCF4 import *
+
+sys.path.append(data_dir)
 from read_Degrad import read_degrad
 from read_experimental import read_experimental
 from fiting import fitParameters
@@ -121,7 +122,7 @@ x0 = np.array([1,
                999 ])
 lower = [0.0,
          0.0, 0.0, 0.0,  
-         0.0, 0.05, 0.0, 50, 0.0,
+         0.0, 0.065, 0.0, 50, 0.0,
          0.0]
 
 upper = [1.0, 

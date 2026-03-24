@@ -121,9 +121,11 @@ def read_degrad(archivo_entrada, archivo_salida_1, archivo_salida_2, gas1, gas2,
 
             ########################## Guardado en Pickle/CSV ##############################################
 
+        population_gen.fillna(0)
         population.to_csv(f"{output_dir}{name_of_output}.csv", index=False)
         print(f"✅ Guardado: {name_of_output}.csv")
 
+    population_gen.fillna(0)
     population_gen.to_csv(f"{output_general_name}.csv", index=False)
     print(f"✅ Guardado: {name_of_output}.csv")
             #population.to_pickle(f"pickle_data/{name_of_output}.pkl")

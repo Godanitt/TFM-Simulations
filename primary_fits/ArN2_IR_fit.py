@@ -11,7 +11,7 @@ data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data'))
 sys.path.append(models_dir)
 sys.path.append(data_dir)
 
-from ArN2 import *
+from ArN2_infrarred import *
 from read_Degrad import read_degrad
 from read_experimental import read_experimental
 from fiting import fitParameters
@@ -63,10 +63,12 @@ concentration = np.array([0.001,0.005,0.01,0.05,0.1,0.2,0.5,1])
 
 dataframe = pd.DataFrame(
     {    
-        "Ar Meta":   [["EXC"],     "ARGON",     0, 11.6, "Ar_meta"],
-        "Ar Res":   [["EXC"],     "ARGON",      11.6, 11.7, "Ar_res"],
-        "Ar**":   [["EXC"],     "ARGON",     11., 100, "Ar_dbleStar"],
-        "N2*":    [["C 3PI"], "NITROGEN",  11, 16.5, "N2_star"] #C 3PI
+        "Ar* 696":   [["EXC"],     "ARGON",     13.328, 100, "Ar_696"],
+        "Ar* 727":   [["EXC"],     "ARGON",     13.328, 100, "Ar_727"],
+        "Ar* 750":   [["EXC"],     "ARGON",     13.479, 100, "Ar_750"],
+        "Ar* 763":   [["EXC"],     "ARGON",     13.171, 100, "Ar_763"],
+        "Ar* 772":   [["EXC"],     "ARGON",     13.328, 100, "Ar_772"],
+        "Ar* 794":   [["EXC"],     "ARGON",     13.282, 100, "Ar_794"],
     }, 
     index=["name principal", "gas", "energy low", "energy up", "name output"]
 )
@@ -74,14 +76,14 @@ dataframe = pd.DataFrame(
 
 
 output_dir = "../data/Primary_DegradData/ArN2/"
-output_general_name =  "../data/Primary_DegradData/ArN2"
+output_general_name =  "../data/Primary_DegradData/ArN2_IR"
 
 read_degrad(archivo_entrada, archivo_salida_1, archivo_salida_2, gas1, gas2, concentration, dataframe, output_dir, output_general_name)
 
 
 archivo_entrada = "../data/Experimental/ArN2/N2_primary_data_final.pkl"
-yields = ["yield_N2"]
-presiones = [1,2,2.5,3,4,5]
+yields = ["696","727","750","763","772"]
+presiones = [1,2,3,4,5]
 concentraciones_reales= None
 no_sistematic = False
 
@@ -90,11 +92,25 @@ output_dir = "../data/Experimental/ArN2/"
 
 read_experimental(archivo_entrada, yields, presiones, output_dir, concentraciones_reales=concentraciones_reales, no_sistematic = no_sistematic)
 
+
+
 #####################################################
 ###### Traemos los datos anteriormente generados 
 
 DATA_DIR = "../data/Experimental/ArN2/"
-yield_N2_uv  = pd.read_csv(os.path.join(DATA_DIR, "yield_N2.csv"))
+yield_696_ir  = pd.read_csv(os.path.join(DATA_DIR, "696.csv"))
+yield_727_ir  = pd.read_csv(os.path.join(DATA_DIR, "727.csv"))
+yield_750_ir  = pd.read_csv(os.path.join(DATA_DIR, "750.csv"))
+yield_763_ir  = pd.read_csv(os.path.join(DATA_DIR, "763.csv"))
+yield_772_ir  = pd.read_csv(os.path.join(DATA_DIR, "772.csv"))
+
+yield_696_ir = yield_696_ir[yield_696_ir["N2 concentration (%)"] < 11]
+yield_727_ir = yield_727_ir[yield_727_ir["N2 concentration (%)"] < 2]
+yield_750_ir = yield_750_ir[yield_750_ir["N2 concentration (%)"] < 11]
+yield_763_ir = yield_763_ir[yield_763_ir["N2 concentration (%)"] < 21]
+yield_772_ir = yield_772_ir[yield_772_ir["N2 concentration (%)"] < 11]
+
+
 
 """
 columns = yield_N2_uv.columns
@@ -103,9 +119,10 @@ for i, column in enumerate(columns):
     if "Err" in column:
         yield_N2_uv[column] = yield_N2_uv[columns[i-1]]/10 * np.log10(concentrations*1000)
 """
+
 DATA_DIR = "../data/Primary_DegradData"
 
-degrad_data        = pd.read_csv(os.path.join(DATA_DIR, "ArN2.csv"))
+degrad_data = pd.read_csv(os.path.join(DATA_DIR, "ArN2_IR.csv"))
 
 
 #########################################################3
@@ -116,67 +133,61 @@ to_cm3 = 2.69 * 10**(19) * 10**(-9)
 
 
 x0_semifixed = np.array([
-               0.0,
-               1/(2.6e-2), 7.1e-18*to_m3, 5.6e-13*to_cm3, 
-               0.0, 
-               3.2e-17*to_m3, 2.5e-11*to_cm3, 0.00793,
-               0.0, 0.33e-11*to_cm3, 3.2e3,
-               #0.0, 0.0, 
-               0.0, 4.5e3, 0.000924,
-               0.0, 0.0,
-               0.0, 0.0, 
+               0.0, 28.3, 0.0, 0.0, 
+               0.0, 28.3, 0.0, 0.0, 
+               0.0, 21.7, 0.0, 0.0, 
+               0.0, 29.4, 0.0, 0.0, 
+               0.0, 28.3, 0.0, 0.0, 
                ])
 
-lower_semifixed = x0_semifixed*0.5
-upper_semifixed = x0_semifixed*2
+lower_semifixed = x0_semifixed*0.99
+upper_semifixed = x0_semifixed*1.01
 
 lower       = np.array([
-               0.0, 
-               0.0, 0.0, 0.0, 
-               0.0, 
-               0.0, 0.0, 0.0,
-               0.0, 0.0, 0.0,
-               #0.0, 0.0, 
-               0.0, 0.0, 0.0,
-               0.0, 0.0,
-               0.01, 0.01, 
+               0.0, 0.0, 0.0, 0.0, 
+               0.0, 0.0, 0.0, 0.0, 
+               0.0, 0.0, 0.0, 0.0, 
+               0.0, 0.0, 0.0, 0.0, 
+               0.0, 0.0, 0.0, 0.0, 
                ]) + lower_semifixed
 
 x0          = np.array([
-               0.99, 
-               0.0, 0.0, 0.0, 
-               0.99, 
-               0.0, 0.0, 0.0,
-               0.99, 0.0, 0.0,
-               #0.0, 0.0, 
-               0.99, 0.0, 0.0,
-               0.99, 0.99,
-               0.99, 0.99, 
+               0.99, 0.0, 1.0, 1.0, 
+               0.99, 0.0, 1.0, 1.0, 
+               0.99, 0.0, 1.0, 1.0, 
+               0.99, 0.0, 1.0, 1.0, 
+               0.99, 0.0, 1.0, 1.0, 
                ]) + x0_semifixed
 
 upper          = np.array([
-               1.0, 
-               0.0, 0.0, 0.0, 
-               1.0, 
-               0.0, 0.0, 0.0,
-               1.0, 0.0, 0.0,
-               #0.0, 0.0, 
-               1.0, 0.0, 0.0,
-               1.0, 1.0,
-               100.0, 100.0, 
+               1.0, 0.0, 1000.0, 1000.0, 
+               1.0, 0.0, 1000.0, 1000.0,
+               1.0, 0.0, 1000.0, 1000.0, 
+               1.0, 0.0, 1000.0, 1000.0, 
+               1.0, 0.0, 1000.0, 1000.0, 
                ]) + upper_semifixed
 
 bounds=(list(lower), list(upper))
 
 equations = {
-    "vis": theory_yield_N2_uv,
+    "696": theory_yield_ArN2_Ir_696,
+    "727": theory_yield_ArN2_Ir_727,
+    "750": theory_yield_ArN2_Ir_750,
+    "763": theory_yield_ArN2_Ir_763,
+    "772": theory_yield_ArN2_Ir_772,
 }
 
 experimental_data = {
-    "vis": yield_N2_uv,
+    "696": yield_696_ir,
+    "727": yield_727_ir,
+    "750": yield_750_ir,
+    "763": yield_763_ir,
+    "772": yield_772_ir,
 }
 
-popt = fitParameters(equations, experimental_data, degrad_data, x0=x0, bounds=bounds)
+popt = fitParameters(equations, experimental_data, degrad_data, x0=x0, bounds=bounds,  is_infrared = True)
+
+
 N_res = popt.fun.size
 N_par = popt.x.size
 dof   = N_res - N_par
@@ -190,7 +201,8 @@ print(f"Grados de libertad: {dof}")
 print(f"Chi2 (real): {chi2}")
 print(f"Chi2 reducido: {chi2_red}")
 print("="*60)
-"""
+
+
 J = popt.jac
 m, p = J.shape
 s2 = 2 * popt.cost / (m - p)
@@ -200,109 +212,47 @@ N_res = popt.fun.size
 N_par = popt.x.size
 dof   = N_res - N_par
 chi2_red = chi2 / dof
-"""
+
+
+
 #######################################################################
 # =================== PLOT ========================
 #######################################################################
 
 pressure = [1,2,3,4,5]
 
-concentrations = np.logspace(-4, 0, 1000)
+for name in equations:
 
-fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
-    df_exp=yield_N2_uv,
-    theory_func=theory_yield_N2_uv,
-    fit_params=popt.x,
-    degrad_data=degrad_data,
-    concentration_grid=concentrations,
-    pressures = pressure,
-    x_col="N2 concentration (%)",
-    x_plot_factor=100,
-    min_positive_x=1e-3,
-    title="Emission in Ar-N$_2$",
-    xlabel=r"Concentration of N$_2$ [%]",
-    ylabel="Normalized Yield",
-    xlim=(0.1 * 0.9, 100 * 1.1),
-    ylim=(0.01, 4),
-    xscale="log",
-    yscale="log",
-    cmap="viridis",
-    darken_factor=-0.15,
-    legend=True,
-    legend_kwargs={"ncol": 2, "fontsize": 9},
-    output="plots/ArN2_global.pdf",
-    show=False,
-    activate_components = False
-)
+    concentrations = np.logspace(-4, 0, 1000)
+
+    fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
+        df_exp=experimental_data[name],
+        theory_func=equations[name],
+        fit_params=popt.x,
+        degrad_data=degrad_data,
+        concentration_grid=concentrations,
+        pressures = pressure,
+        x_col="N2 concentration (%)",
+        x_plot_factor=100,
+        min_positive_x=1e-3,
+        title="Emission in Ar-N$_2$",
+        xlabel=r"Concentration of N$_2$ [%]",
+        ylabel="Normalized Yield",
+        xlim=(0.1 * 0.9, 100 * 1.1),
+        ylim=(0.0001, 1),
+        xscale="log",
+        yscale="log",
+        cmap="viridis",
+        darken_factor=-0.15,
+        legend=True,
+        legend_kwargs={"ncol": 2, "fontsize": 9},
+        output=f"plots/ArN2_IR/ArN2_global_{name}.pdf",
+        show=False,
+        activate_components = False
+    )
 
 
-pressure = [1]
 
-fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
-    df_exp=yield_N2_uv,
-    theory_func=theory_yield_N2_uv,
-    fit_params=popt.x,
-    degrad_data=degrad_data,
-    concentration_grid=concentrations,
-    pressures = pressure,
-    x_col="N2 concentration (%)",
-    x_plot_factor=100,
-    min_positive_x=1e-3,
-    title="Emission in Ar-N$_2$",
-    xlabel=r"Concentration of N$_2$ [%]",
-    ylabel="Normalized Yield",
-    xlim=(0.1 * 0.9, 100 * 1.1),
-    ylim=(0.01, 4),
-    xscale="log",
-    yscale="log",
-    cmap="viridis",
-    darken_factor=-0.15,
-    legend=True,
-    legend_kwargs={"ncol": 2, "fontsize": 9},
-    line_label_fmt=["{p:g} bar completed",
-                    "{p:g} bar N2 dir",
-                    "{p:g} bar Ar* Meta ",
-                    "{p:g} bar Ar* Res bar",
-                    "{p:g} bar Ar** bar"],
-    output="plots/ArN2_global_components_1bar.pdf",
-    show=False,
-    activate_components = True
-)
-
-pressure = [5]
-
-fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
-    df_exp=yield_N2_uv,
-    theory_func=theory_yield_N2_uv,
-    fit_params=popt.x,
-    degrad_data=degrad_data,
-    concentration_grid=concentrations,
-    pressures = pressure,
-    x_col="N2 concentration (%)",
-    x_plot_factor=100,
-    min_positive_x=1e-993,
-    title="Emission in Ar-N$_2$",
-    xlabel=r"Concentration of N$_2$ [%]",
-    ylabel="Normalized Yield",
-    xlim=(0.1 * 0.9, 100 * 1.1),
-    ylim=(0.01, 4),
-    xscale="log",
-    yscale="log",
-    cmap="viridis",
-    darken_factor=-0.15,
-    legend=True,
-    legend_kwargs={"ncol": 2, "fontsize": 9},
-    line_label_fmt=["{p:g} bar completed",
-                    "{p:g} bar N2 dir",
-                    "{p:g} bar Ar* Meta ",
-                    "{p:g} bar Ar* Res bar",
-                    "{p:g} bar Ar** bar"],
-    output="plots/ArN2_global_components_5bar.pdf",
-    show=False,
-    activate_components = True
-)
-
-"""
 #######################################################################
 # =================== LATEX, TYPST, CSV EXPORT ========================
 #######################################################################
@@ -318,41 +268,39 @@ names_tex = [
 
 
 names_csv = [
-    "Nnorm",               
+    "PAr_star_696"    ,
+    "tau_N2_696"     ,
+    "K_Ar_Q_Ar_696"   ,
+    "K_Ar_Q_N2_696"  ,
 
-    "tau_N2",              
-    "K_N2_Q_N2" ,          
-    "K_N2_Q_Ar" ,          
+    "PAr_star_727"   ,
+    "tau_N2_727"   ,
+    "K_Ar_Q_Ar_727"   ,
+    "K_Ar_Q_N2_727" ,
 
-    "P_N2"    ,            
+    "PAr_star_750"   ,
+    "tau_N2_750"    ,
+    "K_Ar_Q_Ar_750"   ,
+    "K_Ar_Q_N2_750"  ,
 
-    "K_ArMeta_Q_N2c"  ,    
-    "K_ArMeta_Q_N2b"   ,   
-    "K_ArMeta_Q_2Ar"    ,  
+    "PAr_star_764"   ,
+    "tau_N2_764"     ,
+    "K_Ar_Q_Ar_764"  ,
+    "K_Ar_Q_N2_764" ,
 
-    "P_Ar2"              , 
-    "K_Ar2_Q_N2"          ,    
-    "tau_Ar2"              ,   
-
-
-    "P_Ar22"               ,
-    "tau_meta_Ar2"          ,
-    "K_ArRes_Q_2Ar"          ,  
-
-    "P_Ar_dbleStar_1"    ,
-    "P_Ar_dbleStar_2"     ,       
-
-    "tau_Ar_dbleStar "    ,
-    "K_Ar_dbleStar_Q_Ar"   ,    
+    "PAr_star_772" ,
+    "tau_N2_772",
+    "K_Ar_Q_Ar_772",
+    "K_Ar_Q_N2_772" ,
 ]
 
-export_to_csv("../data/Parameters/ArN2_primary.csv",popt,names_csv)
+export_to_csv("../data/Parameters/ArN2_IR_primary.csv",popt,names_csv)
 
 
 latex_table, _, perr, rel = export_fit_table_latex(
     result=popt,
     names=names_csv,
-    filename="tex_param/ArN2_param.tex",
+    filename="tex_param/ArN2_IR_param.tex",
     caption="Parámetros obtenidos del ajuparamste global.",
     label="tab:fit_params",
     sigfigs=4
@@ -390,5 +338,4 @@ sns.heatmap(
 plt.title("Matriz de Correlación de Parámetros Ajustados", fontsize=14)
 plt.tight_layout()
 
-plt.savefig("plots/ArN2_CorrelationMatrix_GlobalFit.pdf", dpi=300)
-"""
+plt.savefig("plots/ArN2_IR/ArN2_IR_CorrelationMatrix_GlobalFit.pdf", dpi=300)
