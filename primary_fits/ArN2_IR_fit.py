@@ -104,11 +104,11 @@ yield_750_ir  = pd.read_csv(os.path.join(DATA_DIR, "750.csv"))
 yield_763_ir  = pd.read_csv(os.path.join(DATA_DIR, "763.csv"))
 yield_772_ir  = pd.read_csv(os.path.join(DATA_DIR, "772.csv"))
 
-yield_696_ir = yield_696_ir[yield_696_ir["N2 concentration (%)"] < 11]
-yield_727_ir = yield_727_ir[yield_727_ir["N2 concentration (%)"] < 2]
-yield_750_ir = yield_750_ir[yield_750_ir["N2 concentration (%)"] < 11]
-yield_763_ir = yield_763_ir[yield_763_ir["N2 concentration (%)"] < 21]
-yield_772_ir = yield_772_ir[yield_772_ir["N2 concentration (%)"] < 11]
+yield_696_ir_n = yield_696_ir[yield_696_ir["N2 concentration (%)"] < 2]
+yield_727_ir_n = yield_727_ir[yield_727_ir["N2 concentration (%)"] < 2]
+yield_750_ir_n = yield_750_ir[yield_750_ir["N2 concentration (%)"] < 6]
+yield_763_ir_n = yield_763_ir[yield_763_ir["N2 concentration (%)"] < 2]
+yield_772_ir_n = yield_772_ir[yield_772_ir["N2 concentration (%)"] < 2]
 
 
 
@@ -140,31 +140,31 @@ x0_semifixed = np.array([
                0.0, 28.3, 0.0, 0.0, 
                ])
 
-lower_semifixed = x0_semifixed*0.99
-upper_semifixed = x0_semifixed*1.01
+lower_semifixed = x0_semifixed*0.999999999999999
+upper_semifixed = x0_semifixed*1.000000000000001
 
 lower       = np.array([
-               0.0, 0.0, 0.0, 0.0, 
-               0.0, 0.0, 0.0, 0.0, 
-               0.0, 0.0, 0.0, 0.0, 
-               0.0, 0.0, 0.0, 0.0, 
-               0.0, 0.0, 0.0, 0.0, 
+               0.99, 0.0, 0.0, 0.0, 
+               0.99, 0.0, 0.0, 0.0, 
+               0.99, 0.0, 0.0, 0.0, 
+               0.99, 0.0, 0.0, 0.0, 
+               0.99, 0.0, 0.0, 0.0,
                ]) + lower_semifixed
 
 x0          = np.array([
-               0.99, 0.0, 1.0, 1.0, 
-               0.99, 0.0, 1.0, 1.0, 
-               0.99, 0.0, 1.0, 1.0, 
-               0.99, 0.0, 1.0, 1.0, 
-               0.99, 0.0, 1.0, 1.0, 
+               0.999, 0.0, 1.0, 1.0, 
+               0.999, 0.0, 1.0, 1.0, 
+               0.999, 0.0, 1.0, 1.0, 
+               0.999, 0.0, 1.0, 1.0, 
+               0.999, 0.0, 1.0, 1.0, 
                ]) + x0_semifixed
 
 upper          = np.array([
-               1.0, 0.0, 1000.0, 1000.0, 
-               1.0, 0.0, 1000.0, 1000.0,
-               1.0, 0.0, 1000.0, 1000.0, 
-               1.0, 0.0, 1000.0, 1000.0, 
-               1.0, 0.0, 1000.0, 1000.0, 
+               1, 0.0, 1000.0, 1000.0, 
+               1, 0.0, 1000.0, 1000.0, 
+               1, 0.0, 1000.0, 1000.0, 
+               1, 0.0, 1000.0, 1000.0, 
+               1, 0.0, 1000.0, 1000.0, 
                ]) + upper_semifixed
 
 bounds=(list(lower), list(upper))
@@ -178,22 +178,23 @@ equations = {
 }
 
 experimental_data = {
-    "696": yield_696_ir,
-    "727": yield_727_ir,
-    "750": yield_750_ir,
-    "763": yield_763_ir,
-    "772": yield_772_ir,
+    "696": yield_696_ir_n,
+    "727": yield_727_ir_n,
+    "750": yield_750_ir_n,
+    "763": yield_763_ir_n,
+    "772": yield_772_ir_n,
 }
 
-popt = fitParameters(equations, experimental_data, degrad_data, x0=x0, bounds=bounds,  is_infrared = True)
+
+popt = fitParameters(equations, experimental_data, degrad_data, x0=x0, bounds=bounds,  is_infrared = True,
+                    fixed_idx = [1,5,9,13,17],
+                    fixed_error= 0.1)
 
 
-N_res = popt.fun.size
-N_par = popt.x.size
-dof   = N_res - N_par
-chi2 = 2 * popt.cost
-chi2_red = chi2 / dof
-
+cov_theta = popt.pcov
+chi2 = popt.chi2
+dof = popt.dof
+chi2_red = popt.chi2_red
 
 print("="*60)
 print("Parámetros globales: \n", popt.x)
@@ -203,21 +204,17 @@ print(f"Chi2 reducido: {chi2_red}")
 print("="*60)
 
 
-J = popt.jac
-m, p = J.shape
-s2 = 2 * popt.cost / (m - p)
-cov_theta =  s2 * np.linalg.inv(J.T @ J)
-chi2 = 2 * popt.cost
-N_res = popt.fun.size
-N_par = popt.x.size
-dof   = N_res - N_par
-chi2_red = chi2 / dof
-
-
-
 #######################################################################
 # =================== PLOT ========================
 #######################################################################
+
+experimental_data = {
+    "696": yield_696_ir,
+    "727": yield_727_ir,
+    "750": yield_750_ir,
+    "763": yield_763_ir,
+    "772": yield_772_ir,
+}
 
 pressure = [1,2,3,4,5]
 
@@ -235,7 +232,7 @@ for name in equations:
         x_col="N2 concentration (%)",
         x_plot_factor=100,
         min_positive_x=1e-3,
-        title="Emission in Ar-N$_2$",
+        title=f"Emission in Ar-N$_2$ {name} nm",
         xlabel=r"Concentration of N$_2$ [%]",
         ylabel="Normalized Yield",
         xlim=(0.1 * 0.9, 100 * 1.1),

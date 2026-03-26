@@ -91,14 +91,13 @@ read_degrad(archivo_entrada, archivo_salida_1, archivo_salida_2, gas1, gas2, con
 archivo_entrada = "../data/Experimental/ArCF4/CF4_primary_data_final.pkl"
 yields = ["vis","UV"]
 presiones = [1,2,2.5,3,4,5]
-concentraciones_reales= None
+#concentraciones_reales= np.array([0.00001,0.001,0.002,0.005,0.01,0.02,0.05,0.1,0.2,0.5,1])*100
+
 no_sistematic = True
-
-
 
 output_dir = "../data/Experimental/ArCF4/"
 
-read_experimental(archivo_entrada, yields, presiones, output_dir, concentraciones_reales=concentraciones_reales, no_sistematic = True)
+read_experimental(archivo_entrada, yields, presiones, output_dir, no_sistematic = True)
 
 #####################################################
 ###### Traemos los datos anteriormente generados 
@@ -116,19 +115,22 @@ degrad_data        = pd.read_csv(os.path.join(DATA_DIR, "ArCF4.csv"))
 ####### AJUSTE
 
 
-x0 = np.array([1,
+x0 = np.array([0,
                0.11352059, 0.00156568 , 999, 
                0.01793004 ,0.1, 0.31565123, 50.1, 0.99,
-               999 ])
+               999,
+               0.1])
 lower = [0.0,
          0.0, 0.0, 0.0,  
          0.0, 0.065, 0.0, 50, 0.0,
+         0.0,
          0.0]
 
-upper = [1.0, 
+upper = [0.20, 
          1.0, 1.0, 10000.0, 
          10.0, 10.0, 1.0, 50.2, 1.0,
-         10000.0]
+         10000.0,
+         0.3]
 
 bounds=(lower, upper)
 
@@ -137,71 +139,15 @@ equations = {
     "uv": theory_yield_uv
 }
 
+yield_uv.loc[0,"fCF4"]=0.001
 experimental_data = {
     "vis": yield_vis,
     "uv": yield_uv
 }
 
+
 popt = fitParameters(equations, experimental_data, degrad_data, x0=x0, bounds=bounds)
 
-J = popt.jac
-m, p = J.shape
-s2 = 2 * popt.cost / (m - p)
-cov_theta =  s2 * np.linalg.inv(J.T @ J)
-chi2 = 2 * popt.cost
-N_res = popt.fun.size
-N_par = popt.x.size
-dof   = N_res - N_par
-chi2_red = chi2 / dof
-
-print("="*60)
-print("Parámetros globales:", popt.x)
-print(f"Chi2 (real): {chi2}")
-print(f"Grados de libertad: {dof}")
-print(f"Chi2 reducido: {chi2_red}")
-print("="*60)
-
-
-#######################################################################
-# =================== LATEX, TYPST, CSV EXPORT ========================
-#######################################################################
-
-names_tex = [
-    "$N_{\\text{norm}}$",
-    "$P_{\\mathrm{CF_3}}|_{\\mathrm{dir}}$",
-    "$P_{\\mathrm{Ar}^{**}} $",
-    "${K_{\\mathrm{Ar^{**},Q(Ar)}}} [ns]$",
-    "$1 / {\\tau_{\\mathrm{disocc}} K_{\\mathrm{relax}}}$",
-    "$\\tau_{\mathrm{uv}} K_{\mathrm{CF_4^(+,*)Q(CF_4)}}$",
-    "$P_{\\mathrm{CF_4^{+,*}}}|_{\\mathrm{dir}}$",
-    "$K_{\\mathrm{Ar^{++},Q(CF_4)}}$ [ns]",
-    "$P_{\\mathrm{Ar}^{++}}$",
-    "${K_{\\mathrm{Ar^{**},Q(CF_4)}}} [ns]$"
-]
-
-latex_table, _, perr, rel = export_fit_table_latex(
-    result=popt,
-    names=names_tex,
-    filename="tex_param/ArCF4_param.tex",
-    caption="Parámetros obtenidos del ajuparamste global.",
-    label="tab:fit_params",
-    sigfigs=4
-)
-
-names_csv = [
-    "Nnorm",
-    "PCF3dir$",
-    "PAr**",
-    "KAr**QAr",
-    "1/tauDiscKrelax",
-    "tauUvKCF4QCF4",
-    "PCF4dir",
-    "KAr++QCF4",
-    "PAr++",
-    "KAr**QCF4"
-]
-
-export_to_csv("../data/Parameters/ArCF4_primary.csv",popt,names_csv)
 
 #######################################################################
 # =================== PLOT ========================
@@ -229,7 +175,7 @@ fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
     ylim=(0.001, 0.4),
     xscale="log",
     yscale="log",
-    cmap="inferno",
+    cmap="viridis",
     darken_factor=-0.15,
     legend=True,
     legend_kwargs={"ncol": 2, "fontsize": 9},
@@ -254,16 +200,97 @@ fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
     xlabel=r"Concentration of CF$_4$ [%]",
     ylabel="Normalized Yield",
     xlim=(0.001 * 0.9, 100 * 1.1),
-    ylim=None,
+    ylim=(0.025,1.05),
     xscale="log",
     yscale="log",
-    cmap="plasma",
+    cmap="viridis",
     darken_factor=-0.15,
     legend=True,
     legend_kwargs={"ncol": 2, "fontsize": 9},
+    line_label_fmt=["{p:g} bar completed",
+                    "{p:g} bar CF3*"],
     output="plots/ArCF4_uv.pdf",
     show=False,
+    activate_components=True
 )
+
+
+
+#######################################################################
+# =================== LATEX, TYPST, CSV EXPORT ========================
+#######################################################################
+
+names_csv = [
+    "Nnorm",
+    "PCF3dir vis$",
+    "PAr**",
+    "KAr**QAr",
+    "1/tauDiscKrelax",
+    "tauUvKCF4QCF4",
+    "PCF4dir",
+    "KAr++QCF4",
+    "PAr++",
+    "KAr**QCF4",
+    "PCF3dir uv$",
+]
+
+export_to_csv("../data/Parameters/ArCF4_primary.csv",popt,names_csv)
+
+
+names_tex = [
+    "$N_{\\text{norm}}$",
+    "$P_{\\mathrm{CF_3}}|_{\\mathrm{vis,dir}}$",
+    "$P_{\\mathrm{Ar}^{**}} $",
+    "${K_{\\mathrm{Ar^{**},Q(Ar)}}} [ns]$",
+    "$1 / {\\tau_{\\mathrm{disocc}} K_{\\mathrm{relax}}}$",
+    "$\\tau_{\mathrm{uv}} K_{\mathrm{CF_4^(+,*)Q(CF_4)}}$",
+    "$P_{\\mathrm{CF_4^{+,*}}}|_{\\mathrm{dir}}$",
+    "$K_{\\mathrm{Ar^{++},Q(CF_4)}}$ [ns]",
+    "$P_{\\mathrm{Ar}^{++}}$",
+    "${K_{\\mathrm{Ar^{**},Q(CF_4)}}} [ns]$",
+    "$P_{\\mathrm{CF_3}}|_{\\mathrm{uv,dir}}$",
+]
+
+latex_table, _, perr, rel = export_fit_table_latex(
+    result=popt,
+    names=names_tex,
+    filename="tex_param/ArCF4_param.tex",
+    caption="Parámetros obtenidos del ajuparamste global.",
+    label="tab:fit_params",
+    sigfigs=4
+)
+
+
+#######################################################################
+# =================== CDATA ========================
+#######################################################################
+
+
+chi2 = 2 * popt.cost
+N_res = popt.fun.size
+N_par = popt.x.size
+dof   = N_res - N_par
+chi2_red = chi2 / dof
+
+print("="*60)
+print("Parámetros globales:", popt.x)
+print(f"Chi2 (real): {chi2}")
+print(f"Grados de libertad: {dof}")
+print(f"Chi2 reducido: {chi2_red}")
+print("="*60)
+
+J = popt.jac
+m, p = J.shape
+s2 = 2 * popt.cost / (m - p)
+cov_theta =  s2 * np.linalg.inv(J.T @ J)
+chi2 = 2 * popt.cost
+N_res = popt.fun.size
+N_par = popt.x.size
+dof   = N_res - N_par
+chi2_red = chi2 / dof
+
+
+
 
 #######################################################################
 # =================== CORRELATION MATRIX ========================

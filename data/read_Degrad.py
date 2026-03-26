@@ -131,3 +131,5 @@ def read_degrad(archivo_entrada, archivo_salida_1, archivo_salida_2, gas1, gas2,
             #population.to_pickle(f"pickle_data/{name_of_output}.pkl")
             #print(f"✅ Guardado: {name}.pkl")
 
+###############3
+

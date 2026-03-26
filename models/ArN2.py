@@ -5,22 +5,13 @@ from scipy.interpolate import interp1d
 
 from scipy.interpolate import PchipInterpolator
 
-
-# % de CF4 en Ar
-cf4_pct = np.array([0, 1.0, 2.0, 5.0, 10, 20, 30, 50, 75, 100])/100
-
-# Potencial de ionización (según la columna Ar/CF4)
-ion_pot = np.array([26.4, 26.7, 26.9, 27.4, 28.1, 29.4, 30.2, 31.7, 33.0, 34.3])
-
-def ion_potential(f):
-    f_cf4 = np.asarray(f, dtype=float)
-    W=np.interp(f_cf4,cf4_pct,ion_pot)
-    return W
+def W_ArN2(xN2, WAr=26.4, WN2=34.8):
+    return 1.0 / ((1.0-xN2)/WAr + xN2/WN2)
 
 
 def theory_yield_N2_uv(x, degrad_data, fN2, n, activate_components = False):
     fN2 = np.asarray(fN2, dtype=float)
-    W = 1 
+    W = W_ArN2(fN2)
 
     concentration = degrad_data["concentration"]
     Pob_N2 = degrad_data["N2_star"].to_numpy()
@@ -97,14 +88,14 @@ def theory_yield_N2_uv(x, degrad_data, fN2, n, activate_components = False):
 
 
     if activate_components:
-        return (W * Nnorm * factor_N2 * (Pob_N2 * P_N2 + Pob_Ar_meta * factor_Ar_meta + Pob_Ar_res * factor_Ar_res + Pob_Ar_dbleStar * factor_Ar_dbleStar_meta),
-                W * Nnorm * factor_N2 * (Pob_N2 * P_N2),
-                W * Nnorm * factor_N2 * ( Pob_Ar_meta * factor_Ar_meta),
-                W * Nnorm * factor_N2 * (Pob_Ar_res * factor_Ar_res),
-                W * Nnorm * factor_N2 * (Pob_Ar_dbleStar * factor_Ar_dbleStar_meta)
+        return ((1/W)* Nnorm * factor_N2 * (Pob_N2 * P_N2 + Pob_Ar_meta * factor_Ar_meta + Pob_Ar_res * factor_Ar_res + Pob_Ar_dbleStar * factor_Ar_dbleStar_meta),
+                (1/W)* Nnorm * factor_N2 * (Pob_N2 * P_N2),
+                (1/W)* Nnorm * factor_N2 * ( Pob_Ar_meta * factor_Ar_meta),
+                (1/W)* Nnorm * factor_N2 * (Pob_Ar_res * factor_Ar_res),
+                (1/W)* Nnorm * factor_N2 * (Pob_Ar_dbleStar * factor_Ar_dbleStar_meta)
         )
     else:
-        return  W * Nnorm * factor_N2 * (Pob_N2 * P_N2 + Pob_Ar_meta * factor_Ar_meta + Pob_Ar_res * factor_Ar_res + Pob_Ar_dbleStar * factor_Ar_dbleStar_meta) 
+        return  (1/W)* Nnorm * factor_N2 * (Pob_N2 * P_N2 + Pob_Ar_meta * factor_Ar_meta + Pob_Ar_res * factor_Ar_res + Pob_Ar_dbleStar * factor_Ar_dbleStar_meta) 
 
 
 
@@ -113,6 +104,9 @@ def theory_yield_N2_uv(x, degrad_data, fN2, n, activate_components = False):
 
 def _theory_yield_N2_uv(x, degrad_data, fN2, n, activate_components = False):
     fN2 = np.asarray(fN2, dtype=float)
+
+    W = W_ArN2(fN2)# (1/ion_potential(fN2))
+
 
     concentration = degrad_data["concentration"]
     P_N2 = degrad_data["N2_star"].to_numpy()
@@ -144,10 +138,8 @@ def _theory_yield_N2_uv(x, degrad_data, fN2, n, activate_components = False):
     denom = (fN2) * n * K4 + 1/30 + (1-fN2) * n * K5
     frac3  = np.where(denom == 0, 0.0, (1/30)/ denom)
     
-    W = 1 # (1/ion_potential(fN2))
-
     if activate_components:
-        return (W * N * (P_N2 + (P_Ar_Star + P_Ar_dbleStar * frac3) * frac1) * frac2,
-                W * N * P_N2 * frac2)
+        return ((1/W) * N * (P_N2 + (P_Ar_Star + P_Ar_dbleStar * frac3) * frac1) * frac2,
+                (1/W) * N * P_N2 * frac2)
     else:
-        return W * N * (P_N2 + (P_Ar_Star + P_Ar_dbleStar * p_dbleStar * frac3) * p_Star * frac1) * frac2
+        return (1/W)* N * (P_N2 + (P_Ar_Star + P_Ar_dbleStar * p_dbleStar * frac3) * p_Star * frac1) * frac2

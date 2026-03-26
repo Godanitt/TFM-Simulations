@@ -81,7 +81,7 @@ def theory_yield_ArN2_Ir_696(x, degrad_data, fN2, n, activate_components = False
     K_Ar_Q_N2_772   = x[19]
 
   
-    frac1 = PAr_star_696 * (1/tau_N2_696) / ( 1/tau_N2_696 + n * fN2 * K_Ar_Q_Ar_696 + n * (1 - fN2) * K_Ar_Q_N2_696)
+    frac1 = PAr_star_696 * (1/tau_N2_696) / ( 1/tau_N2_696 + n * fN2 * K_Ar_Q_N2_696 + n * (1 - fN2) * K_Ar_Q_Ar_696)
 
     if activate_components:
         return (W * frac1 * Pob_Ar_696, W * frac1 * Pob_Ar_696)
@@ -153,7 +153,7 @@ def theory_yield_ArN2_Ir_727(x, degrad_data, fN2, n, activate_components = False
     K_Ar_Q_N2_772   = x[19]
 
   
-    frac1 = PAr_star_727 * (1/tau_N2_727) / ( 1/tau_N2_727 + n * fN2 * K_Ar_Q_Ar_727+ n * (1 - fN2) * K_Ar_Q_N2_727)
+    frac1 = PAr_star_727 * (1/tau_N2_727) / ( 1/tau_N2_727 + n * fN2 * K_Ar_Q_N2_727+ n * (1 - fN2) * K_Ar_Q_Ar_727)
 
 
     if activate_components:
@@ -224,7 +224,7 @@ def theory_yield_ArN2_Ir_750(x, degrad_data, fN2, n, activate_components = False
     K_Ar_Q_Ar_772   = x[18]
     K_Ar_Q_N2_772   = x[19]
 
-    frac1 = PAr_star_750 * (1/tau_N2_764) / ( 1/tau_N2_750 + n * fN2 * K_Ar_Q_Ar_750 + n * (1 - fN2) * K_Ar_Q_N2_750)
+    frac1 = PAr_star_750 * (1/tau_N2_764) / ( 1/tau_N2_750 + n * fN2 * K_Ar_Q_N2_750 + n * (1 - fN2) * K_Ar_Q_Ar_750)
 
 
     if activate_components:
@@ -295,7 +295,7 @@ def theory_yield_ArN2_Ir_763(x, degrad_data, fN2, n, activate_components = False
     K_Ar_Q_Ar_772   = x[18]
     K_Ar_Q_N2_772   = x[19]
   
-    frac1 = PAr_star_764 * (1/tau_N2_764) / ( 1/tau_N2_764 + n * fN2 * K_Ar_Q_Ar_764+ n * (1 - fN2) * K_Ar_Q_N2_764)
+    frac1 = PAr_star_764 * (1/tau_N2_764) / ( 1/tau_N2_764 + n * fN2 * K_Ar_Q_N2_764+ n * (1 - fN2) * K_Ar_Q_Ar_764)
 
 
     if activate_components:
@@ -366,7 +366,7 @@ def theory_yield_ArN2_Ir_772(x, degrad_data, fN2, n, activate_components = False
     K_Ar_Q_Ar_772   = x[18]
     K_Ar_Q_N2_772   = x[19]
 
-    frac1 = PAr_star_772 * (1/tau_N2_772) / ( 1/tau_N2_772 + n * fN2 * K_Ar_Q_Ar_772 + n * (1 - fN2) * K_Ar_Q_N2_772)
+    frac1 = PAr_star_772 * (1/tau_N2_772) / ( 1/tau_N2_772 + n * fN2 * K_Ar_Q_N2_772 + n * (1 - fN2) * K_Ar_Q_Ar_772)
 
 
     if activate_components:
@@ -437,7 +437,7 @@ def theory_yield_ArN2_Ir_794(x, degrad_data, fN2, n, activate_components = False
     K_Ar_Q_Ar_772   = x[18]
     K_Ar_Q_N2_772   = x[19]
   
-    #frac1 = PAr_star_794 * (1/tau_N2_794) / ( 1/tau_N2_794 + n * fN2 * K_Ar_Q_Ar_794 + n * (1 - fN2) * K_Ar_Q_N2_794)
+    #frac1 = PAr_star_794 * (1/tau_N2_794) / ( 1/tau_N2_794 + n * fN2 * K_Ar_Q_N2_794 + n * (1 - fN2) * K_Ar_Q_794)
 
 
     #if activate_components:

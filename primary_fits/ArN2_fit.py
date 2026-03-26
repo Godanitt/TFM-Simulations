@@ -65,7 +65,7 @@ dataframe = pd.DataFrame(
     {    
         "Ar Meta":   [["EXC"],     "ARGON",     0, 11.6, "Ar_meta"],
         "Ar Res":   [["EXC"],     "ARGON",      11.6, 11.7, "Ar_res"],
-        "Ar**":   [["EXC"],     "ARGON",     11., 100, "Ar_dbleStar"],
+        "Ar**":   [["EXC"],     "ARGON",     11.7, 100, "Ar_dbleStar"],
         "N2*":    [["C 3PI"], "NITROGEN",  11, 16.5, "N2_star"] #C 3PI
     }, 
     index=["name principal", "gas", "energy low", "energy up", "name output"]
@@ -127,11 +127,11 @@ x0_semifixed = np.array([
                0.0, 0.0, 
                ])
 
-lower_semifixed = x0_semifixed*0.5
-upper_semifixed = x0_semifixed*2
+lower_semifixed = x0_semifixed*0.75
+upper_semifixed = x0_semifixed*1.5
 
 lower       = np.array([
-               0.0, 
+               0.15, 
                0.0, 0.0, 0.0, 
                0.0, 
                0.0, 0.0, 0.0,
@@ -143,7 +143,7 @@ lower       = np.array([
                ]) + lower_semifixed
 
 x0          = np.array([
-               0.99, 
+               0.2, 
                0.0, 0.0, 0.0, 
                0.99, 
                0.0, 0.0, 0.0,
@@ -155,7 +155,7 @@ x0          = np.array([
                ]) + x0_semifixed
 
 upper          = np.array([
-               1.0, 
+               0.3, 
                0.0, 0.0, 0.0, 
                1.0, 
                0.0, 0.0, 0.0,
@@ -190,17 +190,17 @@ print(f"Grados de libertad: {dof}")
 print(f"Chi2 (real): {chi2}")
 print(f"Chi2 reducido: {chi2_red}")
 print("="*60)
-"""
-J = popt.jac
-m, p = J.shape
-s2 = 2 * popt.cost / (m - p)
-cov_theta =  s2 * np.linalg.inv(J.T @ J)
-chi2 = 2 * popt.cost
-N_res = popt.fun.size
-N_par = popt.x.size
-dof   = N_res - N_par
-chi2_red = chi2 / dof
-"""
+
+# J = popt.jac
+# m, p = J.shape
+# s2 = 2 * popt.cost / (m - p)
+# cov_theta =  s2 * np.linalg.inv(J.T @ J)
+# chi2 = 2 * popt.cost
+# N_res = popt.fun.size
+# N_par = popt.x.size
+# dof   = N_res - N_par
+# chi2_red = chi2 / dof
+
 #######################################################################
 # =================== PLOT ========================
 #######################################################################
@@ -223,7 +223,7 @@ fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
     xlabel=r"Concentration of N$_2$ [%]",
     ylabel="Normalized Yield",
     xlim=(0.1 * 0.9, 100 * 1.1),
-    ylim=(0.01, 4),
+    #ylim=(0.001, 0.1),
     xscale="log",
     yscale="log",
     cmap="viridis",
@@ -252,7 +252,7 @@ fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
     xlabel=r"Concentration of N$_2$ [%]",
     ylabel="Normalized Yield",
     xlim=(0.1 * 0.9, 100 * 1.1),
-    ylim=(0.01, 4),
+    ylim=(0.001, 0.1),
     xscale="log",
     yscale="log",
     cmap="viridis",
@@ -285,7 +285,7 @@ fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
     xlabel=r"Concentration of N$_2$ [%]",
     ylabel="Normalized Yield",
     xlim=(0.1 * 0.9, 100 * 1.1),
-    ylim=(0.01, 4),
+    ylim=(0.001, 0.1),
     xscale="log",
     yscale="log",
     cmap="viridis",
@@ -302,7 +302,7 @@ fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
     activate_components = True
 )
 
-"""
+
 #######################################################################
 # =================== LATEX, TYPST, CSV EXPORT ========================
 #######################################################################
@@ -391,4 +391,3 @@ plt.title("Matriz de Correlación de Parámetros Ajustados", fontsize=14)
 plt.tight_layout()
 
 plt.savefig("plots/ArN2_CorrelationMatrix_GlobalFit.pdf", dpi=300)
-"""
