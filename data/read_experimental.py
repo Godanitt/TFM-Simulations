@@ -4,6 +4,8 @@ import pandas as pd
 import dill
 import scipy.special
 import importlib
+import matplotlib.pyplot as plt 
+plt.style.use(['science'])
 
 """
 Script que nos permite leer los datos de los yields de visible/ultravioleta,

@@ -21,19 +21,24 @@ def theory_yield_N2_uv(x, degrad_data, fN2, n, activate_components = False):
 
     cols = ["N2_star", "Ar_meta", "Ar_res", "Ar_dbleStar"]
     Y = degrad_data[cols].to_numpy()   # shape: (n_puntos, 4)
+    
+    Y = np.asarray(Y, dtype=float)
+    fN2 = np.asarray(fN2, dtype=float)
 
     if len(fN2) > len(concentration):
-        # Por si acaso, ordena x e y
-        idx = np.argsort(concentration)
-        xn = concentration[idx]
-        y = Y[idx]
+        conc = np.asarray(concentration, dtype=float)
+        yvals = np.asarray(Y, dtype=float)
 
-        interp = PchipInterpolator(xn, y, axis=0)
-        Y_new = interp(fN2)
+        idx = np.argsort(conc)
+        conc_sorted = conc[idx]
+        y_sorted = yvals[idx]
+
+        interp = PchipInterpolator(conc_sorted, y_sorted)
+        Y_interp = interp(fN2)
     else:
-        Y_new = Y
+        Y_interp = Y
 
-    Pob_N2, Pob_Ar_meta, Pob_Ar_res, Pob_Ar_dbleStar = Y_new.T
+    Pob_N2, Pob_Ar_meta, Pob_Ar_res, Pob_Ar_dbleStar = Y_interp.T
 
     Nnorm               = x[0]
 

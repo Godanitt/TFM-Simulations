@@ -4,6 +4,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import sys
 import seaborn as sns
+import scienceplots
+plt.style.use('default')
 
 models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../models'))
 data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data'))
@@ -84,14 +86,42 @@ garfield = read_garfield_csv_folder(
 
 
 DATA_DIR_EXP = "../data/Experimental/ArN2/"
-DATA_DIR_DEGRAD = "../data/Secondary_GarfieldData/ArN2/populations"
+DATA_DIR_GARFIELD = "../data/Secondary_GarfieldData/ArN2/populations"
 DATA_DIR_PAR = "../data/Parameters"
 
 yield_N2_uv  = pd.read_csv(os.path.join(DATA_DIR_EXP, "yield_N2.csv"))
 
-degrad_data = pd.read_csv(os.path.join(DATA_DIR_DEGRAD, "ArN2.csv"))
+garfield_data = pd.read_csv(os.path.join(DATA_DIR_GARFIELD, "ArN2_secondary.csv"))
+garfield_data["concentration"] = garfield_data["concentration"]/100
+
 
 parameter_data = pd.read_csv(os.path.join(DATA_DIR_PAR, "ArN2_primary.csv"))["parameter"].to_numpy()
 print(parameter_data)
 parameter_data[0] = 1
 print(parameter_data)
+
+
+fN2 = np.logspace(-3,0,1000)
+electric_fields = [70,80,90]
+
+plt.figure(figsize=(6,4))
+
+cmap = "viridis"
+cmap_obj = plt.get_cmap(cmap)
+colors = cmap_obj(np.linspace(0.15, 0.85, len(electric_fields)))
+
+for i,electric_field in enumerate(electric_fields):
+    yield_teo = theory_yield_N2_uv(parameter_data, garfield_data[garfield_data["electric_field"]==electric_field], fN2, 1) / 10000 / 100 * W_ArN2(fN2)
+    plt.plot(fN2 * 100,
+        yield_teo,
+        color=colors[i],
+        label=f"{electric_field} kV/cm prediction"
+    )
+
+plt.title("1 bar 10k gain secondary yield prediction for Ar/N2 mixture")
+plt.xscale("log")
+#plt.yscale("log")
+plt.ylabel("ph/e$^-$")
+plt.xlabel("N$_2$ concetration [\%]")
+plt.legend()
+plt.savefig("plots/ArN2_secondary.pdf")

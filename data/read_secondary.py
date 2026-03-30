@@ -2,6 +2,8 @@ import os
 from pathlib import Path
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt 
+plt.style.use(['science'])
 
 
 def _parse_csv_metadata_from_name(filename, concentration_gas=None):

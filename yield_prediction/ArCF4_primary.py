@@ -4,6 +4,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import sys
 import seaborn as sns
+import scienceplots
+plt.style.use('default')
 
 models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../models'))
 data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data'))
@@ -58,8 +60,16 @@ def ion_potential(f):
 fCF4 = np.logspace(-3,0,1000)
 pressure = [1,2,3,4,5]
 
-plt.figure()
+plt.figure(figsize=(6,4))
+plt.style.use('science')
+plt.rcParams.update({
+    "font.family": "serif",   # specify font family here
+    "font.serif": ["Times"],  # specify font here
+    "font.size": 11})          # specify font size here
+
+
 print(parameter_data)
+
 
 cmap = "viridis"
 cmap_obj = plt.get_cmap(cmap)
@@ -85,59 +95,46 @@ plt.errorbar(cf4_red_E100,
 plt.xscale("log")
 #plt.yscale("log")
 plt.ylabel("phe/MeV")
-plt.xlabel("CF4 concetration [%]")
+plt.grid(False)
+plt.xlabel(r"CF$_4$ concetration [\%]")
+plt.title("Yield visible Ar-CF4 mixture")
 plt.legend()
-plt.savefig("plots/ArCF4_primary.pdf")
-
-# x_completed = par_completed[par_completed["type"].str.contains("value")].drop(columns=["type"]).to_numpy()
+plt.savefig("plots/ArCF4_vis_primary.pdf")
 
 
-# N0 = x_completed[0,0] 
-# x_completed[0,0] = 1
+######################################33
+
+fCF4 = np.logspace(-3,0,1000)
+pressure = [1,2,3,4,5]
+
+plt.figure(figsize=(5,3.5))
+plt.style.use(['science','grid'])
+plt.rcParams.update({
+    "font.family": "serif",   # specify font family here
+    "font.serif": ["Times"],  # specify font here
+    "font.size": 11})          # specify font size here
 
 
+print(parameter_data)
 
-# # Mezclas
+cmap = "viridis"
+cmap_obj = plt.get_cmap(cmap)
+colors = cmap_obj(np.linspace(0.15, 0.85, len(pressure)))
 
-# fCF4 = np.logspace(-5,0,100)
+for i in range(len(pressure)):
+    yield_teo = (theory_yield_uv(parameter_data,degrad_data,fCF4,pressure[i])) * (1/0.015) * ion_potential(fCF4)
+    plt.plot(
+        fCF4 * 100,
+        yield_teo,
+        color=colors[i],
+        label=f"{pressure[i]} bar prediction"
+    )
 
-# # Mejoramos los valores:
-# pob_Ar3rd = np.zeros_like(fCF4)
-# pob_ArdbleStar = np.zeros_like(fCF4)
-# pob_CF3 = np.zeros_like(fCF4)
-# pob_CF4 = np.zeros_like(fCF4)
-
-# for i in range(len(fCF4)): 
-#     pob_Ar3rd[i] = np.interp(fCF4[i],f,pAr3rd)
-#     pob_ArdbleStar[i] = np.interp(fCF4[i],f,pArdbleStar) 
-#     pob_CF3[i] = np.interp(fCF4[i],f,pCF3)
-#     pob_CF4[i] = np.interp(fCF4[i],f,pCF4)
-    
-# n = 1
-# phMev =  1/0.015
-# n1_completed = theory_yield_vis(x_completed[0,:],fCF4,n,pob_CF3,pob_ArdbleStar,pob_CF4,pob_Ar3rd) * phMev
-
-
-# fig,ax = plt.subplots(ncols=1,figsize=(8,5))
-# ax.plot(fCF4*100,n1_completed,color="blue",label="New Model Prediction (1-5 bar)")
-# ax.errorbar(visible["fCF4 real"],
-#              visible["1.0bar"]*phMev*ion_potential(visible["fCF4 real"]/100)/N0,
-#              yerr=visible["Err 1.0bar"]*phMev*ion_potential(visible["fCF4 real"]/100)/N0,
-#              marker="o",
-#              linestyle="none",
-#              label="X-Ray data")
-
-
-
-# ax.legend(loc="upper left")
-# ax.set_xscale("log")
-# ax.set_xlabel("$f_{CF_4}$ (%)")
-# ax.set_yscale("log")
-# ax.set_ylabel("Yield [phe/MeV]")
-# ax.set_xlim(0.07,120)
-# ax.set_ylim(20,2300)
-
-
-
-# fig.tight_layout()
-# fig.savefig("yield_prediction.pdf",bbox_inches="tight")
+plt.xscale("log")
+#plt.yscale("log")
+plt.ylabel("phe/MeV")
+plt.grid(False)
+plt.title("Yield UV Ar-CF4 mixture")
+plt.xlabel("CF$_4$ concetration [\%]")
+plt.legend()
+plt.savefig("plots/ArCF4_uv_primary.pdf")

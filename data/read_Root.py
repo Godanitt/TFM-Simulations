@@ -3,7 +3,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import uproot
-
+import scienceplots
+plt.style.use(['science'])
 
 def _normalise_gas_name(name):
     """Normaliza nombres de gas para comparación."""
@@ -98,12 +99,6 @@ def _build_mapping_table_for_file(table_df, active_gases, argon_update):
         base = base.sort_values("level").reset_index(drop=True)
 
     return base
-
-from pathlib import Path
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import uproot
 
 
 def _normalise_gas_name(name):
@@ -445,6 +440,7 @@ def read_data_per_primary_electron(
                 })
 
                 plt.figure(figsize=(8, 5))
+                plt.style.use(['science'])
                 plt.hist(ne, bins="auto", edgecolor="black")
                 plt.xlabel(electron_branch)
                 plt.ylabel("Frecuencia")
@@ -454,6 +450,7 @@ def read_data_per_primary_electron(
                 plt.close()
 
                 plt.figure(figsize=(8, 5))
+                plt.style.use(['science'])
                 plt.hist(ni, bins="auto", edgecolor="black")
                 plt.xlabel(ion_branch)
                 plt.ylabel("Frecuencia")
@@ -543,6 +540,7 @@ def read_data_per_primary_electron(
                 })
 
                 plt.figure(figsize=(8, 5))
+                plt.style.use(['science'])
                 plt.hist(ne, bins="auto", edgecolor="black")
                 plt.xlabel(electron_branch)
                 plt.ylabel("Frecuencia")
@@ -552,6 +550,7 @@ def read_data_per_primary_electron(
                 plt.close()
 
                 plt.figure(figsize=(8, 5))
+                plt.style.use(['science'])
                 plt.hist(ni, bins="auto", edgecolor="black")
                 plt.xlabel(ion_branch)
                 plt.ylabel("Frecuencia")
@@ -649,6 +648,7 @@ def read_data_per_primary_electron(folder_path, tree_name="dataPerPrimaryElectro
 
                 # Gráfica de ne
                 plt.figure(figsize=(8, 5))
+                plt.style.use(['science'])
                 plt.hist(ne, bins="auto", edgecolor="white")
                 plt.xlabel("ne")
                 plt.ylabel("Frecuencia")

@@ -18,6 +18,42 @@ from fiting import fitParameters
 from parameter_export import export_fit_table_latex, export_to_csv
 from ploting import plot_fit_vs_experiment_by_pressure
 
+
+
+#########################################################
+
+
+def apply_global_threshold(df, conc_col="N2 concentration (%)"):
+    bar_cols = ["1.0bar", "2.0bar", "3.0bar", "4.0bar", "5.0bar"]
+    err_cols = [f"Err {c}" for c in bar_cols]
+
+    # 1) Región de referencia: 50% a 100%
+    df_ref     = df[df[conc_col] >= 50].copy()
+    df_ref_50  = df[df[conc_col] == 50].copy()
+    df_ref_100 = df[df[conc_col] == 100].copy()
+
+    # 2) Threshold global del dataframe = máximo entre todas las columnas de presión
+    threshold_50 = df_ref_50[bar_cols].max().max()
+    threshold_100 = df_ref_100[bar_cols].max().max()
+
+    threshold = min(threshold_50,threshold_100)
+
+    # 3) Nos quedamos con la región < 50% para ajustar
+    df_low = df[df[conc_col] < 50].copy()
+
+    # 4) Máscara celda a celda: conservar solo yields >= threshold
+    mask = df_low[bar_cols] >= threshold
+
+    # 5) Aplicar máscara a yields
+    df_low[bar_cols] = df_low[bar_cols].where(mask)
+
+    # 6) Aplicar la misma máscara a los errores correspondientes
+    for bar, err in zip(bar_cols, err_cols):
+        df_low[err] = df_low[err].where(mask[bar])
+
+    return df_low, threshold
+
+
 #########################################################
 ####### CREAMOS LOS ARCHIVOS + LOS CARGAMOS 
 
@@ -63,12 +99,12 @@ concentration = np.array([0.001,0.005,0.01,0.05,0.1,0.2,0.5,1])
 
 dataframe = pd.DataFrame(
     {    
-        "Ar* 696":   [["EXC"],     "ARGON",     13.328, 100, "Ar_696"],
-        "Ar* 727":   [["EXC"],     "ARGON",     13.328, 100, "Ar_727"],
-        "Ar* 750":   [["EXC"],     "ARGON",     13.479, 100, "Ar_750"],
-        "Ar* 763":   [["EXC"],     "ARGON",     13.171, 100, "Ar_763"],
-        "Ar* 772":   [["EXC"],     "ARGON",     13.328, 100, "Ar_772"],
-        "Ar* 794":   [["EXC"],     "ARGON",     13.282, 100, "Ar_794"],
+        "Ar* 696":   [["EXC"],     "ARGON",     13.32, 13.32 + 10, "Ar_696"],
+        "Ar* 727":   [["EXC"],     "ARGON",     13.32, 13.32 + 10, "Ar_727"],
+        "Ar* 750":   [["EXC"],     "ARGON",     13.47, 13.47 + 10, "Ar_750"],
+        "Ar* 763":   [["EXC"],     "ARGON",     13.17, 13.17 + 10, "Ar_763"],
+        "Ar* 772":   [["EXC"],     "ARGON",     13.32, 13.32 + 10, "Ar_772"],
+        "Ar* 794":   [["EXC"],     "ARGON",     13.28, 13.28 + 10, "Ar_794"],
     }, 
     index=["name principal", "gas", "energy low", "energy up", "name output"]
 )
@@ -104,13 +140,16 @@ yield_750_ir  = pd.read_csv(os.path.join(DATA_DIR, "750.csv"))
 yield_763_ir  = pd.read_csv(os.path.join(DATA_DIR, "763.csv"))
 yield_772_ir  = pd.read_csv(os.path.join(DATA_DIR, "772.csv"))
 
-yield_696_ir_n = yield_696_ir[yield_696_ir["N2 concentration (%)"] < 2]
-yield_727_ir_n = yield_727_ir[yield_727_ir["N2 concentration (%)"] < 2]
-yield_750_ir_n = yield_750_ir[yield_750_ir["N2 concentration (%)"] < 6]
-yield_763_ir_n = yield_763_ir[yield_763_ir["N2 concentration (%)"] < 2]
-yield_772_ir_n = yield_772_ir[yield_772_ir["N2 concentration (%)"] < 2]
+yield_696_ir_n, thr_696 = apply_global_threshold(yield_696_ir)
+yield_727_ir_n, thr_727 = apply_global_threshold(yield_727_ir)
+yield_750_ir_n, thr_750 = apply_global_threshold(yield_750_ir)
+yield_763_ir_n, thr_763 = apply_global_threshold(yield_763_ir)
+yield_772_ir_n, thr_772 = apply_global_threshold(yield_772_ir)
+
+print(thr_696, thr_727, thr_750, thr_763, thr_772)
 
 
+print(thr_727)
 
 """
 columns = yield_N2_uv.columns
@@ -144,11 +183,11 @@ lower_semifixed = x0_semifixed*0.999999999999999
 upper_semifixed = x0_semifixed*1.000000000000001
 
 lower       = np.array([
-               0.99, 0.0, 0.0, 0.0, 
-               0.99, 0.0, 0.0, 0.0, 
-               0.99, 0.0, 0.0, 0.0, 
-               0.99, 0.0, 0.0, 0.0, 
-               0.99, 0.0, 0.0, 0.0,
+               0.0, 0.0, 0.0, 0.0, 
+               0.0, 0.0, 0.0, 0.0, 
+               0.0, 0.0, 0.0, 0.0, 
+               0.0, 0.0, 0.0, 0.0, 
+               0.0, 0.0, 0.0, 0.0,
                ]) + lower_semifixed
 
 x0          = np.array([
@@ -178,11 +217,11 @@ equations = {
 }
 
 experimental_data = {
-    "696": yield_696_ir_n,
-    "727": yield_727_ir_n,
-    "750": yield_750_ir_n,
-    "763": yield_763_ir_n,
-    "772": yield_772_ir_n,
+    "696": yield_696_ir_n.fillna(0),
+    "727": yield_727_ir_n.fillna(0),
+    "750": yield_750_ir_n.fillna(0),
+    "763": yield_763_ir_n.fillna(0),
+    "772": yield_772_ir_n.fillna(0),
 }
 
 
@@ -209,11 +248,11 @@ print("="*60)
 #######################################################################
 
 experimental_data = {
-    "696": yield_696_ir,
-    "727": yield_727_ir,
-    "750": yield_750_ir,
-    "763": yield_763_ir,
-    "772": yield_772_ir,
+    "696": yield_696_ir_n,
+    "727": yield_727_ir_n,
+    "750": yield_750_ir_n,
+    "763": yield_763_ir_n,
+    "772": yield_772_ir_n,
 }
 
 pressure = [1,2,3,4,5]

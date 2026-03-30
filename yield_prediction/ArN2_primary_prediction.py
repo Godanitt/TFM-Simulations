@@ -66,7 +66,7 @@ plt.errorbar(x_data,
 
 plt.xscale("log")
 #plt.yscale("log")
-plt.ylabel("phe/MeV")
-plt.xlabel("N2 concetration [%]")
+plt.ylabel("ph/e$^-$")
+plt.xlabel("N$_2$ concetration [\%]")
 plt.legend()
 plt.savefig("plots/ArN2_primary.pdf")

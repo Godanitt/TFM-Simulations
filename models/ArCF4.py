@@ -30,20 +30,23 @@ def theory_yield_vis(x, degrad_data, fCF4, n,activate_components = False):
 
     cols = ["CF3", "Ar_dbleStar", "CF4", "Ar_3rd"]
     Y = degrad_data[cols].to_numpy()   # shape: (n_puntos, 4)
+    
+    Y = np.asarray(Y, dtype=float)
 
     if len(f_cf4) > len(concentration):
-        # Por si acaso, ordena x e y
-        idx = np.argsort(concentration)
-        xn = concentration[idx]
-        y = Y[idx]
+        conc = np.asarray(concentration, dtype=float)
+        yvals = np.asarray(Y, dtype=float)
 
-        interp = PchipInterpolator(xn, y, axis=0)
-        Y_new = interp(f_cf4)
+        idx = np.argsort(conc)
+        conc_sorted = conc[idx]
+        y_sorted = yvals[idx]
+
+        interp = PchipInterpolator(conc_sorted, y_sorted)
+        Y_interp = interp(f_cf4)
     else:
-        Y_new = Y
+        Y_interp = Y
 
-    P_CF3, P_Ar_dbleStar, P_CF4, P_Ar_3rd = Y_new.T
-
+    P_CF3, P_Ar_dbleStar, P_CF4, P_Ar_3rd = Y_interp.T
 
     N           = x[0]
     p_CF3       = x[1]
@@ -55,7 +58,7 @@ def theory_yield_vis(x, degrad_data, fCF4, n,activate_components = False):
     denom = n * f_cf4 * K2 + n * (1.0 - f_cf4) * K + 1/30
     frac  = np.where(denom == 0, 0.0, K2 * n * f_cf4 / denom)
     
-    
+
 
     # OJO: aquí faltaba un "*" en tu ejemplo: p_CF3(P_CF3 + ...) → p_CF3 * (...)
     return (1/ion_potential(f_cf4))*N*(p_CF3 * P_CF3 + frac * p_DbleStar * P_Ar_dbleStar)
@@ -69,19 +72,23 @@ def theory_yield_uv(x, degrad_data, fCF4, n, activate_components = False):
 
     cols = ["CF3", "Ar_dbleStar", "CF4", "Ar_3rd"]
     Y = degrad_data[cols].to_numpy()   # shape: (n_puntos, 4)
+    
+    Y = np.asarray(Y, dtype=float)
 
     if len(f_cf4) > len(concentration):
-        # Por si acaso, ordena x e y
-        idx = np.argsort(concentration)
-        xn = concentration[idx]
-        y = Y[idx]
+        conc = np.asarray(concentration, dtype=float)
+        yvals = np.asarray(Y, dtype=float)
 
-        interp = PchipInterpolator(xn, y, axis=0)
-        Y_new = interp(f_cf4)
+        idx = np.argsort(conc)
+        conc_sorted = conc[idx]
+        y_sorted = yvals[idx]
+
+        interp = PchipInterpolator(conc_sorted, y_sorted)
+        Y_interp = interp(f_cf4)
     else:
-        Y_new = Y
+        Y_interp = Y
 
-    P_CF3, P_Ar_dbleStar, P_CF4, P_Ar_3rd = Y_new.T
+    P_CF3, P_Ar_dbleStar, P_CF4, P_Ar_3rd = Y_interp.T
 
     N           = x[0]
     p_DbleStar  = x[2]

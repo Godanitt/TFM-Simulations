@@ -6,17 +6,34 @@ from scipy.interpolate import interp1d
 from scipy.interpolate import PchipInterpolator
 
 
-# % de CF4 en Ar
-cf4_pct = np.array([0, 1.0, 2.0, 5.0, 10, 20, 30, 50, 75, 100])/100
+def W_ArN2(xN2, WAr=26.4, WN2=34.8):
+    return 1.0 / ((1.0-xN2)/WAr + xN2/WN2)
 
-# Potencial de ionización (según la columna Ar/CF4)
-ion_pot = np.array([26.4, 26.7, 26.9, 27.4, 28.1, 29.4, 30.2, 31.7, 33.0, 34.3])
+def interpolation(yvals, fN2, conc):
+    conc_sel = np.asarray(conc, dtype=float)
+    y_sel = np.asarray(yvals, dtype=float)
+    fN2 = np.asarray(fN2, dtype=float)
 
-def ion_potential(f):
-    f_cf4 = np.asarray(f, dtype=float)
-    W=np.interp(f_cf4,cf4_pct,ion_pot)
-    return W
+    if y_sel.ndim == 1:
+        mask = np.isfinite(conc_sel) & np.isfinite(y_sel)
+    else:
+        mask = np.isfinite(conc_sel) & np.all(np.isfinite(y_sel), axis=1)
 
+    conc_sel = conc_sel[mask]
+    y_sel = y_sel[mask]
+
+    order = np.argsort(conc_sel)
+    conc_sorted = conc_sel[order]
+    y_sorted = y_sel[order]
+
+    conc_unique, unique_idx = np.unique(conc_sorted, return_index=True)
+    y_unique = y_sorted[unique_idx]
+
+    if len(conc_unique) < 2:
+        raise ValueError(f"No hay suficientes puntos para interpolar: {conc_unique}")
+
+    interp = PchipInterpolator(conc_unique, y_unique, axis=0)
+    return interp(fN2)
 
 ###################################
 ###################################
@@ -27,8 +44,8 @@ def ion_potential(f):
 
 def theory_yield_ArN2_Ir_696(x, degrad_data, fN2, n, activate_components = False):
     fN2 = np.asarray(fN2, dtype=float)
-    W = 1 
-    
+    W = 1/W_ArN2(fN2)
+
     concentration = degrad_data["concentration"]
     Pob_Ar_696 = degrad_data["Ar_696"].to_numpy()
     Pob_Ar_727 = degrad_data["Ar_727"].to_numpy()
@@ -37,23 +54,16 @@ def theory_yield_ArN2_Ir_696(x, degrad_data, fN2, n, activate_components = False
     Pob_Ar_772 = degrad_data["Ar_772"].to_numpy()
     Pob_Ar_794 = degrad_data["Ar_794"].to_numpy()
 
+
     cols = ["Ar_696", "Ar_727", "Ar_750", "Ar_763", "Ar_772", "Ar_794"]
     Y = degrad_data[cols].to_numpy()   # shape: (n_puntos, 4)
-
-    if len(fN2) > len(concentration):
-        # Por si acaso, ordena x e y
-        idx = np.argsort(concentration)
-        xn = concentration[idx]
-        y = Y[idx]
-
-        interp = PchipInterpolator(xn, y, axis=0)
-        Y_new = interp(fN2)
-    else:
-        Y_new = Y
+    
+    Y = np.asarray(Y, dtype=float)
+    fN2 = np.asarray(fN2, dtype=float)
 
 
 
-    Pob_Ar_696, Pob_Ar_727, Pob_Ar_750, Pob_Ar_764, Pob_Ar_772, Pob_Ar_794= Y_new.T
+    Pob_Ar_696, Pob_Ar_727, Pob_Ar_750, Pob_Ar_764, Pob_Ar_772, Pob_Ar_794= interpolation(Y,fN2,concentration).T
 
     PAr_star_696    = x[0]
     tau_N2_696      = x[1]
@@ -99,7 +109,7 @@ def theory_yield_ArN2_Ir_696(x, degrad_data, fN2, n, activate_components = False
 
 def theory_yield_ArN2_Ir_727(x, degrad_data, fN2, n, activate_components = False):
     fN2 = np.asarray(fN2, dtype=float)
-    W = 1 
+    W = 1/W_ArN2(fN2)
 
     concentration = degrad_data["concentration"]
     Pob_Ar_696 = degrad_data["Ar_696"].to_numpy()
@@ -111,21 +121,13 @@ def theory_yield_ArN2_Ir_727(x, degrad_data, fN2, n, activate_components = False
 
     cols = ["Ar_696", "Ar_727", "Ar_750", "Ar_763", "Ar_772", "Ar_794"]
     Y = degrad_data[cols].to_numpy()   # shape: (n_puntos, 4)
-
-    if len(fN2) > len(concentration):
-        # Por si acaso, ordena x e y
-        idx = np.argsort(concentration)
-        xn = concentration[idx]
-        y = Y[idx]
-
-        interp = PchipInterpolator(xn, y, axis=0)
-        Y_new = interp(fN2)
-    else:
-        Y_new = Y
+    
+    Y = np.asarray(Y, dtype=float)
+    fN2 = np.asarray(fN2, dtype=float)
 
 
 
-    Pob_Ar_696, Pob_Ar_727, Pob_Ar_750, Pob_Ar_764, Pob_Ar_772, Pob_Ar_794= Y_new.T
+    Pob_Ar_696, Pob_Ar_727, Pob_Ar_750, Pob_Ar_764, Pob_Ar_772, Pob_Ar_794= interpolation(Y,fN2,concentration).T
 
     PAr_star_696    = x[0]
     tau_N2_696      = x[1]
@@ -171,7 +173,7 @@ def theory_yield_ArN2_Ir_727(x, degrad_data, fN2, n, activate_components = False
 
 def theory_yield_ArN2_Ir_750(x, degrad_data, fN2, n, activate_components = False):
     fN2 = np.asarray(fN2, dtype=float)
-    W = 1 
+    W = 1/W_ArN2(fN2)
 
     concentration = degrad_data["concentration"]
     Pob_Ar_696 = degrad_data["Ar_696"].to_numpy()
@@ -181,23 +183,16 @@ def theory_yield_ArN2_Ir_750(x, degrad_data, fN2, n, activate_components = False
     Pob_Ar_772 = degrad_data["Ar_772"].to_numpy()
     Pob_Ar_794 = degrad_data["Ar_794"].to_numpy()
 
+
     cols = ["Ar_696", "Ar_727", "Ar_750", "Ar_763", "Ar_772", "Ar_794"]
     Y = degrad_data[cols].to_numpy()   # shape: (n_puntos, 4)
-
-    if len(fN2) > len(concentration):
-        # Por si acaso, ordena x e y
-        idx = np.argsort(concentration)
-        xn = concentration[idx]
-        y = Y[idx]
-
-        interp = PchipInterpolator(xn, y, axis=0)
-        Y_new = interp(fN2)
-    else:
-        Y_new = Y
+    
+    Y = np.asarray(Y, dtype=float)
+    fN2 = np.asarray(fN2, dtype=float)
 
 
 
-    Pob_Ar_696, Pob_Ar_727, Pob_Ar_750, Pob_Ar_764, Pob_Ar_772, Pob_Ar_794= Y_new.T
+    Pob_Ar_696, Pob_Ar_727, Pob_Ar_750, Pob_Ar_764, Pob_Ar_772, Pob_Ar_794= interpolation(Y,fN2,concentration).T
 
     PAr_star_696    = x[0]
     tau_N2_696      = x[1]
@@ -224,13 +219,13 @@ def theory_yield_ArN2_Ir_750(x, degrad_data, fN2, n, activate_components = False
     K_Ar_Q_Ar_772   = x[18]
     K_Ar_Q_N2_772   = x[19]
 
-    frac1 = PAr_star_750 * (1/tau_N2_764) / ( 1/tau_N2_750 + n * fN2 * K_Ar_Q_N2_750 + n * (1 - fN2) * K_Ar_Q_Ar_750)
+    frac1 = PAr_star_750 * (1/tau_N2_750) / ( 1/tau_N2_750 + n * fN2 * K_Ar_Q_N2_750 + n * (1 - fN2) * K_Ar_Q_Ar_750)
 
 
     if activate_components:
-        return (W * frac1 * Pob_Ar_764, W * frac1 * Pob_Ar_764)
+        return (W * frac1 * Pob_Ar_750, W * frac1 * Pob_Ar_750)
     else:
-        return  W * frac1 * Pob_Ar_764
+        return W * frac1 * Pob_Ar_750
     
 
 ###################################
@@ -242,7 +237,7 @@ def theory_yield_ArN2_Ir_750(x, degrad_data, fN2, n, activate_components = False
 
 def theory_yield_ArN2_Ir_763(x, degrad_data, fN2, n, activate_components = False):
     fN2 = np.asarray(fN2, dtype=float)
-    W = 1 
+    W = 1/W_ArN2(fN2)
 
     concentration = degrad_data["concentration"]
     Pob_Ar_696 = degrad_data["Ar_696"].to_numpy()
@@ -254,21 +249,13 @@ def theory_yield_ArN2_Ir_763(x, degrad_data, fN2, n, activate_components = False
 
     cols = ["Ar_696", "Ar_727", "Ar_750", "Ar_763", "Ar_772", "Ar_794"]
     Y = degrad_data[cols].to_numpy()   # shape: (n_puntos, 4)
-
-    if len(fN2) > len(concentration):
-        # Por si acaso, ordena x e y
-        idx = np.argsort(concentration)
-        xn = concentration[idx]
-        y = Y[idx]
-
-        interp = PchipInterpolator(xn, y, axis=0)
-        Y_new = interp(fN2)
-    else:
-        Y_new = Y
+    
+    Y = np.asarray(Y, dtype=float)
+    fN2 = np.asarray(fN2, dtype=float)
 
 
 
-    Pob_Ar_696, Pob_Ar_727, Pob_Ar_750, Pob_Ar_764, Pob_Ar_772, Pob_Ar_794= Y_new.T
+    Pob_Ar_696, Pob_Ar_727, Pob_Ar_750, Pob_Ar_764, Pob_Ar_772, Pob_Ar_794= interpolation(Y,fN2,concentration).T
 
     PAr_star_696    = x[0]
     tau_N2_696      = x[1]
@@ -313,7 +300,7 @@ def theory_yield_ArN2_Ir_763(x, degrad_data, fN2, n, activate_components = False
 
 def theory_yield_ArN2_Ir_772(x, degrad_data, fN2, n, activate_components = False):
     fN2 = np.asarray(fN2, dtype=float)
-    W = 1 
+    W = 1/W_ArN2(fN2)
 
     concentration = degrad_data["concentration"]
     Pob_Ar_696 = degrad_data["Ar_696"].to_numpy()
@@ -325,21 +312,13 @@ def theory_yield_ArN2_Ir_772(x, degrad_data, fN2, n, activate_components = False
 
     cols = ["Ar_696", "Ar_727", "Ar_750", "Ar_763", "Ar_772", "Ar_794"]
     Y = degrad_data[cols].to_numpy()   # shape: (n_puntos, 4)
-
-    if len(fN2) > len(concentration):
-        # Por si acaso, ordena x e y
-        idx = np.argsort(concentration)
-        xn = concentration[idx]
-        y = Y[idx]
-
-        interp = PchipInterpolator(xn, y, axis=0)
-        Y_new = interp(fN2)
-    else:
-        Y_new = Y
+    
+    Y = np.asarray(Y, dtype=float)
+    fN2 = np.asarray(fN2, dtype=float)
 
 
 
-    Pob_Ar_696, Pob_Ar_727, Pob_Ar_750, Pob_Ar_764, Pob_Ar_772, Pob_Ar_794= Y_new.T
+    Pob_Ar_696, Pob_Ar_727, Pob_Ar_750, Pob_Ar_764, Pob_Ar_772, Pob_Ar_794= interpolation(Y,fN2,concentration).T
 
     PAr_star_696    = x[0]
     tau_N2_696      = x[1]
@@ -384,8 +363,8 @@ def theory_yield_ArN2_Ir_772(x, degrad_data, fN2, n, activate_components = False
 
 def theory_yield_ArN2_Ir_794(x, degrad_data, fN2, n, activate_components = False):
     fN2 = np.asarray(fN2, dtype=float)
-    W = 1 
-
+    W = 1/W_ArN2(fN2)
+    
     concentration = degrad_data["concentration"]
     Pob_Ar_696 = degrad_data["Ar_696"].to_numpy()
     Pob_Ar_727 = degrad_data["Ar_727"].to_numpy()
@@ -394,23 +373,17 @@ def theory_yield_ArN2_Ir_794(x, degrad_data, fN2, n, activate_components = False
     Pob_Ar_772 = degrad_data["Ar_772"].to_numpy()
     Pob_Ar_794 = degrad_data["Ar_794"].to_numpy()
 
+
     cols = ["Ar_696", "Ar_727", "Ar_750", "Ar_763", "Ar_772", "Ar_794"]
     Y = degrad_data[cols].to_numpy()   # shape: (n_puntos, 4)
-
-    if len(fN2) > len(concentration):
-        # Por si acaso, ordena x e y
-        idx = np.argsort(concentration)
-        xn = concentration[idx]
-        y = Y[idx]
-
-        interp = PchipInterpolator(xn, y, axis=0)
-        Y_new = interp(fN2)
-    else:
-        Y_new = Y
+    
+    Y = np.asarray(Y, dtype=float)
+    fN2 = np.asarray(fN2, dtype=float)
 
 
 
-    Pob_Ar_696, Pob_Ar_727, Pob_Ar_750, Pob_Ar_764, Pob_Ar_772, Pob_Ar_794= Y_new.T
+    Pob_Ar_696, Pob_Ar_727, Pob_Ar_750, Pob_Ar_764, Pob_Ar_772, Pob_Ar_794= interpolation(Y,fN2,concentration).T
+
 
     PAr_star_696    = x[0]
     tau_N2_696      = x[1]
