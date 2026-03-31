@@ -117,58 +117,55 @@ to_m3  = 2.69 * 10**(25) * 10**(-9)
 to_cm3 = 2.69 * 10**(19) * 10**(-9)
 
 
+tau_N2          = 1e2/np.mean(np.array([2.6,2.07,3.3,2.5,2.74,2.66])) 
+K_N2_Q_N2       = to_m3*1e-17*np.mean(np.array([0.71,1.12,1,1.4]))
+K_N2_Q_Ar       = to_m3*1e-19*np.mean(np.array([5.6,8.6]))
+
+K_ArMeta_Q_N2c  = to_m3*1e-17*np.mean(np.array([3.2,3.0,1.1]))
+K_ArMeta_Q_N2b  = to_m3*1e-17*np.mean(np.array([0.16]))
+K_ArMeta_Q_2Ar  = 1e-9*np.mean(np.array([7.93e6]))
+
+K_ArRes_Q_N2c   = to_m3*1e-17*np.mean(np.array([1.5,3.6]))
+K_ArRes_Q_N2b   = to_m3*1e-17*np.mean(np.array([1.5,0]))
+K_ArRes_Q_2Ar   = 1e-9*np.mean(np.array([9.24e5]))  
+
+
 x0_semifixed = np.array([
-               0.0,
-               1/(2.6e-2), 7.1e-18*to_m3, 5.6e-13*to_cm3, 
                0.0, 
-               3.2e-17*to_m3, 2.5e-11*to_cm3, 0.00793,
-               0.0, 0.33e-11*to_cm3, 3.2e3,
-               #0.0, 0.0, 
-               0.0, 4.5e3, 0.000924,
-               0.0, 0.0,
-               0.0, 0.0, 
+               0.0,
+               tau_N2, K_N2_Q_N2, K_N2_Q_Ar, 
+               K_ArMeta_Q_N2c, K_ArMeta_Q_N2b, K_ArMeta_Q_2Ar,
+               K_ArRes_Q_N2c, K_ArRes_Q_N2b, K_ArRes_Q_2Ar,
                ])
 
-lower_semifixed = x0_semifixed*0.75
+lower_semifixed = x0_semifixed*0.66
 upper_semifixed = x0_semifixed*1.5
 
-lower       = np.array([
+lower_og       = np.array([
                0.15, 
                0.0, 0.0, 0.0, 
-               0.0, 
+               0.0,
                0.0, 0.0, 0.0,
                0.0, 0.0, 0.0,
-               #0.0, 0.0, 
-               0.0, 0.0, 0.0,
-               0.0, 0.0,
-               0.01, 0.01, 
-               ]) + lower_semifixed
+               ]) # + lower_semifixed
 
-x0          = np.array([
-               0.2, 
+x0_og         = np.array([
+               0.25, 
+               0.0,
                0.0, 0.0, 0.0, 
-               0.99, 
                0.0, 0.0, 0.0,
-               0.99, 0.0, 0.0,
-               #0.0, 0.0, 
-               0.99, 0.0, 0.0,
-               0.99, 0.99,
-               0.99, 0.99, 
-               ]) + x0_semifixed
+               0.0, 0.0, 0.0,
+               ]) # + x0_semifixed
 
-upper          = np.array([
-               0.3, 
+upper_og          = np.array([
+               0.35, 
+               1.0,
                0.0, 0.0, 0.0, 
-               1.0, 
                0.0, 0.0, 0.0,
-               1.0, 0.0, 0.0,
-               #0.0, 0.0, 
-               1.0, 0.0, 0.0,
-               1.0, 1.0,
-               100.0, 100.0, 
-               ]) + upper_semifixed
+               0.0, 0.0, 0.0,
+               ]) #+ upper_semifixed
 
-bounds=(list(lower), list(upper))
+bounds=(list(lower_og+lower_semifixed), list(upper_og+upper_semifixed))
 
 equations = {
     "vis": theory_yield_N2_uv,
@@ -178,7 +175,9 @@ experimental_data = {
     "vis": yield_N2_uv,
 }
 
-popt = fitParameters(equations, experimental_data, degrad_data, x0=x0, bounds=bounds)
+popt = fitParameters(equations, experimental_data, degrad_data, x0=x0_og+x0_semifixed, bounds=bounds)
+
+
 N_res = popt.fun.size
 N_par = popt.x.size
 dof   = N_res - N_par
@@ -196,33 +195,22 @@ print("="*60)
 names_csv = [
     "Nnorm",               
 
+    "P_N2"    ,            
+
     "tau_N2",              
     "K_N2_Q_N2" ,          
     "K_N2_Q_Ar" ,          
-
-    "P_N2"    ,            
 
     "K_ArMeta_Q_N2c"  ,    
     "K_ArMeta_Q_N2b"   ,   
     "K_ArMeta_Q_2Ar"    ,  
 
-    "P_Ar2"              , 
-    "K_Ar2_Q_N2"          ,    
-    "tau_Ar2"              ,   
-
-
-    "P_Ar22"               ,
-    "tau_meta_Ar2"          ,
-    "K_ArRes_Q_2Ar"          ,  
-
-    "P_Ar_dbleStar_1"    ,
-    "P_Ar_dbleStar_2"     ,       
-
-    "tau_Ar_dbleStar "    ,
-    "K_Ar_dbleStar_Q_Ar"   ,    
+    "K_ArRes_Q_N2c"  ,    
+    "K_ArRes_Q_N2b"   ,   
+    "K_ArRes_Q_2Ar"    ,  
 ]
 
-export_to_csv("../data/Parameters/ArN2_primary.csv",popt,names_csv)
+export_to_csv("../data/Parameters/ArN2_primary.csv", popt, names_csv)
 
 J = popt.jac
 m, p = J.shape
@@ -337,17 +325,27 @@ fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
 
 
 #######################################################################
-# =================== LATEX, TYPST, CSV EXPORT ========================
+# =================== LATEX, TYPST, CSV EXPORT ====================== #
 #######################################################################
 
 names_tex = [
-    "$N_{\\text{norm}}$",
-    "$P_{\\mathrm{Ar}^{**}} $",
-    "$K_{\\mathrm{Ar}^{**}Q(\\mathrm{Ar}^{**})}/K_{\\mathrm{Ar}^{**}Q(\\mathrm{N}_2)} $",
-    "$1 / {\\tau_{\\mathrm{Ar}^{**}} K_{\\mathrm{Ar}Q(\\mathrm{N}_2)}} $",
-    "${\\tau_{\\mathrm{N}_2} K_{\\mathrm{N}_2Q(\\mathrm{Ar}^{**})}}$",
-    "${\\tau_{\\mathrm{N}_2} K_{\\mathrm{N}_2Q(\\mathrm{N}_2)}}$"
-]
+    "$N_{\\text{norm}}$",               
+
+    "$P_{\\text{N}_2}$"    ,            
+
+    "$\\tau_{\\text{N}_2}$ [ns]",              
+    "$K_{\\text{N}_2 Q (\\text{N}_2)}$ [ns$^{-1}$]" ,      
+    "$K_{\\text{N}_2 Q (\\text{Ar})}$ [ns$^{-1}$]" ,      
+
+    "$K_{\\text{Ar}_{1s5} Q (\\text{N}_2(\\text{C}))}$ [ns$^{-1}$]" ,    
+    "$K_{\\text{Ar}_{1s5} Q (\\text{N}_2(\\text{B}))}$ [ns$^{-1}$]" ,  
+    "$K_{\\text{Ar}_{1s5} Q (\\text{2Ar})}$ [ns$^{-1}$]" ,  
+
+    "$K_{\\text{Ar}_{1s4} Q (\\text{N}_2(\\text{C}))}$ [ns$^{-1}$]" ,    
+    "$K_{\\text{Ar}_{1s4} Q (\\text{N}_2(\\text{B}))}$ [ns$^{-1}$]" ,  
+    "$K_{\\text{Ar}_{1s4} Q (\\text{2Ar})}$ [ns$^{-1}$]" ,  
+
+ ]
 
 
 
@@ -374,7 +372,7 @@ corr = cov_theta / outer
 corr = np.clip(corr, -1, 1)
 
 # DataFrame para seaborn
-corr_df = pd.DataFrame(corr, columns=names_csv, index=names_csv)
+corr_df = pd.DataFrame(corr, columns=names_tex, index=names_tex)
 
 # --- Plot estilo seaborn ---
 plt.figure(figsize=(10, 8))
@@ -393,3 +391,51 @@ plt.title("Matriz de Correlación de Parámetros Ajustados", fontsize=14)
 plt.tight_layout()
 
 plt.savefig("plots/ArN2_CorrelationMatrix_GlobalFit.pdf", dpi=300)
+
+#######################################################################
+# =================== Parameters ========================
+#######################################################################
+
+x0 = x0_og + x0_semifixed
+
+lower_semifixed = x0_semifixed*0.8
+upper_semifixed = x0_semifixed*1.2
+bounds=(list(lower_og+lower_semifixed), list(upper_og+upper_semifixed))
+popt1 = fitParameters(equations, experimental_data, degrad_data, x0=x0, bounds=bounds)
+x1 = popt1.x
+
+
+lower_semifixed = x0_semifixed*0.66
+upper_semifixed = x0_semifixed*1.5
+bounds=(list(lower_og+lower_semifixed), list(upper_og+upper_semifixed))
+popt2 = fitParameters(equations, experimental_data, degrad_data, x0=x0, bounds=bounds)
+x2 = popt2.x
+
+lower_semifixed = x0_semifixed*0.5
+upper_semifixed = x0_semifixed*2
+bounds=(list(lower_og+lower_semifixed), list(upper_og+upper_semifixed))
+popt3 = fitParameters(equations, experimental_data, degrad_data, x0=x0, bounds=bounds)
+x3 = popt3.x
+
+lower_semifixed = x0_semifixed*0.33
+upper_semifixed = x0_semifixed*3
+bounds=(list(lower_og+lower_semifixed), list(upper_og+upper_semifixed))
+popt4 = fitParameters(equations, experimental_data, degrad_data, x0=x0, bounds=bounds)
+x4 = popt4.x
+
+df = pd.DataFrame({"Parameter":names_tex,
+                   "$x_0$":x0,
+                   "Factor x1.2":x1,
+                   "Factor x1.5":x2,
+                   "Factor x2"  :x3,
+                   "Factor x3"  :x4})
+
+df.style.hide(axis="index").format(
+    lambda x: f"$\\num{{{x:.2e}}}$" if isinstance(x, (int, float)) else x
+    ).to_latex(
+    "ArN2.tex",
+    caption="Parameters known ($x_0$) and the obtained in the fit with a parameter factor freedom",
+    label="tab:mitabla",
+    siunitx=True,
+    hrules=True
+)

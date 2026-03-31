@@ -1,129 +1,12 @@
 from pathlib import Path
+import re
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import uproot
 import scienceplots
-plt.style.use(['science'])
 
-def _normalise_gas_name(name):
-    """Normaliza nombres de gas para comparación."""
-    if pd.isna(name):
-        return None
-    s = str(name).strip().lower()
-
-    mapping = {
-        "ar": "ar",
-        "argon": "ar",
-        "cf4": "cf4",
-        "n2": "n2",
-        "nitrogen": "n2",
-        "co2": "co2",
-        "xe": "xe",
-        "ne": "ne",
-        "he": "he",
-        "ch4": "ch4",
-        "ic4h10": "ic4h10",
-        "c2h6": "c2h6",
-        "c3h8": "c3h8",
-    }
-    return mapping.get(s, s)
-
-
-def _get_active_gases_from_filename(root_file):
-    """
-    Extrae pares gas-fracción del nombre del archivo.
-    Ejemplo:
-        ar_100.0_n2_0.0_60.0kVcm_... -> ["ar"]
-        ar_90.0_n2_10.0_60.0kVcm_... -> ["ar", "n2"]
-
-    Devuelve la lista de gases con fracción > 0.
-    """
-    tokens = root_file.stem.lower().split("_")
-    active_gases = []
-
-    i = 0
-    while i < len(tokens) - 1:
-        gas = _normalise_gas_name(tokens[i])
-
-        try:
-            frac = float(tokens[i + 1])
-            if frac > 0:
-                active_gases.append(gas)
-            i += 2
-        except ValueError:
-            i += 1
-
-    return active_gases
-
-
-def _build_mapping_table_for_file(table_df, active_gases, argon_update):
-    """
-    Construye la tabla de mapeo que se usará para un archivo concreto.
-
-    Reglas:
-    - Si es mezcla: usa la tabla global tal cual.
-    - Si es gas puro: filtra ese gas y renumera desde 0.
-    - Si además es Ar puro y argon_update=True:
-      inserta hueco 3..7 y desplaza +5 a partir de >2.
-    """
-    base = table_df.copy()
-
-    # Mezcla: no tocar numeración global
-    if len(active_gases) != 1:
-        return base
-
-    # Gas puro
-    pure_gas = active_gases[0]
-    base = base[base["_gas_norm"] == pure_gas].copy()
-    base = base.sort_values("level").reset_index(drop=True)
-
-    # Renumerar desde 0
-    base["level"] = np.arange(len(base), dtype=int)
-
-    # Corrección específica de Ar puro
-    if pure_gas == "ar" and argon_update:
-        # Desplazar +5 todo lo que esté por encima del 2
-        base.loc[base["level"] > 2, "level"] += 5
-
-        # Insertar filas vacías en 3..7
-        extra_cols = list(base.columns)
-        gap_rows = []
-        for lev in range(3, 8):
-            row = {col: pd.NA for col in extra_cols}
-            row["level"] = lev
-            gap_rows.append(row)
-
-        gap_df = pd.DataFrame(gap_rows, columns=extra_cols)
-        base = pd.concat([base, gap_df], ignore_index=True)
-        base = base.sort_values("level").reset_index(drop=True)
-
-    return base
-
-
-def _normalise_gas_name(name):
-    """Normaliza nombres de gas para comparación."""
-    if pd.isna(name):
-        return None
-    s = str(name).strip().lower()
-
-    mapping = {
-        "ar": "ar",
-        "argon": "ar",
-        "cf4": "cf4",
-        "n2": "n2",
-        "nitrogen": "n2",
-        "co2": "co2",
-        "xe": "xe",
-        "ne": "ne",
-        "he": "he",
-        "ch4": "ch4",
-        "ic4h10": "ic4h10",
-        "c2h6": "c2h6",
-        "c3h8": "c3h8",
-    }
-    return mapping.get(s, s)
-
+plt.style.use(["science"])
 
 def _get_active_gases_from_filename(root_file):
     """
@@ -189,13 +72,12 @@ def _build_mapping_table_for_file(table_df, active_gases, argon_update):
     """
     base = table_df.copy()
 
-    # Si se detectan gases activos, filtrar solo esos
     if active_gases:
         base = base[base["_gas_norm"].isin(active_gases)].copy()
 
     base = base.sort_values("level").reset_index(drop=True)
 
-    # Caso gas puro
+    # Gas puro
     if len(active_gases) == 1:
         pure_gas = active_gases[0]
 
@@ -210,13 +92,13 @@ def _build_mapping_table_for_file(table_df, active_gases, argon_update):
 
         return base
 
-    # Caso mezcla
+    # Mezcla
     if len(active_gases) >= 2:
         if "ar" in active_gases and argon_update:
             base = _apply_argon_gap_to_mapping(base)
         return base
 
-    # Caso residual: si no se detectó nada útil, devolver sin tocar
+    # Caso residual
     return base
 
 
@@ -276,7 +158,7 @@ def export_hlevels_to_csv(
         print(f"No se encontraron archivos .root en: {folder}")
         return []
 
-    out_dir = folder.parent / "csv"
+    out_dir = (folder.parent / "csv").resolve()
     out_dir.mkdir(exist_ok=True)
 
     generated_csvs = []
@@ -301,7 +183,6 @@ def export_hlevels_to_csv(
                     argon_update=argon_update
                 )
 
-                # Los bins del histograma siempre van 0..N-1
                 hist_levels = np.arange(len(values), dtype=int)
 
                 df = pd.DataFrame({
@@ -309,10 +190,10 @@ def export_hlevels_to_csv(
                     "n_events": values
                 })
 
-                # Cruce con la tabla de mapeo
+                # Cruce con tabla de niveles
                 df = df.merge(mapping_df, how="left", on="level")
 
-                # Asegurar que también existan niveles del mapping aunque no aparezcan en hLevels
+                # Asegurar niveles insertados aunque no estén en el histograma
                 if not mapping_df.empty:
                     max_level = int(max(df["level"].max(), mapping_df["level"].max()))
                 else:
@@ -325,7 +206,6 @@ def export_hlevels_to_csv(
                       .rename(columns={"index": "level"})
                 )
 
-                # Poner 0 a los niveles insertados que no estaban en hLevels
                 df["n_events"] = df["n_events"].fillna(0)
 
                 # Reinyectar metadata del mapping
@@ -342,7 +222,6 @@ def export_hlevels_to_csv(
                         if col in df.columns:
                             df.loc[mask_other_gas, col] = pd.NA
 
-                # Eliminar columna auxiliar
                 if "_gas_norm" in df.columns:
                     df = df.drop(columns=["_gas_norm"])
 
@@ -372,229 +251,126 @@ def export_hlevels_to_csv(
 
     return generated_csvs
 
+def _normalise_gas_name(name):
+    if pd.isna(name):
+        return None
+
+    s = str(name).strip().lower()
+    mapping = {
+        "ar": "ar",
+        "argon": "ar",
+        "cf4": "cf4",
+        "n2": "n2",
+        "nitrogen": "n2",
+        "co2": "co2",
+        "xe": "xe",
+        "ne": "ne",
+        "he": "he",
+        "ch4": "ch4",
+        "ic4h10": "ic4h10",
+        "c2h6": "c2h6",
+        "c3h8": "c3h8",
+    }
+    return mapping.get(s, s)
+
+
+def _extract_metadata_from_filename(root_file, gas_concentration=None):
+    """
+    Extrae del nombre del archivo:
+        - electric_field
+        - pressure
+        - gap
+        - gas1
+        - concentration_gas_1
+        - gas2
+        - concentration_gas_2
+        - concentration   <-- concentración del gas pedido en gas_concentration
+
+    Ejemplo:
+        ar_90.0_n2_10.0_60.0kVcm_1.0bar_128um.root
+    """
+    stem = Path(root_file).stem
+    tokens = stem.split("_")
+
+    meta = {
+        "electric_field": pd.NA,
+        "pressure": pd.NA,
+        "gap": pd.NA,
+        "gas1": pd.NA,
+        "concentration_gas_1": pd.NA,
+        "gas2": pd.NA,
+        "concentration_gas_2": pd.NA,
+        "concentration": pd.NA,
+    }
+
+    gas_pairs = []
+    i = 0
+    while i < len(tokens) - 1:
+        gas = _normalise_gas_name(tokens[i])
+        try:
+            frac = float(tokens[i + 1])
+            if gas is not None:
+                gas_pairs.append((gas, frac))
+            i += 2
+            continue
+        except ValueError:
+            pass
+
+        tok = tokens[i].strip().lower()
+
+        m_field = re.match(r"^([0-9]+(?:\.[0-9]+)?)\s*(kvcm|kv/cm|vcm|v/cm)$", tok, flags=re.IGNORECASE)
+        if m_field and pd.isna(meta["electric_field"]):
+            meta["electric_field"] = float(m_field.group(1))
+            i += 1
+            continue
+
+        m_pressure = re.match(r"^([0-9]+(?:\.[0-9]+)?)\s*(bar|mbar|atm|torr)$", tok, flags=re.IGNORECASE)
+        if m_pressure and pd.isna(meta["pressure"]):
+            meta["pressure"] = float(m_pressure.group(1))
+            i += 1
+            continue
+
+        m_gap = re.match(r"^([0-9]+(?:\.[0-9]+)?)\s*(nm|um|mm|cm)$", tok, flags=re.IGNORECASE)
+        if m_gap and pd.isna(meta["gap"]):
+            meta["gap"] = float(m_gap.group(1))
+            i += 1
+            continue
+
+        i += 1
+
+    if len(gas_pairs) >= 1:
+        meta["gas1"] = gas_pairs[0][0]
+        meta["concentration_gas_1"] = gas_pairs[0][1]
+
+    if len(gas_pairs) >= 2:
+        meta["gas2"] = gas_pairs[1][0]
+        meta["concentration_gas_2"] = gas_pairs[1][1]
+
+    # Concentración del gas elegido explícitamente
+    if gas_concentration is not None:
+        gas_concentration = _normalise_gas_name(gas_concentration)
+        concentration = pd.NA
+        for gas, frac in gas_pairs:
+            if gas == gas_concentration:
+                concentration = frac
+                break
+        meta["concentration"] = concentration
+
+    return meta
+
 
 def read_data_per_primary_electron(
     folder_path,
     tree_name="dataPerPrimaryElectron",
-    electron_branch="nElectrons",
-    ion_branch="nIons"
+    gas_concentration=None
 ):
-    """
-    Lee 'dataPerPrimaryElectron' en todos los ROOT de una carpeta y devuelve:
-        - media y desviación estándar de nElectrons
-        - media y desviación estándar de nIons
-
-    Además guarda histogramas en:
-        folder_path/gain_distribution/
-    """
-    folder = Path(folder_path)
-    if not folder.is_dir():
-        raise NotADirectoryError(f"La ruta no es una carpeta válida: {folder}")
-
-    root_files = sorted(folder.glob("*.root"))
-    if not root_files:
-        print(f"No se encontraron archivos .root en: {folder}")
-        return pd.DataFrame()
-
-    plot_dir = folder / "gain_distribution"
-    plot_dir.mkdir(exist_ok=True)
-
-    summary_rows = []
-
-    for root_file in root_files:
-        try:
-            with uproot.open(root_file) as f:
-                keys_nocycle = f.keys(cycle=False)
-
-                if tree_name not in keys_nocycle:
-                    print(f"[AVISO] '{tree_name}' no existe en {root_file.name}")
-                    continue
-
-                tree = f[tree_name]
-                branches = tree.keys()
-
-                if electron_branch not in branches or ion_branch not in branches:
-                    print(
-                        f"[AVISO] En {root_file.name} faltan ramas "
-                        f"'{electron_branch}' o '{ion_branch}'. "
-                        f"Ramas disponibles: {branches}"
-                    )
-                    continue
-
-                arrays = tree.arrays([electron_branch, ion_branch], library="np")
-                ne = np.asarray(arrays[electron_branch], dtype=float)
-                ni = np.asarray(arrays[ion_branch], dtype=float)
-
-                ne_mean = np.mean(ne)
-                ne_std = np.std(ne, ddof=1) if len(ne) > 1 else 0.0
-                ni_mean = np.mean(ni)
-                ni_std = np.std(ni, ddof=1) if len(ni) > 1 else 0.0
-
-                summary_rows.append({
-                    "file": root_file.name,
-                    "ne_mean": ne_mean,
-                    "ne_std": ne_std,
-                    "ni_mean": ni_mean,
-                    "ni_std": ni_std,
-                    "n_entries": len(ne)
-                })
-
-                plt.figure(figsize=(8, 5))
-                plt.style.use(['science'])
-                plt.hist(ne, bins="auto", edgecolor="black")
-                plt.xlabel(electron_branch)
-                plt.ylabel("Frecuencia")
-                plt.title(f"Distribución de electrones - {root_file.stem}")
-                plt.tight_layout()
-                plt.savefig(plot_dir / f"{root_file.stem}_{electron_branch}.png", dpi=200)
-                plt.close()
-
-                plt.figure(figsize=(8, 5))
-                plt.style.use(['science'])
-                plt.hist(ni, bins="auto", edgecolor="black")
-                plt.xlabel(ion_branch)
-                plt.ylabel("Frecuencia")
-                plt.title(f"Distribución de iones - {root_file.stem}")
-                plt.tight_layout()
-                plt.savefig(plot_dir / f"{root_file.stem}_{ion_branch}.png", dpi=200)
-                plt.close()
-
-                print(f"[OK] Procesado: {root_file.name}")
-
-        except Exception as e:
-            print(f"[ERROR] No se pudo procesar {root_file.name}: {e}")
-
-    summary_df = pd.DataFrame(summary_rows)
-
-    if not summary_df.empty:
-        summary_csv = folder / "dataPerPrimaryElectron_summary.csv"
-        summary_df.to_csv(summary_csv, index=False)
-        print(f"[OK] Resumen guardado en: {summary_csv.name}")
-
-    return summary_df
-
-def read_data_per_primary_electron(
-    folder_path,
-    tree_name="dataPerPrimaryElectron",
-    electron_branch="nElectrons",
-    ion_branch="nIons"
-):
-    """
-    Lee 'dataPerPrimaryElectron' en todos los ROOT de una carpeta y devuelve:
-        - media y desviación estándar de nElectrons
-        - media y desviación estándar de nIons
-
-    Además guarda histogramas en:
-        folder_path/gain_distribution/
-    """
-    folder = Path(folder_path)
-    if not folder.is_dir():
-        raise NotADirectoryError(f"La ruta no es una carpeta válida: {folder}")
-
-    root_files = sorted(folder.glob("*.root"))
-    if not root_files:
-        print(f"No se encontraron archivos .root en: {folder}")
-        return pd.DataFrame()
-
-    plot_dir = folder / "gain_distribution"
-    plot_dir.mkdir(exist_ok=True)
-
-    summary_rows = []
-
-    for root_file in root_files:
-        try:
-            with uproot.open(root_file) as f:
-                keys_nocycle = f.keys(cycle=False)
-
-                if tree_name not in keys_nocycle:
-                    print(f"[AVISO] '{tree_name}' no existe en {root_file.name}")
-                    continue
-
-                tree = f[tree_name]
-                branches = tree.keys()
-
-                if electron_branch not in branches or ion_branch not in branches:
-                    print(
-                        f"[AVISO] En {root_file.name} faltan ramas "
-                        f"'{electron_branch}' o '{ion_branch}'. "
-                        f"Ramas disponibles: {branches}"
-                    )
-                    continue
-
-                arrays = tree.arrays([electron_branch, ion_branch], library="np")
-                ne = np.asarray(arrays[electron_branch], dtype=float)
-                ni = np.asarray(arrays[ion_branch], dtype=float)
-
-                ne_mean = np.mean(ne)
-                ne_std = np.std(ne, ddof=1) if len(ne) > 1 else 0.0
-                ni_mean = np.mean(ni)
-                ni_std = np.std(ni, ddof=1) if len(ni) > 1 else 0.0
-
-                summary_rows.append({
-                    "file": root_file.name,
-                    "ne_mean": ne_mean,
-                    "ne_std": ne_std,
-                    "ni_mean": ni_mean,
-                    "ni_std": ni_std,
-                    "n_entries": len(ne)
-                })
-
-                plt.figure(figsize=(8, 5))
-                plt.style.use(['science'])
-                plt.hist(ne, bins="auto", edgecolor="black")
-                plt.xlabel(electron_branch)
-                plt.ylabel("Frecuencia")
-                plt.title(f"Distribución de electrones - {root_file.stem}")
-                plt.tight_layout()
-                plt.savefig(plot_dir / f"{root_file.stem}_{electron_branch}.png", dpi=200)
-                plt.close()
-
-                plt.figure(figsize=(8, 5))
-                plt.style.use(['science'])
-                plt.hist(ni, bins="auto", edgecolor="black")
-                plt.xlabel(ion_branch)
-                plt.ylabel("Frecuencia")
-                plt.title(f"Distribución de iones - {root_file.stem}")
-                plt.tight_layout()
-                plt.savefig(plot_dir / f"{root_file.stem}_{ion_branch}.png", dpi=200)
-                plt.close()
-
-                print(f"[OK] Procesado: {root_file.name}")
-
-        except Exception as e:
-            print(f"[ERROR] No se pudo procesar {root_file.name}: {e}")
-
-    summary_df = pd.DataFrame(summary_rows)
-
-    if not summary_df.empty:
-        summary_csv = folder / "dataPerPrimaryElectron_summary.csv"
-        summary_df.to_csv(summary_csv, index=False)
-        print(f"[OK] Resumen guardado en: {summary_csv.name}")
-
-    return summary_df
-
-######################3
-def read_data_per_primary_electron(folder_path, tree_name="dataPerPrimaryElectron"):
     """
     Lee el árbol 'dataPerPrimaryElectron' de todos los ROOT de una carpeta,
-    extrae las ramas 'ne' y 'ni', calcula:
-        - media y desviación estándar de ne
-        - media y desviación estándar de ni
+    extrae nElectrons y nIons, calcula medias y desviaciones estándar, y además
+    extrae metadata del nombre del archivo.
 
-    Además genera las gráficas de distribución en:
-        folder_path/gain_distribution/
-
-    Parámetros
-    ----------
-    folder_path : str o Path
-        Ruta a la carpeta con los archivos .root
-    tree_name : str
-        Nombre del árbol a leer (por defecto 'dataPerPrimaryElectron')
-
-    Devuelve
-    --------
-    pandas.DataFrame
-        Tabla resumen con estadísticas por archivo
+    Si gas_concentration se especifica, añade una columna 'concentration'
+    con la fracción del gas pedido.
     """
     folder = Path(folder_path)
     if not folder.is_dir():
@@ -605,7 +381,7 @@ def read_data_per_primary_electron(folder_path, tree_name="dataPerPrimaryElectro
         print(f"No se encontraron archivos .root en: {folder}")
         return pd.DataFrame()
 
-    plot_dir = folder / ".." / "gain_distribution"
+    plot_dir = (folder / ".." / "gain_distribution").resolve()
     plot_dir.mkdir(exist_ok=True)
 
     summary_rows = []
@@ -637,8 +413,21 @@ def read_data_per_primary_electron(folder_path, tree_name="dataPerPrimaryElectro
                 ni_mean = np.mean(ni)
                 ni_std = np.std(ni, ddof=1) if len(ni) > 1 else 0.0
 
+                meta = _extract_metadata_from_filename(
+                    root_file,
+                    gas_concentration=gas_concentration
+                )
+
                 summary_rows.append({
                     "file": root_file.name,
+                    "electric_field": meta["electric_field"],
+                    "pressure": meta["pressure"],
+                    "gap": meta["gap"],
+                    "gas1": meta["gas1"],
+                    "concentration_gas_1": meta["concentration_gas_1"],
+                    "gas2": meta["gas2"],
+                    "concentration_gas_2": meta["concentration_gas_2"],
+                    "concentration": meta["concentration"],
                     "ne_mean": ne_mean,
                     "ne_std": ne_std,
                     "ni_mean": ni_mean,
@@ -646,26 +435,14 @@ def read_data_per_primary_electron(folder_path, tree_name="dataPerPrimaryElectro
                     "n_entries": len(ne)
                 })
 
-                # Gráfica de ne
                 plt.figure(figsize=(8, 5))
-                plt.style.use(['science'])
                 plt.hist(ne, bins="auto", edgecolor="white")
-                plt.xlabel("ne")
+                plt.xlabel("nElectrons")
                 plt.ylabel("Frecuencia")
-                plt.title(f"Distribución de ne\n{root_file.stem}")
+                plt.title(f"Distribución de nElectrons\n{root_file.stem}")
                 plt.tight_layout()
                 plt.savefig(plot_dir / f"{root_file.stem}_ne.pdf", dpi=200)
                 plt.close()
-
-                # Gráfica de ni
-                # plt.figure(figsize=(8, 5))
-                # plt.hist(ni, bins="auto", edgecolor="white")
-                # plt.xlabel("ni")
-                # plt.ylabel("Frecuencia")
-                # plt.title(f"Distribución de ni\n{root_file.stem}")
-                # plt.tight_layout()
-                # plt.savefig(plot_dir / f"{root_file.stem}_ni.pdf", dpi=200)
-                # plt.close()
 
                 print(f"[OK] Procesado: {root_file.name}")
 
@@ -675,11 +452,26 @@ def read_data_per_primary_electron(folder_path, tree_name="dataPerPrimaryElectro
     summary_df = pd.DataFrame(summary_rows)
 
     if not summary_df.empty:
-        summary_csv = folder / ".." / "dataPerPrimaryElectron_summary.csv"
+        preferred_order = [
+            "file",
+            "electric_field",
+            "pressure",
+            "gap",
+            "gas1",
+            "concentration_gas_1",
+            "gas2",
+            "concentration_gas_2",
+            "concentration",
+            "ne_mean",
+            "ne_std",
+            "ni_mean",
+            "ni_std",
+            "n_entries",
+        ]
+        summary_df = summary_df[[c for c in preferred_order if c in summary_df.columns]]
+
+        summary_csv = (folder / ".." / "dataPerPrimaryElectron_summary.csv").resolve()
         summary_df.to_csv(summary_csv, index=False)
         print(f"[OK] Resumen guardado en: {summary_csv}")
 
     return summary_df
-
-
-###########S

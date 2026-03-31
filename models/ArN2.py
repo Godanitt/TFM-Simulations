@@ -41,66 +41,44 @@ def theory_yield_N2_uv(x, degrad_data, fN2, n, activate_components = False):
     Pob_N2, Pob_Ar_meta, Pob_Ar_res, Pob_Ar_dbleStar = Y_interp.T
 
     Nnorm               = x[0]
+    P_N2                = x[1]
 
-    tau_N2              = x[1]
-    K_N2_Q_N2           = x[2]
-    K_N2_Q_Ar           = x[3]
+    tau_N2              = x[2]
+    K_N2_Q_N2           = x[3]
+    K_N2_Q_Ar           = x[4]
 
-    P_N2                = x[4]
 
     K_ArMeta_Q_N2c      = x[5]
     K_ArMeta_Q_N2b      = x[6]
     K_ArMeta_Q_2Ar      = x[7]
 
-    P_Ar2               = x[8]
-    K_Ar2_Q_N2          = x[9]     
-    tau_Ar2             = x[10]     
-
-    K_ArRes_Q_N2c       = x[5]
-    K_ArRes_Q_N2b       = x[6]  
-
-    P_Ar22               = x[11]
-    tau_meta_Ar2         = x[12]  
-    K_ArRes_Q_2Ar       = x[13]     
-
-    P_Ar_dbleStar_1     = x[14]
-    P_Ar_dbleStar_2     = x[15]         
-
-    tau_Ar_dbleStar     = x[16]
-    K_Ar_dbleStar_Q_Ar  = x[17]       
+    K_ArRes_Q_N2c       = x[8]
+    K_ArRes_Q_N2b       = x[9]  
+    K_ArRes_Q_2Ar       = x[10]     
+     
 
     frac_1 = (1/tau_N2) / (1/tau_N2 + n * fN2 * K_N2_Q_N2 + n * (1 - fN2) * K_N2_Q_Ar)
 
     factor_N2 = frac_1
 
-    frac_2 = (K_ArMeta_Q_N2b * fN2 * n) / ((K_ArMeta_Q_N2b + K_ArMeta_Q_N2c) * fN2 * n + (K_ArMeta_Q_2Ar * (1-fN2) * n**2))
-    frac_3 = (K_ArMeta_Q_2Ar * (1-fN2) * n**2) / ((K_ArMeta_Q_N2b + K_ArMeta_Q_N2c) * fN2 * n + (K_ArMeta_Q_2Ar * (1-fN2) * n**2))
-    frac_4 = (K_Ar2_Q_N2 * fN2 * n) / (K_Ar2_Q_N2 * fN2 * n + 1/tau_Ar2)
+    frac_2 = (K_ArMeta_Q_N2c * fN2 * n) / ((K_ArMeta_Q_N2b + K_ArMeta_Q_N2c) * fN2 * n + (K_ArMeta_Q_2Ar * (1-fN2) * n**2))
 
-    factor_Ar_meta = frac_2 + P_Ar2 * frac_3 * frac_4
+    factor_Ar_meta = frac_2 
 
-    frac_5 = (K_ArRes_Q_N2c * fN2 * n) / ((K_ArRes_Q_N2b+K_ArRes_Q_N2c) * fN2 * n + K_ArRes_Q_2Ar * (1-fN2) * n**2 )
-    frac_6 = (K_ArRes_Q_2Ar * (1-fN2) * n**2) / ((K_ArMeta_Q_N2b + K_ArMeta_Q_N2c) * fN2 * n + (K_ArRes_Q_2Ar * (1-fN2) * n**2))
-    frac_7 = (K_Ar2_Q_N2 * fN2 * n) / (K_Ar2_Q_N2 * fN2 * n + 1/tau_meta_Ar2)
+    frac_5 = (K_ArRes_Q_N2c * fN2 * n) / ((K_ArRes_Q_N2b + K_ArRes_Q_N2c) * fN2 * n + K_ArRes_Q_2Ar * (1-fN2) * n**2 )
 
-    factor_Ar_res = frac_5 + P_Ar22 * frac_6 * frac_7
-
-    frac_8 = (n * fN2) / (n * fN2 + tau_Ar_dbleStar + n * (1-fN2) * K_Ar_dbleStar_Q_Ar) 
-    frac_9 = (n * (1-fN2)) / (n * fN2 * (1/K_Ar_dbleStar_Q_Ar) + tau_Ar_dbleStar  + n * (1-fN2) ) 
-
-    factor_Ar_dbleStar_meta =  P_Ar_dbleStar_1 * frac_8 +  P_Ar_dbleStar_2 * frac_9 * (0.9 * factor_Ar_meta + 0.1 * factor_Ar_res)
+    factor_Ar_res = frac_5 
 
 
 
     if activate_components:
-        return ((1/W)* Nnorm * factor_N2 * (Pob_N2 * P_N2 + Pob_Ar_meta * factor_Ar_meta + Pob_Ar_res * factor_Ar_res + Pob_Ar_dbleStar * factor_Ar_dbleStar_meta),
+        return ((1/W)* Nnorm * factor_N2 * (Pob_N2 * P_N2 + Pob_Ar_meta * factor_Ar_meta + Pob_Ar_res * factor_Ar_res ),
                 (1/W)* Nnorm * factor_N2 * (Pob_N2 * P_N2),
-                (1/W)* Nnorm * factor_N2 * ( Pob_Ar_meta * factor_Ar_meta),
+                (1/W)* Nnorm * factor_N2 * (Pob_Ar_meta * factor_Ar_meta),
                 (1/W)* Nnorm * factor_N2 * (Pob_Ar_res * factor_Ar_res),
-                (1/W)* Nnorm * factor_N2 * (Pob_Ar_dbleStar * factor_Ar_dbleStar_meta)
         )
     else:
-        return  (1/W)* Nnorm * factor_N2 * (Pob_N2 * P_N2 + Pob_Ar_meta * factor_Ar_meta + Pob_Ar_res * factor_Ar_res + Pob_Ar_dbleStar * factor_Ar_dbleStar_meta) 
+        return  (1/W)* Nnorm * factor_N2 * (Pob_N2 * P_N2 + Pob_Ar_meta * factor_Ar_meta + Pob_Ar_res * factor_Ar_res ) 
 
 
 
