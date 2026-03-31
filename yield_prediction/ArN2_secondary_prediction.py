@@ -63,10 +63,10 @@ config = pd.DataFrame({
         "type": "excitation"
     },
     "N2*": {
-        "name principal": ["C 3PI"],
+        "name principal": [""],
         "gas": "N2",
-        "energy low": 11.0,
-        "energy up": 100,
+        "energy low": 11,
+        "energy up":  15.5,
         "name output": "N2_star",
         "type": "excitation"
     }

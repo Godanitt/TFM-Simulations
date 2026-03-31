@@ -4,6 +4,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import sys
 import seaborn as sns
+import scienceplots
+plt.style.use('default')
 
 models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../models'))
 data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data'))
@@ -66,7 +68,7 @@ dataframe = pd.DataFrame(
         "Ar Meta":   [["EXC"],     "ARGON",     0, 11.6, "Ar_meta"],
         "Ar Res":   [["EXC"],     "ARGON",      11.6, 11.7, "Ar_res"],
         "Ar**":   [["EXC"],     "ARGON",     11.7, 100, "Ar_dbleStar"],
-        "N2*":    [["C 3PI"], "NITROGEN",  11, 16.5, "N2_star"] #C 3PI
+        "N2*":    [[""], "NITROGEN",  11, 15.5, "N2_star"] #C 3PI
     }, 
     index=["name principal", "gas", "energy low", "energy up", "name output"]
 )
@@ -191,15 +193,46 @@ print(f"Chi2 (real): {chi2}")
 print(f"Chi2 reducido: {chi2_red}")
 print("="*60)
 
-# J = popt.jac
-# m, p = J.shape
-# s2 = 2 * popt.cost / (m - p)
-# cov_theta =  s2 * np.linalg.inv(J.T @ J)
-# chi2 = 2 * popt.cost
-# N_res = popt.fun.size
-# N_par = popt.x.size
-# dof   = N_res - N_par
-# chi2_red = chi2 / dof
+names_csv = [
+    "Nnorm",               
+
+    "tau_N2",              
+    "K_N2_Q_N2" ,          
+    "K_N2_Q_Ar" ,          
+
+    "P_N2"    ,            
+
+    "K_ArMeta_Q_N2c"  ,    
+    "K_ArMeta_Q_N2b"   ,   
+    "K_ArMeta_Q_2Ar"    ,  
+
+    "P_Ar2"              , 
+    "K_Ar2_Q_N2"          ,    
+    "tau_Ar2"              ,   
+
+
+    "P_Ar22"               ,
+    "tau_meta_Ar2"          ,
+    "K_ArRes_Q_2Ar"          ,  
+
+    "P_Ar_dbleStar_1"    ,
+    "P_Ar_dbleStar_2"     ,       
+
+    "tau_Ar_dbleStar "    ,
+    "K_Ar_dbleStar_Q_Ar"   ,    
+]
+
+export_to_csv("../data/Parameters/ArN2_primary.csv",popt,names_csv)
+
+J = popt.jac
+m, p = J.shape
+s2 = 2 * popt.cost / (m - p)
+cov_theta =  s2 * np.linalg.inv(J.T @ J)
+chi2 = 2 * popt.cost
+N_res = popt.fun.size
+N_par = popt.x.size
+dof   = N_res - N_par
+chi2_red = chi2 / dof
 
 #######################################################################
 # =================== PLOT ========================
@@ -316,37 +349,6 @@ names_tex = [
     "${\\tau_{\\mathrm{N}_2} K_{\\mathrm{N}_2Q(\\mathrm{N}_2)}}$"
 ]
 
-
-names_csv = [
-    "Nnorm",               
-
-    "tau_N2",              
-    "K_N2_Q_N2" ,          
-    "K_N2_Q_Ar" ,          
-
-    "P_N2"    ,            
-
-    "K_ArMeta_Q_N2c"  ,    
-    "K_ArMeta_Q_N2b"   ,   
-    "K_ArMeta_Q_2Ar"    ,  
-
-    "P_Ar2"              , 
-    "K_Ar2_Q_N2"          ,    
-    "tau_Ar2"              ,   
-
-
-    "P_Ar22"               ,
-    "tau_meta_Ar2"          ,
-    "K_ArRes_Q_2Ar"          ,  
-
-    "P_Ar_dbleStar_1"    ,
-    "P_Ar_dbleStar_2"     ,       
-
-    "tau_Ar_dbleStar "    ,
-    "K_Ar_dbleStar_Q_Ar"   ,    
-]
-
-export_to_csv("../data/Parameters/ArN2_primary.csv",popt,names_csv)
 
 
 latex_table, _, perr, rel = export_fit_table_latex(

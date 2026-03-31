@@ -4,6 +4,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import sys
 import seaborn as sns
+import scienceplots
+plt.style.use('default')
+
 
 models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../models'))
 data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data'))
@@ -76,7 +79,7 @@ dataframe = pd.DataFrame(
 
         "CF3":    [["NEUTRAL DISS"],                         "CF4",      0, 100, "CF3"],
 
-        "Ar3rd":  [["CHARGE STATE =2","CHARGE STATE "],      "ARGON",    0, 100, "Ar_3rd"]
+        "Ar3rd":  [["CHARGE STATE =2"],      "ARGON",    0, 100, "Ar_3rd"]
         
     }, 
     index=["name principal", "gas", "energy low", "energy up", "name output"]

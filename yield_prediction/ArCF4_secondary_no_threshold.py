@@ -66,7 +66,7 @@ config = pd.DataFrame({
     "Ar3rd": {
         "name principal": ["IONISATION"],
         "gas": "Ar",
-        "energy low": 0,
+        "energy low": 40,
         "energy up": 120,
         "name output": "Ar_3rd",
         "type": "ionisation"
@@ -111,7 +111,7 @@ electric_fields = [40,60,70,80,90,110]
 
 ####
 
-ne = 100    
+ne = 94    
 
 ####
 
@@ -155,11 +155,11 @@ colors = cmap_obj(np.linspace(0.15, 0.85, len(electric_fields)))
 
 for i,electric_field in enumerate(electric_fields):
 
-    # yield_teo_uv = theory_yield_uv(parameter_data, garfield_data[garfield_data["electric_field"]==electric_field], fN2, 1)  / (ne * 500) * ion_potential(fN2)  
-    # yield_teo_vis = (theory_yield_vis(parameter_data, garfield_data[garfield_data["electric_field"]==electric_field], fN2, 1)) / (ne * 500) * ion_potential(fN2)
-    # yield_teo = yield_teo_uv/7 + yield_teo_vis/6
+    yield_teo_uv = theory_yield_uv(parameter_data, garfield_data[garfield_data["electric_field"]==electric_field], fN2, 1)  / (ne * 500) * ion_potential(fN2)  
+    yield_teo_vis = (theory_yield_vis(parameter_data, garfield_data[garfield_data["electric_field"]==electric_field], fN2, 1)) / (ne * 500) * ion_potential(fN2)
+    yield_teo = yield_teo_uv/15 + yield_teo_vis/5
 
-    yield_teo = (1/7.2) * theory_yield_uv(parameter_data, garfield_data[garfield_data["electric_field"]==electric_field], fN2, 1)  / (ne * 500) * ion_potential(fN2)  
+    #yield_teo = (1/7.2) * theory_yield_uv(parameter_data, garfield_data[garfield_data["electric_field"]==electric_field], fN2, 1)  / (ne * 500) * ion_potential(fN2)  
 
     plt.plot(fN2 * 100,
         yield_teo,
