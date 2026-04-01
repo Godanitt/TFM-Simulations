@@ -91,20 +91,6 @@ config = pd.DataFrame({
 
 
 # ============================================================
-# 4) POBLACIONES SIN NORMALIZAR
-# ============================================================
-garfield_raw = read_garfield_csv_folder(
-    folder_path=csv_folder,
-    dataframe=config,
-    output_dir=populations_dir,
-    output_general_name=os.path.join(populations_dir, "ArCF4_secondary_raw"),
-    gas_concentration="cf4",
-    gain_summary=summary,
-    normalized=None
-)
-
-
-# ============================================================
 # 5) POBLACIONES NORMALIZADAS POR ne
 # ============================================================
 garfield_norm_ne = read_garfield_csv_folder(

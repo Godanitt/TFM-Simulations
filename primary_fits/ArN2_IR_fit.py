@@ -272,7 +272,7 @@ for name in equations:
         x_plot_factor=100,
         min_positive_x=1e-3,
         title=f"Emission in Ar-N$_2$ {name} nm",
-        xlabel=r"Concentration of N$_2$ [%]",
+        xlabel=r"Concentration of N$_2$ [\\%]",
         ylabel="Normalized Yield",
         xlim=(0.1 * 0.9, 100 * 1.1),
         ylim=(0.0001, 1),

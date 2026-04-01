@@ -2,6 +2,13 @@ import re
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors as mcolors
+import scienceplots
+plt.style.use('default')
+plt.style.use('science')
+plt.rcParams.update({
+    "font.family": "serif",   # specify font family here
+    "font.serif": ["Times"],  # specify font here
+    "font.size": 11})          # specify font size here
 
 
 def darken_color(color, factor=0.65):

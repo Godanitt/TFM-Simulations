@@ -5,8 +5,11 @@ import matplotlib.pyplot as plt
 import sys
 import seaborn as sns
 import scienceplots
-plt.style.use('default')
-
+plt.style.use('science')
+plt.rcParams.update({
+    "font.family": "serif",   # specify font family here
+    "font.serif": ["Times"],  # specify font here
+    "font.size": 11})      
 
 models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../models'))
 data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data'))
@@ -122,18 +125,18 @@ x0 = np.array([0,
                0.11352059, 0.00156568 , 999, 
                0.01793004 ,0.1, 0.31565123, 50.1, 0.99,
                999,
-               0.1])
+               0.0])
 lower = [0.0,
          0.0, 0.0, 0.0,  
          0.0, 0.065, 0.0, 50, 0.0,
          0.0,
          0.0]
 
-upper = [0.20, 
+upper = [1.0, 
          1.0, 1.0, 10000.0, 
          10.0, 10.0, 1.0, 50.2, 1.0,
          10000.0,
-         0.3]
+         0.001]
 
 bounds=(lower, upper)
 
@@ -156,7 +159,7 @@ popt = fitParameters(equations, experimental_data, degrad_data, x0=x0, bounds=bo
 # =================== PLOT ========================
 #######################################################################
 
-pressure = [1,3,5]
+pressure = [1,3,4]
 
 concentrations = np.logspace(-4, 0, 1000)
 yield_vis_plot = yield_vis["1.0bar"]
@@ -172,7 +175,7 @@ fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
     x_plot_factor=100,
     min_positive_x=1e-3,
     title="Visible",
-    xlabel=r"Concentration of CF$_4$ [%]",
+    xlabel="Concentration of CF$_4$ [$\%$]",
     ylabel="Normalized Yield",
     xlim=(0.1 * 0.9, 100 * 1.1),
     ylim=(0.001, 0.4),
@@ -200,7 +203,7 @@ fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
     x_plot_factor=100,
     min_positive_x=1e-5,
     title="Ultraviolet",
-    xlabel=r"Concentration of CF$_4$ [%]",
+    xlabel="Concentration of CF$_4$ [$\%$]",
     ylabel="Normalized Yield",
     xlim=(0.001 * 0.9, 100 * 1.1),
     ylim=(0.025,1.05),
@@ -213,8 +216,8 @@ fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
     line_label_fmt=["{p:g} bar completed",
                     "{p:g} bar CF3*"],
     output="plots/ArCF4_uv.pdf",
-    show=False,
-    activate_components=True
+    show=True,
+    activate_components=False
 )
 
 
