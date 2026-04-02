@@ -120,8 +120,8 @@ print("parameter_data original:")
 print(parameter_data)
 
 parameter_data[0] = 1
-parameter_data[1] = 0.35
-parameter_data[2] = 0.35
+parameter_data[1] = 0.38
+parameter_data[2] = 0.38
 parameter_data[-1] = parameter_data[-1] * 0.8
 
 print("parameter_data modificado:")
@@ -163,8 +163,8 @@ for i, electric_field in enumerate(electric_fields):
 
 plt.errorbar(
     [100, 67, 10, 5],
-    [0.1, 0.3, 0.36, 0.33],
-    yerr=np.array([0.1, 0.3, 0.36, 0.33]) * 0.2,
+    [0.1, 0.3, 0.39, 0.38],
+    yerr=np.array([0.1, 0.3, 0.39, 0.38]) * 0.25,
     fmt="."
 )
 
@@ -203,7 +203,7 @@ for i, electric_field in enumerate(electric_fields):
         * ion_potential(fN2)
     )
 
-    yield_teo = yield_teo_uv / 14.0 + yield_teo_vis / 5.0
+    yield_teo = yield_teo_uv / 50 + yield_teo_vis / 4.2
 
     plt.plot(
         fN2 * 100,
@@ -214,8 +214,8 @@ for i, electric_field in enumerate(electric_fields):
 
 plt.errorbar(
     [100, 67, 10, 5],
-    [0.04, 0.045, 0.085, 0.07],
-    yerr=np.array([0.04, 0.045, 0.085, 0.07]) * 0.2,
+    [0.04, 0.045, 0.085, 0.068],
+    yerr=np.array([0.04, 0.045, 0.085, 0.068]) * 0.25,
     fmt="."
 )
 

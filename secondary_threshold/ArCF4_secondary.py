@@ -134,6 +134,12 @@ parameter_data_og = pd.read_csv(os.path.join(DATA_DIR_PAR, "ArCF4_primary.csv"))
 parameter_data_og[0] = 1
 parameter_data = parameter_data_og.copy()
 
+print("="*30)
+print("parameter_data original:")
+print(parameter_data)
+print("="*30)
+
+
 levels = pd.read_csv(os.path.join(DATA_DIR_LEV, "ArCF4_level_data.csv"))
 
 CF3_energy = levels[levels["state_name"].str.contains("NEUTRAL", na=False)].copy()
@@ -153,33 +159,32 @@ fracAr = np.zeros_like(Ar_energy_list)
 fN2 = np.logspace(-3, 0, 1000)
 electric_fields = [40, 60, 70, 80, 90, 110]
 
-probabilities = np.linspace(max(parameter_data_og[1],parameter_data_og[2]),1,50)
+probabilities = np.linspace(max(parameter_data_og[1],parameter_data_og[2]),1,100)
+#probabilities = np.linspace(0.28,0.7,10)
+
 chi2 = np.zeros_like(probabilities)
 
 electric_fields = [40, 60, 70, 80, 90, 110]
-electric_fields = [70]
+#electric_fields = [60]#40, 60, 70,]# 80, 90, 110]
 
-standard_concentration = 0.1
+standard_concentration = 0.10
 normalization = "ni"
 
 npe = 500 # numero de electrones primarios, importante
 
-for i, electric_field in enumerate(electric_fields):
-    g_subset = garfield_data[garfield_data["electric_field"] == electric_field].copy()
-
-    cf3_ref_value = degrad_data.loc[
+cf3_ref_value = degrad_data.loc[
         degrad_data["concentration"] == standard_concentration, "CF3"
     ].iloc[0]
 
-    ar_ref_value = degrad_data.loc[
+ar_ref_value = degrad_data.loc[
         degrad_data["concentration"] == standard_concentration, "Ar_dbleStar"
     ].iloc[0]
 
-    CF3_completed = pd.DataFrame()
-    Ar_completed = pd.DataFrame()
+CF3_completed = pd.DataFrame()
+Ar_completed = pd.DataFrame()
     
     
-    for l,E1 in enumerate(CF3_energy_list[:]):
+for l,E1 in enumerate(CF3_energy_list[:]):
 
             dataframe = pd.DataFrame(
                 {
@@ -207,7 +212,7 @@ for i, electric_field in enumerate(electric_fields):
             ].iloc[0] / cf3_ref_value
 
 
-    for l,E1 in enumerate(Ar_energy_list[:]):
+for l,E1 in enumerate(Ar_energy_list[:]):
             dataframe = pd.DataFrame(
                 {
 
@@ -232,22 +237,20 @@ for i, electric_field in enumerate(electric_fields):
                 degrad_data_Ar["concentration"] == standard_concentration, "Ar_dbleStar"
             ].iloc[0] / ar_ref_value
 
-
-    g_subset_og = g_subset.copy()
-    plt.figure()
+for i, electric_field in enumerate(electric_fields):
+    plt.figure(figsize=(6,4))
     for j,prob in enumerate(probabilities): 
             
-            parameter_data[1] =  max(parameter_data_og[1],parameter_data_og[2])/prob
-            parameter_data[2] =  max(parameter_data_og[1],parameter_data_og[2])/prob
 
+            parameter_data[1] = prob # max(parameter_data_og[1],parameter_data_og[2])/ # 0.35 # 
+            parameter_data[2] = prob # max(parameter_data_og[1],parameter_data_og[2])/ # 0.35 # 
             fracCF3_value = parameter_data_og[1]/parameter_data[1]
             fracAR_value = parameter_data_og[2]/parameter_data[2]
 
             idx = np.abs(fracCF3 - fracCF3_value).argmin()
-            Ecf4 = CF3_energy_list[idx] # 15.6 #
+            Ecf4 = CF3_energy_list[idx] # 15.6 #    
             idx = np.abs(fracAr - fracAR_value).argmin()
-            Ear =  Ar_energy_list[idx] # 11.8 #
-
+            Ear =  Ar_energy_list[idx] #11.8 #  
             print("==="*10)
             print(parameter_data[1],parameter_data[2])
             print(fracCF3_value,fracAR_value)
@@ -255,10 +258,9 @@ for i, electric_field in enumerate(electric_fields):
             print(Ecf4,Ear)
             print("==="*10)
 
-            parameter_data[1] =  max(parameter_data_og[1],parameter_data_og[2])/prob # 0.35 #
-            parameter_data[2] =  max(parameter_data_og[1],parameter_data_og[2])/prob # 0.35 #
 
-
+            # parameter_data[1] = 0.35 #  max(parameter_data_og[1],parameter_data_og[2])/prob # 
+            # parameter_data[2] = 0.35 #  max(parameter_data_og[1],parameter_data_og[2])/prob # 
 
             ### garfield
             config = pd.DataFrame({
@@ -273,7 +275,7 @@ for i, electric_field in enumerate(electric_fields):
                 "Ar**": {
                     "name principal": "EXC",
                     "gas": "Ar",
-                    "energy low": Ear,
+                    "energy low": Ear*0.99,
                     "energy up": 100,
                     "name output": "Ar_dbleStar",
                     "type": "excitation"
@@ -281,7 +283,7 @@ for i, electric_field in enumerate(electric_fields):
                 "CF3": {
                     "name principal": "NEUTRAL DISS",
                     "gas": "CF4",
-                    "energy low": Ecf4,
+                    "energy low": Ecf4*0.99,
                     "energy up": 100,
                     "name output": "CF3",
                     "type": "inelastic"
@@ -301,37 +303,49 @@ for i, electric_field in enumerate(electric_fields):
                 folder_path=csv_folder,
                 dataframe=config,
                 output_dir=populations_dir,
-                output_general_name=os.path.join(populations_dir, "trash"),
+                output_general_name=os.path.join(populations_dir, "ArCF4_secondary"),
                 gas_concentration="cf4",
                 gain_summary=summary,
                 normalized=normalization
             )
 
-            garfield_data = pd.read_csv(os.path.join(populations_dir, "trash.csv"))
+
+            garfield_data = pd.read_csv(os.path.join(populations_dir, "ArCF4_secondary.csv"))
+            garfield_data = garfield_data[garfield_data["electric_field"] == electric_field].copy()
             garfield_data["concentration"] = garfield_data["concentration"] / 100.0
 
 
             ### chi 2 + grafica
 
             press = np.array([1,1,1,1]) #bar
-            con = np.array([1, 0.67, 0.10, 0.05]) #%
-            phe = np.array([0.1, 0.3, 0.36, 0.33]) #ph/e-               
+            con = np.array([0.05,0.10,0.67,1]) #%
+            phe = np.array([0.38, 0.39, 0.28, 0.1]) #ph/e-               
     
-            chi2red = 0
 
             _fCF4 = np.logspace(-3,0,100)
 
             plt.xscale("log")
-            plt.xlim(4,100)
-            plt.plot(_fCF4*100,theory_yield_vis(parameter_data,garfield_data,_fCF4,1) * (ion_potential(_fCF4*100) / npe))
+            plt.xlim(4,105)
+            plt.plot(_fCF4*100,theory_yield_vis(parameter_data,garfield_data,_fCF4,1) * (ion_potential(_fCF4) / npe)
+                     ,label=f"{parameter_data[1]:.2f};{Ecf4:.2f},{Ear:.2f}")
             
-            plt.scatter(con*100, phe)
+            plt.errorbar(con*100, phe, yerr = phe*0.25, fmt=".")
+            #plt.legend(loc="lower left", ncol=2)
 
-            # yy = theory_yield_vis(parameter_data,garfield_norm_ne,con,1) * (ion_potential(con) / npe)
-            # chi2red = sum(((phe-yy)/(phe*0.3))**2)
+            #mask = garfield_data["concentration"].isin(con)
+            #garfield_data = garfield_data.loc[mask, "concentration"]           
+            
 
+            yy = theory_yield_vis(parameter_data, garfield_data, con, 1) * (ion_potential(con) / npe)
 
+            phe = np.asarray(phe).ravel()
+            yy = np.asarray(yy).ravel()
+            print(phe-yy)
 
-plt.figure()
-plt.plot(probabilities,chi2)    
-plt.yscale("log")        
+            chi2[j] = np.sum(((phe - yy) / (phe * 0.22))**2)
+    
+    plt.show()
+    plt.figure()
+    plt.plot(probabilities,chi2)    
+    plt.yscale("log")     
+    plt.show()   
