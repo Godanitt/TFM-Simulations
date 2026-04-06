@@ -65,7 +65,7 @@ def theory_yield_vis(x, degrad_data, fCF4, n, activate_components=False):
     p_CF3 = x[1]
     p_DbleStar = x[2]
     K = x[3]
-    K2 = x[9]
+    K2 = x[4]
 
     denom = n * f_cf4 * K2 + n * (1.0 - f_cf4) * K + 1 / 30
     frac = np.where(denom == 0, 0.0, K2 * n * f_cf4 / denom)
@@ -92,14 +92,12 @@ def theory_yield_uv(x, degrad_data, fCF4, n, activate_components=False):
     P_CF3, P_Ar_dbleStar, P_CF4, P_Ar_3rd = Y_interp.T
 
     N = x[0]
-    p_DbleStar = x[2]
     K = x[3]
-    K1 = x[4]
-    K2 = x[5]
-    p_CF3 = x[6]
-    K3 = x[7]
-    K4 = x[8]
-    K5 = x[9]
+    K1 = x[5]
+    K2 = x[6]
+    p_CF3 = x[7]
+    K3 = x[8]
+    K4 = x[9]
     p_CF3_uv = x[10]
 
     numer = f_cf4 * n

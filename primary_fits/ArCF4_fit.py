@@ -117,20 +117,18 @@ degrad_data        = pd.read_csv(os.path.join(DATA_DIR, "ArCF4.csv"))
 
 
 x0 = np.array([0.99,
-               0.05, 0.99 , 9, 
+               0.05, 0.99 , 9, 0,
                0.0 ,0.1, 0.0, 50.1, 0.0,
-               0,
                0.3])
 lower = [0.0,
-         0.0, 0.215, 0.0,  
+         0.0, 0.215, 0.0, 0.0,
          0.0, 0.065, 0.0, 50, 0.0,
-         0.0,
          0.2]
 
 upper = [1.0, 
          0.085, 1.0, 10000.0, 
-         10.0, 10.0, 1.0, 50.2, 1.0,
          10000.0,
+         10.0, 10.0, 1.0, 50.2, 1.0,
          0.4]
          
 bounds=(lower, upper)
@@ -231,12 +229,12 @@ names_csv = [
     "PCF3dir vis$",
     "PAr**",
     "KAr**QAr",
+    "KAr**QCF4",
     "1/tauDiscKrelax",
     "tauUvKCF4QCF4",
     "PCF4dir",
     "KAr++QCF4",
     "PAr++",
-    "KAr**QCF4",
     "PCF3dir uv$",
 ]
 
@@ -247,13 +245,13 @@ names_tex = [
     "$N_{\\text{norm}}$",
     "$P_{\\mathrm{CF_3}}|_{\\mathrm{vis,dir}}$",
     "$P_{\\mathrm{Ar}^{**}} $",
-    "${K_{\\mathrm{Ar^{**},Q(Ar)}}} [ns]$",
-    "$1 / {\\tau_{\\mathrm{disocc}} K_{\\mathrm{relax}}}$",
+    "${K_{\\mathrm{Ar^{**},Q(Ar)}}}$ [ns]",
+    "${K_{\\mathrm{Ar^{**},Q(CF_4)}}}$ [ns]",
+    "$1 / {\\tau_{\\mathrm{dis}} K_{\\mathrm{relax}}}$",
     "$\\tau_{\mathrm{uv}} K_{\mathrm{CF_4^(+,*)Q(CF_4)}}$",
     "$P_{\\mathrm{CF_4^{+,*}}}|_{\\mathrm{dir}}$",
     "$K_{\\mathrm{Ar^{++},Q(CF_4)}}$ [ns]",
     "$P_{\\mathrm{Ar}^{++}}$",
-    "${K_{\\mathrm{Ar^{**},Q(CF_4)}}} [ns]$",
     "$P_{\\mathrm{CF_3}}|_{\\mathrm{uv,dir}}$",
 ]
 
@@ -261,8 +259,8 @@ latex_table, _, perr, rel = export_fit_table_latex(
     result=popt,
     names=names_tex,
     filename="tex_param/ArCF4_param.tex",
-    caption="Parámetros obtenidos del ajuparamste global.",
-    label="tab:fit_params",
+    caption="Parámetros obtenidos del ajuste global de Ar--CF$_4$.",
+    label="tab:cf4_fit_params",
     sigfigs=4
 )
 

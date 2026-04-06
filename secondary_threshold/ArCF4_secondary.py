@@ -354,7 +354,7 @@ for i, gap in enumerate(gaps):
     plt.xlabel("CF$_4$ concentration [$\\%$]")
     plt.ylabel("ph/e$^-$")
     plt.ylim(0.05,0.5)
-    plt.title("Primary ArCF$_4$ visible yield prediction")
+    plt.title("Secondary ArCF$_4$ visible yield prediction")
    # plt.legend(loc="lower left", ncol=2, fontsize= 9)
     plt.savefig("plots/ArCF4_thresholds.pdf")
     plt.show()
