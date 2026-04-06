@@ -4,12 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import sys
 import seaborn as sns
-import scienceplots
-plt.style.use('science')
-plt.rcParams.update({
-    "font.family": "serif",   # specify font family here
-    "font.serif": ["Times"],  # specify font here
-    "font.size": 11})      
+import scienceplots  
 
 models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../models'))
 data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data'))
@@ -78,9 +73,9 @@ dataframe = pd.DataFrame(
     {
         "CF4":    [["ION CF3 +"],                            "CF4",      0, 100, "CF4"],
 
-        "Ar**":   [["EXC"],                                  "ARGON",    0, 100, "Ar_dbleStar"],
+        "Ar**":   [["EXC"],                                  "ARGON",   0, 100, "Ar_dbleStar"],
 
-        "CF3":    [["NEUTRAL DISS"],                         "CF4",      0, 100, "CF3"],
+        "CF3":    [["NEUTRAL DISS"],                         "CF4",    0, 100, "CF3"],
 
         "Ar3rd":  [["CHARGE STATE =2"],      "ARGON",    0, 100, "Ar_3rd"]
         
@@ -121,24 +116,23 @@ degrad_data        = pd.read_csv(os.path.join(DATA_DIR, "ArCF4.csv"))
 ####### AJUSTE
 
 
-x0 = np.array([0,
-               0.05, 0.3 , 9, 
+x0 = np.array([0.99,
+               0.05, 0.99 , 9, 
                0.0 ,0.1, 0.0, 50.1, 0.0,
                0,
-               0.0])
+               0.3])
 lower = [0.0,
-         0.0, 0.2085, 0.0,  
+         0.0, 0.215, 0.0,  
          0.0, 0.065, 0.0, 50, 0.0,
          0.0,
-         0.0]
+         0.2]
 
 upper = [1.0, 
-         0.1019, 1.0, 10000.0, 
+         0.085, 1.0, 10000.0, 
          10.0, 10.0, 1.0, 50.2, 1.0,
          10000.0,
-         0.001]
-
-
+         0.4]
+         
 bounds=(lower, upper)
 
 equations = {
@@ -154,7 +148,9 @@ experimental_data = {
 
 
 popt = fitParameters(equations, experimental_data, degrad_data, x0=x0, bounds=bounds)
-
+par = popt.x
+par[4] *= 1
+par[5] *= 1
 
 #######################################################################
 # =================== PLOT ========================
@@ -168,27 +164,28 @@ yield_vis_plot = yield_vis["1.0bar"]
 fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
     df_exp=yield_vis,
     theory_func=theory_yield_vis,
-    fit_params=popt.x,
+    fit_params= par,
     degrad_data=degrad_data,
     concentration_grid=concentrations,
     pressures = pressure,
     x_col="fCF4",
     x_plot_factor=100,
     min_positive_x=1e-3,
-    title="Visible",
+    title="Primary ArCF$_4$ Visible Yield fit ",
     xlabel="Concentration of CF$_4$ [$\%$]",
     ylabel="Normalized Yield",
     xlim=(0.1 * 0.9, 100 * 1.1),
-    ylim=(0.001, 0.4),
+    ylim=(0.002, 0.4),
     xscale="log",
     yscale="log",
     cmap="viridis",
     darken_factor=-0.15,
     legend=True,
-    legend_kwargs={"ncol": 2, "fontsize": 9},
+    legend_kwargs={"ncol": 2, "fontsize": 9, "loc":"upper left"},
     output="plots/ArCF4_visible.pdf",
     show=False,
 )
+
 
 
 concentrations = np.logspace(-6, 0, 1000)
@@ -196,30 +193,32 @@ concentrations = np.logspace(-6, 0, 1000)
 fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
     df_exp=yield_uv,
     theory_func=theory_yield_uv,
-    fit_params=popt.x,
+    fit_params= par,
     degrad_data=degrad_data,
     concentration_grid=concentrations,
     pressures = pressure,
     x_col="fCF4",
     x_plot_factor=100,
     min_positive_x=1e-5,
-    title="Ultraviolet",
+    title="Primary ArCF$_4$ UV Yield fit ",
     xlabel="Concentration of CF$_4$ [$\%$]",
     ylabel="Normalized Yield",
     xlim=(0.001 * 0.9, 100 * 1.1),
-    ylim=(0.025,1.05),
+    ylim=(0.03,1.05),
     xscale="log",
     yscale="log",
     cmap="viridis",
     darken_factor=-0.15,
     legend=True,
-    legend_kwargs={"ncol": 2, "fontsize": 9},
+    legend_kwargs={"ncol": 2, "fontsize": 9, "loc":"upper left"},
     line_label_fmt=["{p:g} bar completed",
                     "{p:g} bar CF3*"],
     output="plots/ArCF4_uv.pdf",
     show=True,
     activate_components=False
 )
+
+
 
 
 

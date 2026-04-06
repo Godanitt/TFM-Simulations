@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import uproot
 import scienceplots
 
-plt.style.use(["science"])
 
 def _get_active_gases_from_filename(root_file):
     """
@@ -435,14 +434,40 @@ def read_data_per_primary_electron(
                     "n_entries": len(ne)
                 })
 
-                plt.figure(figsize=(8, 5))
-                plt.hist(ne, bins="auto", edgecolor="white")
-                plt.xlabel("nElectrons")
-                plt.ylabel("Frecuencia")
-                plt.title(f"Distribución de nElectrons\n{root_file.stem}")
+                fig, ax = plt.subplots(figsize=(6, 4))
+
+                plt.style.use(["grid"])        
+                ax.grid(True, which='major', alpha=0.3)
+                ax.grid(True, which='minor', alpha=0.08)
+                    
+                
+                ax.hist(ne, bins="auto", edgecolor="white")
+                ax.set_xlabel("Electrons Generated per Primary Electron")
+                ax.set_ylabel("Frequency")
+                ax.set_title(
+                    f"Electron Gain {meta['gas1']} {meta["concentration_gas_1"]}$\%$ - {meta['gas2']} {meta["concentration_gas_2"]}$\%$ "
+                    f"{meta['pressure']} bar {meta['electric_field']} kV/cm"
+                )
+
                 plt.tight_layout()
+
+                ax.text(
+                    0.97, 0.97,
+                    rf"Mean = {ne_mean:.2f}",
+                    transform=ax.transAxes,
+                    fontsize=11,
+                    ha='right',
+                    va='top',
+                    color='black',
+                    bbox=dict(
+                        boxstyle='round,pad=0.3',
+                        facecolor='white',
+                        edgecolor='0.7',
+                        linewidth=1.0
+                    )
+                )
+
                 plt.savefig(plot_dir / f"{root_file.stem}_ne.pdf", dpi=200)
-                plt.close()
 
                 print(f"[OK] Procesado: {root_file.name}")
 

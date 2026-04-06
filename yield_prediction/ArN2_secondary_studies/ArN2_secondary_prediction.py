@@ -4,11 +4,11 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import scienceplots
+plt.style.use("grid")
 
-plt.style.use("default")
 
-models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../models"))
-data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../data"))
+models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../models"))
+data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../data"))
 
 sys.path.append(models_dir)
 sys.path.append(data_dir)
@@ -21,11 +21,11 @@ from read_secondary import read_garfield_csv_folder
 # ============================================================
 # RUTAS
 # ============================================================
-folder_path = "../data/Secondary_GarfieldData/ArN2/root"
-table_path = "../data/Secondary_GarfieldData/levels/ArN2_level_data.csv"
+folder_path = "../../data/Secondary_GarfieldData/ArN2/root"
+table_path = "../../data/Secondary_GarfieldData/levels/ArN2_level_data.csv"
 
-csv_folder = "../data/Secondary_GarfieldData/ArN2/csv"
-populations_dir = "../data/Secondary_GarfieldData/ArN2/populations"
+csv_folder = "../../data/Secondary_GarfieldData/ArN2/csv"
+populations_dir = "../../data/Secondary_GarfieldData/ArN2/populations"
 plots_dir = "plots"
 
 os.makedirs(populations_dir, exist_ok=True)
@@ -105,9 +105,9 @@ garfield = read_garfield_csv_folder(
 # ============================================================
 # 4) CARGA DE DATOS PARA EL MODELO
 # ============================================================
-DATA_DIR_EXP = "../data/Experimental/ArN2/"
+DATA_DIR_EXP = "../../data/Experimental/ArN2/"
 DATA_DIR_GARFIELD = populations_dir
-DATA_DIR_PAR = "../data/Parameters"
+DATA_DIR_PAR = "../../data/Parameters"
 
 yield_N2_uv = pd.read_csv(os.path.join(DATA_DIR_EXP, "yield_N2.csv"))
 
@@ -127,7 +127,9 @@ fN2 = np.logspace(-3, 0, 1000)
 electric_fields = [70, 80, 90]
 
 plt.figure(figsize=(6, 4))
-plt.style.use("science")
+plt.style.use("grid")
+plt.grid(True, which='major', alpha=0.3)
+plt.grid(True, which='minor', alpha=0.08)
 
 cmap = "viridis"
 cmap_obj = plt.get_cmap(cmap)

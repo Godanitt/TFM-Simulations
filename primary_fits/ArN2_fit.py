@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import sys
 import seaborn as sns
 import scienceplots
-plt.style.use('default')
+plt.style.use('grid')
 
 models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../models'))
 data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data'))
@@ -240,8 +240,8 @@ fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
     x_col="N2 concentration (%)",
     x_plot_factor=100,
     min_positive_x=1e-3,
-    title="Emission in Ar-N$_2$",
-    xlabel=r"Concentration of N$_2$ [\\%]",
+    title="Primary ArN$_2$ fit ",
+    xlabel="Concentration of N$_2$ [$\\%$]",
     ylabel="Normalized Yield",
     xlim=(0.1 * 0.9, 100 * 1.1),
     #ylim=(0.001, 0.1),
@@ -269,8 +269,8 @@ fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
     x_col="N2 concentration (%)",
     x_plot_factor=100,
     min_positive_x=1e-3,
-    title="Emission in Ar-N$_2$",
-    xlabel=r"Concentration of N$_2$ [\\%]",
+    title="Primary ArN$_2$ fit 1 bar components",
+    xlabel="Concentration of N$_2$ [$\\%$]",
     ylabel="Normalized Yield",
     xlim=(0.1 * 0.9, 100 * 1.1),
     ylim=(0.001, 0.1),
@@ -302,8 +302,8 @@ fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
     x_col="N2 concentration (%)",
     x_plot_factor=100,
     min_positive_x=1e-993,
-    title="Emission in Ar-N$_2$",
-    xlabel=r"Concentration of N$_2$ [\\%]",
+    title="Primary ArN$_2$ fit 5 bar components",
+    xlabel="Concentration of N$_2$ [$\\%$]",
     ylabel="Normalized Yield",
     xlim=(0.1 * 0.9, 100 * 1.1),
     ylim=(0.001, 0.1),

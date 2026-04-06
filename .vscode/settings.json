@@ -25,9 +25,8 @@
   "python.defaultInterpreterPath": "/home/daniel/.venv/bin/python",
   "python.analysis.extraPaths": [
         "./data",
-        "./models"
+        "./models",
       ],
 
-  
 
 }

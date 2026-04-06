@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.optimize as opt
-
+import scienceplots
 
 def fitParameters(
     equations,

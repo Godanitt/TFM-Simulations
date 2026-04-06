@@ -4,6 +4,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import sys
 import seaborn as sns
+import scienceplots
+
 
 models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../models'))
 data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data'))
@@ -17,7 +19,6 @@ from read_experimental import read_experimental
 from fiting import fitParameters
 from parameter_export import export_fit_table_latex, export_to_csv
 from ploting import plot_fit_vs_experiment_by_pressure
-
 
 
 #########################################################
@@ -149,8 +150,6 @@ yield_772_ir_n, thr_772 = apply_global_threshold(yield_772_ir)
 print(thr_696, thr_727, thr_750, thr_763, thr_772)
 
 
-print(thr_727)
-
 """
 columns = yield_N2_uv.columns
 concentrations = yield_N2_uv["N2 concentration (%)"].to_numpy()
@@ -191,19 +190,19 @@ lower       = np.array([
                ]) + lower_semifixed
 
 x0          = np.array([
-               0.999, 0.0, 1.0, 1.0, 
-               0.999, 0.0, 1.0, 1.0, 
-               0.999, 0.0, 1.0, 1.0, 
-               0.999, 0.0, 1.0, 1.0, 
-               0.999, 0.0, 1.0, 1.0, 
+               0.0, 0.0, 1.0, 1.0, 
+               0.0, 0.0, 1.0, 1.0, 
+               0.0, 0.0, 1.0, 1.0, 
+               0.0, 0.0, 1.0, 1.0, 
+               0.0, 0.0, 1.0, 1.0, 
                ]) + x0_semifixed
 
 upper          = np.array([
-               1, 0.0, 1000.0, 1000.0, 
-               1, 0.0, 1000.0, 1000.0, 
-               1, 0.0, 1000.0, 1000.0, 
-               1, 0.0, 1000.0, 1000.0, 
-               1, 0.0, 1000.0, 1000.0, 
+               0.25, 0.0, 1000.0, 1000.0, 
+               0.25, 0.0, 1000.0, 1000.0, 
+               0.25, 0.0, 1000.0, 1000.0, 
+               0.25, 0.0, 1000.0, 1000.0, 
+               0.25, 0.0, 1000.0, 1000.0, 
                ]) + upper_semifixed
 
 bounds=(list(lower), list(upper))
@@ -271,8 +270,8 @@ for name in equations:
         x_col="N2 concentration (%)",
         x_plot_factor=100,
         min_positive_x=1e-3,
-        title=f"Emission in Ar-N$_2$ {name} nm",
-        xlabel=r"Concentration of N$_2$ [\\%]",
+        title=f"Primary ArN$_2$ IR ({name} nm) Yield fit",
+        xlabel="Concentration of N$_2$ [$\%$]",
         ylabel="Normalized Yield",
         xlim=(0.1 * 0.9, 100 * 1.1),
         ylim=(0.0001, 1),
@@ -281,7 +280,7 @@ for name in equations:
         cmap="viridis",
         darken_factor=-0.15,
         legend=True,
-        legend_kwargs={"ncol": 2, "fontsize": 9},
+        legend_kwargs={"ncol": 2, "fontsize": 9, "loc":"lower left"},
         output=f"plots/ArN2_IR/ArN2_global_{name}.pdf",
         show=False,
         activate_components = False

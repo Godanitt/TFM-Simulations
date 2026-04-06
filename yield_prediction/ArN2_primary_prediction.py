@@ -4,6 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import sys
 import seaborn as sns
+import scienceplots
 from matplotlib import colors as mcolors
 
 models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../models'))
@@ -39,10 +40,12 @@ x_data = [100]
 y_data = [141.1] # A mi me da 136 ahora mismo!!
 sy_data = [2.1]
 
-fN2 = np.logspace(-3,0,1000)
+fN2 = np.logspace(-4,0,1000)
 pressure = [1,2,3,4,5]
 
-plt.figure()
+
+plt.figure(figsize=(6,4))
+plt.style.use(['science','grid'])
 
 cmap = "viridis"
 cmap_obj = plt.get_cmap(cmap)
@@ -54,19 +57,22 @@ for i in range(len(pressure)):
         fN2 * 100,
         yield_teo,
         color=colors[i],
+        linewidth = 2,
         label=f"{pressure[i]} bar prediction"
     )
 
-plt.errorbar(x_data,
-             y_data,
-             yerr = sy_data,
-             marker="o",
-             linestyle="none",
-             label="1 bar")
+# plt.errorbar(x_data,
+#              y_data,
+#              yerr = sy_data,
+#              marker="o",
+#              linestyle="none",
+#              label="1 bar")
 
 plt.xscale("log")
-#plt.yscale("log")
-plt.ylabel("ph/e$^-$")
-plt.xlabel("N$_2$ concetration [\%]")
-plt.legend()
+plt.ylabel("ph/MeV")
+plt.title("Primary ArN$_2$ UV yield prediction")
+plt.grid(True, which='major', alpha=0.3)
+plt.grid(True, which='minor', alpha=0.08)
+plt.xlabel("N$_2$ concentration [\%]")
+plt.legend(loc="upper left")
 plt.savefig("plots/ArN2_primary.pdf")

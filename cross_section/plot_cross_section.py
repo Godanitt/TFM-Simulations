@@ -3,8 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import re
 import scienceplots
-plt.style.use('default')
-
 
 def plot_cross_sections(name_txt,output_pdf,main_gas,elastic_index,ion_index,att_index,inel_index):
 
@@ -39,9 +37,12 @@ def plot_cross_sections(name_txt,output_pdf,main_gas,elastic_index,ion_index,att
         y[y <= 0] = np.nan
         return y
 
-    plt.figure(figsize=(6.2, 4.4))
+    plt.figure(figsize=(6, 4))
+    plt.style.use('grid')
+    plt.grid(True, which='major', alpha=0.3)
+    plt.grid(True, which='minor', alpha=0.08)
 
-    plt.style.use('science')
+
     plt.rcParams.update({
         "font.family": "serif",   # specify font family here
         "font.serif": ["Times"],  # specify font here

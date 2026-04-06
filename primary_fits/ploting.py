@@ -3,13 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors as mcolors
 import scienceplots
-plt.style.use('default')
-plt.style.use('science')
-plt.rcParams.update({
-    "font.family": "serif",   # specify font family here
-    "font.serif": ["Times"],  # specify font here
-    "font.size": 11})          # specify font size here
-
+plt.style.use('grid')
 
 def darken_color(color, factor=0.65):
     """
@@ -75,8 +69,12 @@ def plot_fit_vs_experiment_by_pressure(
 
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize)
+
     else:
         fig = ax.figure
+    
+    ax.grid(True, which='major', alpha=0.3)
+    ax.grid(True, which='minor', alpha=0.08)
 
     # x experimental
     x_exp = df_exp[x_col].to_numpy(dtype=float).copy()
@@ -118,7 +116,7 @@ def plot_fit_vs_experiment_by_pressure(
 
     # colores
     cmap_obj = plt.get_cmap(cmap)
-    colors = cmap_obj(np.linspace(0.15, 0.85, len(pressure_cols)))
+    colors = cmap_obj(np.linspace(0.15, 0.85, len(pressure_cols))) # 5))#
 
     for (p, col), color in zip(pressure_cols, colors):
         point_color = darken_color(color, factor=darken_factor)
@@ -148,7 +146,7 @@ def plot_fit_vs_experiment_by_pressure(
                     ax.plot(
                         x_grid_plot,
                         y,
-                        color=darken_color(color,0.3),
+                        color=darken_color(colors[i],0.3),
                         lw=2,
                         label=line_label_fmt[0].format(p=p)
                     )
@@ -156,7 +154,7 @@ def plot_fit_vs_experiment_by_pressure(
                     ax.plot(
                         x_grid_plot,
                         y,
-                        color=darken_color(color,0.3),
+                        color=darken_color(colors[i],0.3),
                         linestyle = linestyles[i],
                         lw=2,
                         label=line_label_fmt[i].format(p=p)

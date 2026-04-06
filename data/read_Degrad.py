@@ -111,7 +111,7 @@ def read_degrad(archivo_entrada, archivo_salida_1, archivo_salida_2, gas1, gas2,
             for _ in name_of_state:
                 mask_aux = df_main_gas['Proceso'].str.contains(_) & mask_aux
 
-            mask = mask_aux & (df_main_gas['Energia'] > energy_lower_limit) & (df_main_gas['Energia'] < energy_upper_limit)
+            mask = mask_aux & (df_main_gas['Energia'] >= energy_lower_limit) & (df_main_gas['Energia'] < energy_upper_limit)
          
         
             population.loc[i, name_of_output] = df_main_gas.loc[mask, 'Eventos'].sum()

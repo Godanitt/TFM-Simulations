@@ -70,14 +70,20 @@ def theory_yield_vis(x, degrad_data, fCF4, n, activate_components=False):
     denom = n * f_cf4 * K2 + n * (1.0 - f_cf4) * K + 1 / 30
     frac = np.where(denom == 0, 0.0, K2 * n * f_cf4 / denom)
 
-    result = (1 / ion_potential(f_cf4)) * N * (
+    total = (1 / ion_potential(f_cf4)) * N * (
         p_CF3 * P_CF3 + frac * p_DbleStar * P_Ar_dbleStar
     )
+    
+
+    if activate_components:
+        if scalar_input:
+            return total.item()
+        return total
 
     if scalar_input:
-        return result.item()
-    return result
-
+        return total.item()
+    
+    return total
 
 def theory_yield_uv(x, degrad_data, fCF4, n, activate_components=False):
     f_cf4, scalar_input = _prepare_f_cf4(fCF4)
@@ -112,19 +118,22 @@ def theory_yield_uv(x, degrad_data, fCF4, n, activate_components=False):
     numer = 1.0 / tau_3rd
     frac4 = np.where(denom == 0, 0.0, numer / denom)
 
-    total = (1 / ion_potential(f_cf4)) * N * (
-        (p_CF3_uv * P_CF3)
+    total = ((p_CF3_uv * theory_yield_vis(x, degrad_data, fCF4, n, activate_components=False))
+        + 1 / ion_potential(f_cf4) * N * (
         + (frac1 * frac2) * (p_CF3 * P_CF4 + frac3 * P_Ar_3rd * K4)
         + tercer_continuo * frac4 * P_Ar_3rd
     )
+    )
 
     if activate_components:
-        comp_cf3 = (1 / ion_potential(f_cf4)) * N * (p_CF3_uv * P_CF3)
-
+        comp_cf4= 1 / ion_potential(f_cf4) * N * (frac1 * frac2) * (p_CF3 * P_CF4 + frac3 * P_Ar_3rd * K4)
+        comp_arDbleStar = 1 / ion_potential(f_cf4) * N * (tercer_continuo * frac4 * P_Ar_3rd)
+        comp_cf3 = p_CF3_uv*(theory_yield_vis(x, degrad_data, fCF4, n, activate_components=False))
         if scalar_input:
             return total.item(), comp_cf3.item()
-        return total, comp_cf3
+        return total, comp_cf4, comp_arDbleStar, comp_cf3
 
     if scalar_input:
         return total.item()
+    
     return total

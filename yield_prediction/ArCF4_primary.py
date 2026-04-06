@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import sys
 import seaborn as sns
 import scienceplots
-plt.style.use('default')
+plt.style.use('grid')
 
 models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../models'))
 data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data'))
@@ -28,7 +28,7 @@ degrad_data = pd.read_csv(os.path.join(DATA_DIR_DEGRAD, "ArCF4.csv"))
 
 parameter_data = pd.read_csv(os.path.join(DATA_DIR_PAR, "ArCF4_primary.csv"))["parameter"].to_numpy()
 print(parameter_data)
-parameter_data[0] = 1
+parameter_data[0] *= 1/0.15
 
 ######################################33
 
@@ -61,12 +61,7 @@ fCF4 = np.logspace(-3,0,1000)
 pressure = [1,2,3,4,5]
 
 plt.figure(figsize=(6,4))
-plt.style.use('science')
-plt.rcParams.update({
-    "font.family": "serif",   # specify font family here
-    "font.serif": ["Times"],  # specify font here
-    "font.size": 11})          # specify font size here
-
+plt.style.use(['science','grid'])
 
 print(parameter_data)
 
@@ -81,6 +76,7 @@ for i in range(len(pressure)):
         fCF4 * 100,
         yield_teo,
         color=colors[i],
+        linewidth = 2,
         label=f"{pressure[i]} bar prediction"
     )
 
@@ -90,14 +86,15 @@ plt.errorbar(cf4_red_E100,
              yerr=yerr_red_E100,
              marker="o",
              linestyle="none",
-             label="$\\alpha$ 100 V/cm data")
+             label="$\\alpha$'s exp data")
 
 plt.xscale("log")
 #plt.yscale("log")
-plt.ylabel("phe/MeV")
-plt.grid(False)
-plt.xlabel(r"CF$_4$ concetration [\%]")
-plt.title("Yield visible Ar-CF4 mixture")
+plt.ylabel("ph/MeV")
+plt.grid(True, which='major', alpha=0.3)
+plt.grid(True, which='minor', alpha=0.08)
+plt.xlabel(r"CF$_4$ concentration [\%]")
+plt.title("Primary Ar-CF4 visible yield prediction")
 plt.legend()
 plt.savefig("plots/ArCF4_vis_primary.pdf")
 
@@ -107,7 +104,9 @@ plt.savefig("plots/ArCF4_vis_primary.pdf")
 fCF4 = np.logspace(-3,0,1000)
 pressure = [1,2,3,4,5]
 
-plt.figure(figsize=(5,3.5))
+
+
+plt.figure(figsize=(6,4))
 plt.style.use(['science','grid'])
 plt.rcParams.update({
     "font.family": "serif",   # specify font family here
@@ -127,14 +126,16 @@ for i in range(len(pressure)):
         fCF4 * 100,
         yield_teo,
         color=colors[i],
-        label=f"{pressure[i]} bar prediction"
+        label=f"{pressure[i]} bar prediction",
+        linewidth = 2
     )
 
 plt.xscale("log")
 #plt.yscale("log")
-plt.ylabel("phe/MeV")
-plt.grid(False)
-plt.title("Yield UV Ar-CF4 mixture")
-plt.xlabel("CF$_4$ concetration [\%]")
+plt.ylabel("ph/MeV")
+plt.grid(True, which='major', alpha=0.3)
+plt.grid(True, which='minor', alpha=0.08)
+plt.title("Primary Ar-CF4 UV yield prediction")
+plt.xlabel("CF$_4$ concentration [\%]")
 plt.legend()
 plt.savefig("plots/ArCF4_uv_primary.pdf")

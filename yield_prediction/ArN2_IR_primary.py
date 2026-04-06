@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import sys
 import seaborn as sns
 from matplotlib import colors as mcolors
+import scienceplots
 
 models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../models'))
 data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data'))
@@ -40,7 +41,8 @@ parameter_data = pd.read_csv(os.path.join(DATA_DIR_PAR, "ArN2_IR_primary.csv"))[
 fN2 = np.logspace(-3,0,1000)
 pressure = [1,2,3,4,5]
 
-plt.figure()
+plt.figure(figsize=(6,4))
+plt.style.use(['science','grid'])
 
 cmap = "viridis"
 cmap_obj = plt.get_cmap(cmap)
@@ -58,6 +60,7 @@ for i in range(len(pressure)):
         fN2 * 100,
         yield_teo,
         color=colors[i],
+        linewidth = 2,
         label=f"{pressure[i]} bar prediction"
     )
 
@@ -70,8 +73,13 @@ for i in range(len(pressure)):
 
 plt.xscale("log")
 #plt.yscale("log")
-plt.ylabel("phe/MeV")
-plt.xlabel("N2 concetration [%]")
-plt.title("Ar-N2 yield prediction IR (650 nm to 790 nm)")
+plt.grid(True, which='major', alpha=0.3)
+plt.grid(True, which='minor', alpha=0.08)
+
+plt.ylabel("ph/MeV")
+plt.xlabel("N$_2$ concentration [\%]")
+plt.grid(True, which='major', alpha=0.3)
+plt.grid(True, which='minor', alpha=0.08)
+plt.title("Primary ArN2 IR (680-785nm) yield prediction")
 plt.legend()
 plt.savefig("plots/ArN2_IR_primary.pdf")
