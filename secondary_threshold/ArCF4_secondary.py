@@ -129,7 +129,7 @@ garfield_data = pd.read_csv(os.path.join(populations_dir, "ArCF4_secondary.csv")
 garfield_data["concentration"] = garfield_data["concentration"] / 100.0
 
 parameter_data_og = pd.read_csv(os.path.join(DATA_DIR_PAR, "ArCF4_primary.csv"))["parameter"].to_numpy()
-parameter_data_og[0] *= 1/0.15
+parameter_data_og[0] = 1
 parameter_data = parameter_data_og.copy()
 
 print("="*30)
@@ -148,7 +148,8 @@ fracCF3 = np.zeros_like(CF3_energy_list)
 Ar_energy_list  = Ar_energy["energy_eV"].to_numpy() 
 fracAr = np.zeros_like(Ar_energy_list)
 
-
+DegradGarfieldFracCF3 = CF3_energy.copy()
+DegradGarfieldFracAr = Ar_energy.copy()
 
 # ============================================================
 # 7) MALLA DE CONCENTRACIONES Y CAMPOS
@@ -156,8 +157,8 @@ fracAr = np.zeros_like(Ar_energy_list)
 
 fN2 = np.logspace(-3, 0, 1000)
 
-probabilities = np.linspace(max(parameter_data_og[1],parameter_data_og[2]),1,40)
-#probabilities = np.linspace(0.10,1,20)
+probabilities = np.linspace(max(parameter_data_og[1],parameter_data_og[2]),0.8,22)
+#probabilities = np.linspace(0.25,0.4,50)
 
 chi2 = np.zeros_like(probabilities)
 
@@ -165,6 +166,12 @@ gaps = [0.05]
 
 standard_concentration = 0.1
 normalization = "ne"
+
+
+# ============================================================
+# 867) Garfield ++ og state para frac calculation
+# ============================================================
+
 
 ##################3
 # importante
@@ -195,7 +202,7 @@ for l,E1 in enumerate(CF3_energy_list[:]):
 
                     "CF3":    [["NEUTRAL DISS"],                         "CF4",      E1*0.999, 100, "CF3"],
 
-                    "Ar3rd":  [["CHARGE STATE =2"],      "ARGON",    0, 100, "Ar_3rd"]
+                    "Ar3rd":  [["CHARGE STATE ="],      "ARGON",    40, 100, "Ar_3rd"]
                     
                 }, 
                 index=["name principal", "gas", "energy low", "energy up", "name output"]
@@ -237,22 +244,27 @@ for l,E1 in enumerate(Ar_energy_list[:]):
                 degrad_data_Ar["concentration"] == standard_concentration, "Ar_dbleStar"
             ].iloc[0] / ar_ref_value
 
+DegradGarfieldFracAr["frac degrad"] = fracAr
+DegradGarfieldFracCF3["frac degrad"] = fracCF3
 
 for i, gap in enumerate(gaps):
     plt.figure(figsize=(6,4))
     plt.style.use(['science','grid'])
+
+    cmap_obj = plt.get_cmap("viridis")
+    colors = cmap_obj(np.linspace(0.15, 0.85, len(probabilities))) # 5))#
     for j,prob in enumerate(probabilities): 
             
             
-            parameter_data[1] = prob # prob # max(parameter_data_og[1],parameter_data_og[2])/ # 0.35 # 
-            parameter_data[2] = prob # max(parameter_data_og[1],parameter_data_og[2])/ # 0.35 # 
+            parameter_data[1] = prob # parameter_data_og[1] # prob # prob # max(parameter_data_og[1],parameter_data_og[2])/ # 0.35 # 
+            parameter_data[2] = prob # parameter_data_og[2] # max(parameter_data_og[1],parameter_data_og[2])/ # 0.35 # 
             fracCF3_value = parameter_data_og[1]/parameter_data[1]
             fracAR_value = parameter_data_og[2]/parameter_data[2]
 
             idx = np.abs(fracCF3 - fracCF3_value).argmin()
-            Ecf4 = CF3_energy_list[idx] # 15.5 # 
+            Ecf4 = CF3_energy_list[idx] # 
             idx = np.abs(fracAr - fracAR_value).argmin()
-            Ear =  Ar_energy_list[idx] # 
+            Ear = Ar_energy_list[idx] # 
             print("==="*10)
             print(parameter_data[1],parameter_data[2])
             print(fracCF3_value,fracAR_value)
@@ -260,7 +272,7 @@ for i, gap in enumerate(gaps):
             print(Ecf4,Ear)
             print("==="*10)
 
-
+            
             # parameter_data[1] = 0.36 #  max(parameter_data_og[1],parameter_data_og[2])/prob # 
             # parameter_data[2] = 0.36 #  max(parameter_data_og[1],parameter_data_og[2])/prob # 
 
@@ -286,7 +298,7 @@ for i, gap in enumerate(gaps):
                     "name principal": "NEUTRAL DISS",
                     "gas": "CF4",
                     "energy low": Ecf4*0.999,
-                    "energy up": 100,
+                    "energy up": 1100,
                     "name output": "CF3",
                     "type": "inelastic"
                 },
@@ -311,11 +323,16 @@ for i, gap in enumerate(gaps):
                 normalized=normalization
             )
 
-
             garfield_data = pd.read_csv(os.path.join(populations_dir, "ArCF4_secondary.csv"))
             garfield_data = garfield_data[garfield_data["gap_mm"] == gap].copy()
+            garfield_data = garfield_data[garfield_data["electric_field"] > 60].copy()
             garfield_data["concentration"] = garfield_data["concentration"] / 100.0
 
+
+            mask1 = garfield_data["concentration"==standard_concentration]
+
+            DegradGarfieldFracCF3["frac garfield"] = fracCF3
+            DegradGarfieldFracCF3["frac garfield"] = fracCF3
 
             ### chi 2 + grafica
 
@@ -324,13 +341,19 @@ for i, gap in enumerate(gaps):
             phe = np.array([0.38287151, 0.38966203, 0.2802068, 0.09335376]) #ph/e-               
     
 
+            # press = np.array([1,1,1,1]) #bar
+            # con = np.array([0.05,0.10,0.67,1]) #%
+            # phe = np.array([0.55, 0.6, 0.31, 0.15]) #ph/e-               
+    
+
             _fCF4 = np.logspace(-3,0,100)
 
             plt.xscale("log")
             plt.xlim(4,105)
-            if True: # j%11 == 0: #
+            if j%2 == 0: #
                 plt.plot(_fCF4*100,theory_yield_vis(parameter_data,garfield_data,_fCF4,1) * (ion_potential(_fCF4) / npe)
-                        ,label="$P_{\mathrm{scint}}$="+f"{parameter_data[1]:.2f},{Ear:.2f},{Ecf4:.2f}")
+                        ,label=f"{prob:.2f},{Ear:.2f},{Ecf4:.2f}",
+                        color=colors[j])
                 
 
             yy = theory_yield_vis(parameter_data, garfield_data, con, 1) * (ion_potential(con) / npe)
@@ -354,21 +377,21 @@ for i, gap in enumerate(gaps):
     plt.xlabel("CF$_4$ concentration [$\\%$]")
     plt.ylabel("ph/e$^-$")
     plt.ylim(0.05,0.5)
+    #plt.ylim(0.05,0.7)
     plt.title("Secondary ArCF$_4$ visible yield prediction")
-   # plt.legend(loc="lower left", ncol=2, fontsize= 9)
+    plt.legend(loc="lower left", ncol=2, fontsize= 9)
     plt.savefig("plots/ArCF4_thresholds.pdf")
-    plt.show()
 
     ########
 
     plt.figure(figsize=(6,4))
     plt.plot(probabilities,chi2) 
     plt.grid(True, which='major', alpha=0.3)
-    plt.xlim(0.18,1.1)
+    plt.xlim(0.01,1.1)
     plt.xlabel("$P_{\mathrm{scint}}$")
     plt.ylabel("$\\chi^2$")
+    plt.yscale("log")
     plt.savefig("plots/Chi2_ArCF4_thresholds.pdf")
-    plt.show()
 
 
 idx = np.argmin(chi2)

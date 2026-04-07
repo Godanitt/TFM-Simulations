@@ -75,9 +75,9 @@ dataframe = pd.DataFrame(
 
         "Ar**":   [["EXC"],                                  "ARGON",   0, 100, "Ar_dbleStar"],
 
-        "CF3":    [["NEUTRAL DISS"],                         "CF4",    0, 100, "CF3"],
+        "CF3":    [["NEUTRAL DISS"],                         "CF4",  0, 100, "CF3"],
 
-        "Ar3rd":  [["CHARGE STATE =2"],      "ARGON",    0, 100, "Ar_3rd"]
+        "Ar3rd":  [["CHARGE STATE ="],      "ARGON",    40, 100, "Ar_3rd"]
         
     }, 
     index=["name principal", "gas", "energy low", "energy up", "name output"]
@@ -98,7 +98,7 @@ no_sistematic = True
 
 output_dir = "../data/Experimental/ArCF4/"
 
-read_experimental(archivo_entrada, yields, presiones, output_dir, no_sistematic = True)
+read_experimental(archivo_entrada, yields, presiones, output_dir, no_sistematic = False)
 
 #####################################################
 ###### Traemos los datos anteriormente generados 
@@ -116,20 +116,19 @@ degrad_data        = pd.read_csv(os.path.join(DATA_DIR, "ArCF4.csv"))
 ####### AJUSTE
 
 
-x0 = np.array([0.99,
-               0.05, 0.99 , 9, 0,
+x0 = np.array([1.0,
+               0.09, 0.99, 9, 9*0.037,
                0.0 ,0.1, 0.0, 50.1, 0.0,
-               0.3])
+               0.001])
 lower = [0.0,
-         0.0, 0.215, 0.0, 0.0,
-         0.0, 0.065, 0.0, 50, 0.0,
-         0.2]
+         0.0, 0.0, 0.0, 0.0,
+         0.0, 0.07, 0.0, 50, 0.0,
+         0.0]
 
 upper = [1.0, 
-         0.085, 1.0, 10000.0, 
-         10000.0,
+         1.0, 1.0, 10000.0, 10000.0,
          10.0, 10.0, 1.0, 50.2, 1.0,
-         0.4]
+         0.01]
          
 bounds=(lower, upper)
 
