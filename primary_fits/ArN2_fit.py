@@ -138,11 +138,11 @@ x0_semifixed = np.array([
                K_ArRes_Q_N2c, K_ArRes_Q_N2b, K_ArRes_Q_2Ar,
                ])
 
-lower_semifixed = x0_semifixed*0.66
-upper_semifixed = x0_semifixed*1.5
+lower_semifixed = x0_semifixed*0.33
+upper_semifixed = x0_semifixed*3
 
 lower_og       = np.array([
-               0.15, 
+               0.0, 
                0.0, 0.0, 0.0, 
                0.0,
                0.0, 0.0, 0.0,
@@ -158,7 +158,7 @@ x0_og         = np.array([
                ]) # + x0_semifixed
 
 upper_og          = np.array([
-               0.35, 
+               1.0, 
                1.0,
                0.0, 0.0, 0.0, 
                0.0, 0.0, 0.0,
@@ -175,7 +175,7 @@ experimental_data = {
     "vis": yield_N2_uv,
 }
 
-popt = fitParameters(equations, experimental_data, degrad_data, x0=x0_og+x0_semifixed, bounds=bounds)
+popt = fitParameters(equations, experimental_data, degrad_data, x0=x0_og+x0_semifixed, bounds=bounds,  is_infrared = True, fixed_idx = [2], fixed_error= 0.376)
 
 
 N_res = popt.fun.size
@@ -351,7 +351,7 @@ names_tex = [
 
 latex_table, _, perr, rel = export_fit_table_latex(
     result=popt,
-    names=names_csv,
+    names=names_tex,
     filename="tex_param/ArN2_param.tex",
     caption="Parámetros obtenidos del ajuparamste global.",
     label="tab:fit_params",
@@ -362,35 +362,34 @@ latex_table, _, perr, rel = export_fit_table_latex(
 # =================== CORRELATION MATRIX ========================
 #######################################################################
 
+# # Construimos matriz de correlación a partir de covarianzas
+# diag = np.sqrt(np.diag(cov_theta))
+# outer = np.outer(diag, diag)
+# corr = cov_theta / outer
 
-# Construimos matriz de correlación a partir de covarianzas
-diag = np.sqrt(np.diag(cov_theta))
-outer = np.outer(diag, diag)
-corr = cov_theta / outer
+# # Seguridad numérica
+# corr = np.clip(corr, -1, 1)
 
-# Seguridad numérica
-corr = np.clip(corr, -1, 1)
+# # DataFrame para seaborn
+# corr_df = pd.DataFrame(corr, columns=names_csv, index=names_csv)
 
-# DataFrame para seaborn
-corr_df = pd.DataFrame(corr, columns=names_tex, index=names_tex)
+# # --- Plot estilo seaborn ---
+# plt.figure(figsize=(10, 8))
+# sns.heatmap(
+#     corr_df,
+#     cmap="coolwarm",
+#     vmin=-1,
+#     vmax=1,
+#     annot=True,
+#     fmt=".2f",
+#     linewidths=0.5,
+#     square=True,
+#     cbar_kws={"label": "Correlación"}
+# )
+# plt.title("Matriz de Correlación de Parámetros Ajustados", fontsize=14)
+# plt.tight_layout()
 
-# --- Plot estilo seaborn ---
-plt.figure(figsize=(10, 8))
-sns.heatmap(
-    corr_df,
-    cmap="coolwarm",
-    vmin=-1,
-    vmax=1,
-    annot=True,
-    fmt=".2f",
-    linewidths=0.5,
-    square=True,
-    cbar_kws={"label": "Correlación"}
-)
-plt.title("Matriz de Correlación de Parámetros Ajustados", fontsize=14)
-plt.tight_layout()
-
-plt.savefig("plots/ArN2_CorrelationMatrix_GlobalFit.pdf", dpi=300)
+# plt.savefig("plots/ArN2_CorrelationMatrix_GlobalFit.pdf", dpi=300)
 
 #######################################################################
 # =================== Parameters ========================
@@ -401,26 +400,26 @@ x0 = x0_og + x0_semifixed
 lower_semifixed = x0_semifixed*0.8
 upper_semifixed = x0_semifixed*1.2
 bounds=(list(lower_og+lower_semifixed), list(upper_og+upper_semifixed))
-popt1 = fitParameters(equations, experimental_data, degrad_data, x0=x0, bounds=bounds)
+popt1 = fitParameters(equations, experimental_data, degrad_data, x0=x0, bounds=bounds, fixed_idx = [2])
 x1 = popt1.x
 
 
 lower_semifixed = x0_semifixed*0.66
 upper_semifixed = x0_semifixed*1.5
 bounds=(list(lower_og+lower_semifixed), list(upper_og+upper_semifixed))
-popt2 = fitParameters(equations, experimental_data, degrad_data, x0=x0, bounds=bounds)
+popt2 = fitParameters(equations, experimental_data, degrad_data, x0=x0, bounds=bounds, fixed_idx = [2])
 x2 = popt2.x
 
 lower_semifixed = x0_semifixed*0.5
 upper_semifixed = x0_semifixed*2
 bounds=(list(lower_og+lower_semifixed), list(upper_og+upper_semifixed))
-popt3 = fitParameters(equations, experimental_data, degrad_data, x0=x0, bounds=bounds)
+popt3 = fitParameters(equations, experimental_data, degrad_data, x0=x0, bounds=bounds, fixed_idx = [2])
 x3 = popt3.x
 
 lower_semifixed = x0_semifixed*0.33
 upper_semifixed = x0_semifixed*3
 bounds=(list(lower_og+lower_semifixed), list(upper_og+upper_semifixed))
-popt4 = fitParameters(equations, experimental_data, degrad_data, x0=x0, bounds=bounds)
+popt4 = fitParameters(equations, experimental_data, degrad_data, x0=x0, bounds=bounds, fixed_idx = [2])
 x4 = popt4.x
 
 df = pd.DataFrame({"Parameter":names_tex,
@@ -433,9 +432,9 @@ df = pd.DataFrame({"Parameter":names_tex,
 df.style.hide(axis="index").format(
     lambda x: f"$\\num{{{x:.2e}}}$" if isinstance(x, (int, float)) else x
     ).to_latex(
-    "ArN2.tex",
+    "tex_param/ArN2_free_factor.tex",
     caption="Parameters known ($x_0$) and the obtained in the fit with a parameter factor freedom",
-    label="tab:mitabla",
+    label="tab:ArN2_free_factor",
     siunitx=True,
     hrules=True
 )

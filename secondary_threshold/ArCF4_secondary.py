@@ -125,8 +125,6 @@ DATA_DIR_DEGRAD = "../data/Primary_DegradData"
 
 
 degrad_data = pd.read_csv(os.path.join(DATA_DIR_DEGRAD, "ArCF4.csv"))
-garfield_data = pd.read_csv(os.path.join(populations_dir, "ArCF4_secondary.csv"))
-garfield_data["concentration"] = garfield_data["concentration"] / 100.0
 
 parameter_data_og = pd.read_csv(os.path.join(DATA_DIR_PAR, "ArCF4_primary.csv"))["parameter"].to_numpy()
 parameter_data_og[0] = 1
@@ -171,7 +169,53 @@ normalization = "ne"
 # ============================================================
 # 867) Garfield ++ og state para frac calculation
 # ============================================================
+config = pd.DataFrame({
+    "CF4": {
+        "name principal": "ION",
+        "gas": "CF4",
+        "energy low": 15.5,
+        "energy up": 16,
+        "name output": "CF4",
+        "type": "ionisation"
+    },
+    "Ar**": {
+        "name principal": "EXC",
+        "gas": "Ar",
+        "energy low": 0,
+        "energy up": 100,
+        "name output": "Ar_dbleStar",
+        "type": "excitation"
+    },
+    "CF3": {
+        "name principal": "NEUTRAL DISS",
+        "gas": "CF4",
+        "energy low": 0,
+        "energy up": 100,
+        "name output": "CF3",
+        "type": "inelastic"
+    },
+    "Ar3rd": {
+        "name principal": "IONISATION",
+        "gas": "Ar",
+        "energy low": 40,
+        "energy up": 120,
+        "name output": "Ar_3rd",
+        "type": "ionisation"
+    }
+})
 
+garfield_norm_ne = read_garfield_csv_folder(
+    folder_path=csv_folder,
+    dataframe=config,
+    output_dir=populations_dir,
+    output_general_name=os.path.join(populations_dir, "ArCF4_secondary"),
+    gas_concentration="cf4",
+    gain_summary=summary,
+    normalized=normalization
+)
+
+garfield_data_og = pd.read_csv(os.path.join(populations_dir, "ArCF4_secondary.csv"))
+garfield_data_og["concentration"] = garfield_data_og["concentration"] / 100.0
 
 ##################3
 # importante
@@ -313,7 +357,7 @@ for i, gap in enumerate(gaps):
             })
 
 
-            garfield_norm_ne = read_garfield_csv_folder(
+            garfield_norm = read_garfield_csv_folder(
                 folder_path=csv_folder,
                 dataframe=config,
                 output_dir=populations_dir,
@@ -324,16 +368,37 @@ for i, gap in enumerate(gaps):
             )
 
             garfield_data = pd.read_csv(os.path.join(populations_dir, "ArCF4_secondary.csv"))
-            garfield_data = garfield_data[garfield_data["gap_mm"] == gap].copy()
-            garfield_data = garfield_data[garfield_data["electric_field"] > 60].copy()
+
+            # Si también existe garfield_data_og, asegúrate de haberlo cargado antes
+            # garfield_data_og = ...
+
+            mask2 = garfield_data["gap_mm"] == gap
+            mask3 = garfield_data["electric_field"] > 60
+
+            garfield_data = garfield_data[mask2 & mask3].copy()
+
+            mask2_og = garfield_data_og["gap_mm"] == gap
+            mask3_og = garfield_data_og["electric_field"] > 60
+
+            mask4 = DegradGarfieldFracAr["energy_eV"] == Ear
+            mask5 = DegradGarfieldFracCF3["energy_eV"] == Ecf4
+            
+            garfield_data_og = garfield_data_og[mask2_og & mask3_og].copy()
+
+            # Ojo: aquí decides si standard_concentration está en % o en fracción
             garfield_data["concentration"] = garfield_data["concentration"] / 100.0
 
+            mask1 = garfield_data["concentration"] == standard_concentration
+            mask1_og = garfield_data_og["concentration"] == standard_concentration
 
-            mask1 = garfield_data["concentration"==standard_concentration]
+            ar_og = garfield_data_og.loc[mask1_og, "Ar_dbleStar"]
+            cf3_og = garfield_data_og.loc[mask1_og, "CF3"]
 
-            DegradGarfieldFracCF3["frac garfield"] = fracCF3
-            DegradGarfieldFracCF3["frac garfield"] = fracCF3
+            ar = garfield_data.loc[mask1, "Ar_dbleStar"]
+            cf3 = garfield_data.loc[mask1, "CF3"]
 
+            DegradGarfieldFracAr.loc[mask4, "frac garfield"] = ar.values / ar_og.values
+            DegradGarfieldFracCF3.loc[mask5, "frac garfield"] = cf3.values / cf3_og.values
             ### chi 2 + grafica
 
             press = np.array([1,1,1,1]) #bar

@@ -24,7 +24,7 @@ from ploting import plot_fit_vs_experiment_by_pressure
 #########################################################
 
 
-def apply_global_threshold(df, conc_col="N2 concentration (%)"):
+def apply_global_threshold(df, conc_col="N2 concentration (%)",is_727=False):
     bar_cols = ["1.0bar", "2.0bar", "3.0bar", "4.0bar", "5.0bar"]
     err_cols = [f"Err {c}" for c in bar_cols]
 
@@ -41,6 +41,8 @@ def apply_global_threshold(df, conc_col="N2 concentration (%)"):
 
     # 3) Nos quedamos con la región < 50% para ajustar
     df_low = df[df[conc_col] < 50].copy()
+    if is_727:
+        df_low = df[df[conc_col] < 5].copy()
 
     # 4) Máscara celda a celda: conservar solo yields >= threshold
     mask = df_low[bar_cols] >= threshold
@@ -142,7 +144,7 @@ yield_763_ir  = pd.read_csv(os.path.join(DATA_DIR, "763.csv"))
 yield_772_ir  = pd.read_csv(os.path.join(DATA_DIR, "772.csv"))
 
 yield_696_ir_n, thr_696 = apply_global_threshold(yield_696_ir)
-yield_727_ir_n, thr_727 = apply_global_threshold(yield_727_ir)
+yield_727_ir_n, thr_727 = apply_global_threshold(yield_727_ir,is_727=True)
 yield_750_ir_n, thr_750 = apply_global_threshold(yield_750_ir)
 yield_763_ir_n, thr_763 = apply_global_threshold(yield_763_ir)
 yield_772_ir_n, thr_772 = apply_global_threshold(yield_772_ir)
@@ -190,11 +192,11 @@ lower       = np.array([
                ]) + lower_semifixed
 
 x0          = np.array([
-               0.0, 0.0, 1.0, 1.0, 
-               0.0, 0.0, 1.0, 1.0, 
-               0.0, 0.0, 1.0, 1.0, 
-               0.0, 0.0, 1.0, 1.0, 
-               0.0, 0.0, 1.0, 1.0, 
+               0.25, 0.0, 1.0, 1.0, 
+               0.25, 0.0, 1.0, 1.0, 
+               0.25, 0.0, 1.0, 1.0, 
+               0.25, 0.0, 1.0, 1.0, 
+               0.25, 0.0, 1.0, 1.0, 
                ]) + x0_semifixed
 
 upper          = np.array([
@@ -274,13 +276,13 @@ for name in equations:
         xlabel="Concentration of N$_2$ [$\%$]",
         ylabel="Normalized Yield",
         xlim=(0.1 * 0.9, 100 * 1.1),
-        ylim=(0.0001, 1),
+        ylim=(0.00005, 0.02),
         xscale="log",
         yscale="log",
         cmap="viridis",
         darken_factor=-0.15,
         legend=True,
-        legend_kwargs={"ncol": 2, "fontsize": 9, "loc":"lower left"},
+        legend_kwargs={"ncol": 2, "fontsize": 9, "loc":"upper right"},
         output=f"plots/ArN2_IR/ArN2_global_{name}.pdf",
         show=False,
         activate_components = False
@@ -293,12 +295,34 @@ for name in equations:
 #######################################################################
 
 names_tex = [
-    "$N_{\\text{norm}}$",
-    "$P_{\\mathrm{Ar}^{**}} $",
-    "$K_{\\mathrm{Ar}^{**}Q(\\mathrm{Ar}^{**})}/K_{\\mathrm{Ar}^{**}Q(\\mathrm{N}_2)} $",
-    "$1 / {\\tau_{\\mathrm{Ar}^{**}} K_{\\mathrm{Ar}Q(\\mathrm{N}_2)}} $",
-    "${\\tau_{\\mathrm{N}_2} K_{\\mathrm{N}_2Q(\\mathrm{Ar}^{**})}}$",
-    "${\\tau_{\\mathrm{N}_2} K_{\\mathrm{N}_2Q(\\mathrm{N}_2)}}$"
+    "$P_{\\mathrm{Ar}^* \\ 696 \\mathrm{nm}}$",
+    "$\\tau_{\\mathrm{Ar}^* \\ 696 \\mathrm{nm}}$",
+    "$K_{\\mathrm{Ar}^*, Q(\\mathrm{Ar}) \\ 696 \\mathrm{nm}}$",
+    "$K_{\\mathrm{Ar}^*, Q(\\mathrm{N}_2) \\ 696 \\mathrm{nm}}$",
+
+
+    "$P_{\\mathrm{Ar}^* \\ 727 \\mathrm{nm}}$",
+    "$\\tau_{\\mathrm{Ar}^* \\ 727 \\mathrm{nm}}$",
+    "$K_{\\mathrm{Ar}^*, Q(\\mathrm{Ar}) \\ 727 \\mathrm{nm}}$",
+    "$K_{\\mathrm{Ar}^*, Q(\\mathrm{N}_2) \\ 727 \\mathrm{nm}}$",
+
+
+    "$P_{\\mathrm{Ar}^* \\ 750 \\mathrm{nm}}$",
+    "$\\tau_{\\mathrm{Ar}^* \\ 750 \\mathrm{nm}}$",
+    "$K_{\\mathrm{Ar}^*, Q(\\mathrm{Ar}) \\ 750 \\mathrm{nm}}$",
+    "$K_{\\mathrm{Ar}^*, Q(\\mathrm{N}_2) \\ 750 \\mathrm{nm}}$",
+
+
+    "$P_{\\mathrm{Ar}^* \\ 764 \\mathrm{nm}}$",
+    "$\\tau_{\\mathrm{Ar}^* \\ 764 \\mathrm{nm}}$",
+    "$K_{\\mathrm{Ar}^*, Q(\\mathrm{Ar}) \\ 764 \\mathrm{nm}}$",
+    "$K_{\\mathrm{Ar}^*, Q(\\mathrm{N}_2) \\ 764 \\mathrm{nm}}$",
+
+    "$P_{\\mathrm{Ar}^* \\ 772 \\mathrm{nm}}$",
+    "$\\tau_{\\mathrm{Ar}^* \\ 772 \\mathrm{nm}}$",
+    "$K_{\\mathrm{Ar}^*, Q(\\mathrm{Ar}) \\ 772 \\mathrm{nm}}$",
+    "$K_{\\mathrm{Ar}^*, Q(\\mathrm{N}_2) \\ 772 \\mathrm{nm}}$",
+
 ]
 
 
@@ -334,7 +358,7 @@ export_to_csv("../data/Parameters/ArN2_IR_primary.csv",popt,names_csv)
 
 latex_table, _, perr, rel = export_fit_table_latex(
     result=popt,
-    names=names_csv,
+    names=names_tex,
     filename="tex_param/ArN2_IR_param.tex",
     caption="Parámetros obtenidos del ajuparamste global.",
     label="tab:fit_params",
@@ -355,7 +379,7 @@ corr = cov_theta / outer
 corr = np.clip(corr, -1, 1)
 
 # DataFrame para seaborn
-corr_df = pd.DataFrame(corr, columns=names_csv, index=names_csv)
+corr_df = pd.DataFrame(corr, columns=names_tex, index=names_tex)
 
 # --- Plot estilo seaborn ---
 plt.figure(figsize=(10, 8))

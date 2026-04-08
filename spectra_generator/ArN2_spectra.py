@@ -31,7 +31,7 @@ parameter_data_IR = pd.read_csv(os.path.join(DATA_DIR_PAR, "ArN2_IR_primary.csv"
 print(parameter_data)
 print(parameter_data_IR)
 
-norm = parameter_data[0]
+norm = parameter_data[0].copy()
 parameter_data[0] = 1
 
 ######################################
@@ -43,6 +43,7 @@ def gaussiana(x,mu,sigma):
 
 
 print(parameter_data)
+print(norm)
 
 
 cmap = "viridis"
@@ -64,7 +65,7 @@ equations = {
 for i,pres in enumerate(pressure):
     plt.figure(figsize=(6,4))
     for j,con in enumerate(concentrations):
-        factor = (1/0.012) * W_ArN2(con/100)
+        factor = (1/0.012) * W_ArN2(con/100) 
 
         yield_N2 = (theory_yield_N2_uv(parameter_data,degrad_data,np.array([con/100]),pres)) 
 
@@ -76,7 +77,7 @@ for i,pres in enumerate(pressure):
         for name in equations:
             yield_IR=equations[name]
             yield_ir = yield_IR(parameter_data_IR,degrad_data_IR,np.array([con/100]),pres)    
-            yield_total += factor*yield_ir[0]*gaussiana(wavelength,float(name),2.5) / 5
+            yield_total += (factor/norm)*yield_ir[0]*gaussiana(wavelength,float(name),2.5) 
 
 
 
@@ -115,7 +116,7 @@ for con in concentrations:
             yield_ir = yield_IR(
                 parameter_data_IR, degrad_data_IR, np.array([con/100]), pres
             )
-            yield_total += factor * yield_ir[0] * gaussiana(wavelength, float(name), 2.5)/ 5
+            yield_total += (factor/norm) * yield_ir[0] * gaussiana(wavelength, float(name), 2.5)
 
         spectra_con.append((pres, yield_total))
         global_ymax = max(global_ymax, np.max(yield_total))

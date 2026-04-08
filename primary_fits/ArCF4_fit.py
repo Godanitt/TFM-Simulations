@@ -16,7 +16,7 @@ from ArCF4 import *
 sys.path.append(data_dir)
 from read_Degrad import read_degrad
 from read_experimental import read_experimental
-from fiting import fitParameters
+from fiting import fitParameters,fitParameters_lmfit,fitParameters_minimize
 from parameter_export import export_fit_table_latex, export_to_csv
 from ploting import plot_fit_vs_experiment_by_pressure
 
@@ -98,7 +98,7 @@ no_sistematic = True
 
 output_dir = "../data/Experimental/ArCF4/"
 
-read_experimental(archivo_entrada, yields, presiones, output_dir, no_sistematic = False)
+read_experimental(archivo_entrada, yields, presiones, output_dir, no_sistematic = True)
 
 #####################################################
 ###### Traemos los datos anteriormente generados 
@@ -115,20 +115,25 @@ degrad_data        = pd.read_csv(os.path.join(DATA_DIR, "ArCF4.csv"))
 #########################################################3
 ####### AJUSTE
 
+# Para poder describir primario y secundario a la vez (fenomenologicamente) con la prescricpión de Pscint común y um threshold inferior de energía diferente tenemos que poner las siguientes exigencias. Estas son, aprox:
+# -- Nnorm ~ 0.14
+# -- Par** ~ 0.27
+# -- Pcf3  ~ 0.09
+# Con esto tienes un chi2 ~ 0.9 
 
-x0 = np.array([1.0,
-               0.09, 0.99, 9, 9*0.037,
-               0.0 ,0.1, 0.0, 50.1, 0.0,
-               0.001])
+x0 = np.array([0.14,
+               0.10, 0.99, 3, 0.037*3,
+               1.0 ,0.1, 0.48, 50.1, 0.37,
+               0.00001])
 lower = [0.0,
          0.0, 0.0, 0.0, 0.0,
-         0.0, 0.07, 0.0, 50, 0.0,
+         0.00, 0.065, 0.0, 50, 0.0,
          0.0]
 
-upper = [1.0, 
+upper = [0.99, 
          1.0, 1.0, 10000.0, 10000.0,
-         10.0, 10.0, 1.0, 50.2, 1.0,
-         0.01]
+         10000.0, 10000.0, 1.0, 50.2, 1.0, 
+         0.0001]
          
 bounds=(lower, upper)
 
@@ -138,6 +143,10 @@ equations = {
 }
 
 yield_uv.loc[0,"fCF4"]=0.001
+
+yield_vis.loc[0, :].drop(['Err 1.0bar','Err 2.0bar','Err 2.5bar','Err 3.0bar','Err 4.0bar','Err 5.0bar'])
+yield_vis.fillna(0)
+
 experimental_data = {
     "vis": yield_vis,
     "uv": yield_uv
@@ -145,6 +154,9 @@ experimental_data = {
 
 
 popt = fitParameters(equations, experimental_data, degrad_data, x0=x0, bounds=bounds)
+#popt = fitParameters_minimize(equations, experimental_data, degrad_data, x0=x0, bounds=bounds)
+
+
 par = popt.x
 par[4] *= 1
 par[5] *= 1

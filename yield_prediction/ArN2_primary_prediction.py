@@ -36,9 +36,9 @@ print(parameter_data)
 
 ######################################33
 
-x_data = [100]
-y_data = [141.1] # A mi me da 136 ahora mismo!!
-sy_data = [2.1]
+x_data = [100,100,100]
+y_data = [96,141.1,146.1]
+sy_data = [40,2.1,2.1]
 
 fN2 = np.logspace(-4,0,1000)
 pressure = [1,2,3,4,5]
@@ -61,12 +61,17 @@ for i in range(len(pressure)):
         label=f"{pressure[i]} bar prediction"
     )
 
-# plt.errorbar(x_data,
-#              y_data,
-#              yerr = sy_data,
-#              marker="o",
-#              linestyle="none",
-#              label="1 bar")
+plt.errorbar(x_data,
+            y_data,
+            yerr = sy_data,
+            marker="o",
+            linestyle="none",
+            label="1 bar",
+            ms=4,
+            color=colors[0],
+            ecolor=colors[0],
+            elinewidth=1,
+            capsize=2,)
 
 plt.xscale("log")
 plt.ylabel("ph/MeV")
@@ -74,5 +79,6 @@ plt.title("Primary ArN$_2$ UV yield prediction")
 plt.grid(True, which='major', alpha=0.3)
 plt.grid(True, which='minor', alpha=0.08)
 plt.xlabel("N$_2$ concentration [\%]")
+plt.yscale("log")
 plt.legend(loc="upper left")
 plt.savefig("plots/ArN2_primary.pdf")

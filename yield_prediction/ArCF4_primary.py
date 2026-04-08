@@ -28,7 +28,7 @@ degrad_data = pd.read_csv(os.path.join(DATA_DIR_DEGRAD, "ArCF4.csv"))
 
 parameter_data = pd.read_csv(os.path.join(DATA_DIR_PAR, "ArCF4_primary.csv"))["parameter"].to_numpy()
 print(parameter_data)
-parameter_data[0] *= 1/0.15
+parameter_data[0] = 1 
 
 ######################################33
 

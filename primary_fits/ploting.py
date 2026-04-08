@@ -116,7 +116,7 @@ def plot_fit_vs_experiment_by_pressure(
 
     # colores
     cmap_obj = plt.get_cmap(cmap)
-    colors = cmap_obj(np.linspace(0.15, 0.85, len(pressure_cols))) # 5))#
+    colors = cmap_obj(np.linspace(0.15, 0.85,  5))#len(pressure_cols))) #
 
     for (p, col), color in zip(pressure_cols, colors):
         point_color = darken_color(color, factor=darken_factor)

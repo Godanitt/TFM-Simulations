@@ -92,12 +92,11 @@ def theory_yield_uv(x, degrad_data, fCF4, n, activate_components=False):
     P_CF3, P_Ar_dbleStar, P_CF4, P_Ar_3rd = Y_interp.T
 
     N = x[0]
-    K = x[3]
     K1 = x[5]
     K2 = x[6]
     p_CF3 = x[7]
     K3 = x[8]
-    K4 = x[9]
+    PAr_3rd = x[9]
     p_CF3_uv = x[10]
 
     numer = f_cf4 * n
@@ -118,13 +117,13 @@ def theory_yield_uv(x, degrad_data, fCF4, n, activate_components=False):
 
     total = ((p_CF3_uv * theory_yield_vis(x, degrad_data, fCF4, n, activate_components=False))
         + 1 / ion_potential(f_cf4) * N * (
-        + (frac1 * frac2) * (p_CF3 * P_CF4 + frac3 * P_Ar_3rd * K4)
+        + (frac1 * frac2) * (p_CF3 * P_CF4 + frac3 * P_Ar_3rd * PAr_3rd)
         + tercer_continuo * frac4 * P_Ar_3rd
     )
     )
 
     if activate_components:
-        comp_cf4= 1 / ion_potential(f_cf4) * N * (frac1 * frac2) * (p_CF3 * P_CF4 + frac3 * P_Ar_3rd * K4)
+        comp_cf4= 1 / ion_potential(f_cf4) * N * (frac1 * frac2) * (p_CF3 * P_CF4 + frac3 * P_Ar_3rd * PAr_3rd)
         comp_arDbleStar = 1 / ion_potential(f_cf4) * N * (tercer_continuo * frac4 * P_Ar_3rd)
         comp_cf3 = p_CF3_uv*(theory_yield_vis(x, degrad_data, fCF4, n, activate_components=False))
         if scalar_input:
