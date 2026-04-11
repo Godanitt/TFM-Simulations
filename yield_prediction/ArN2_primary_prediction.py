@@ -21,7 +21,7 @@ from ArN2 import *
 
 DATA_DIR_EXP = "../data/Experimental/ArN2/"
 DATA_DIR_DEGRAD = "../data/Primary_DegradData"
-DATA_DIR_PAR = "../data/Parameters"
+DATA_DIR_PAR =  "../data/Parameters"
 
 yield_N2_uv  = pd.read_csv(os.path.join(DATA_DIR_EXP, "yield_N2.csv"))
 
@@ -79,6 +79,6 @@ plt.title("Primary ArN$_2$ UV yield prediction")
 plt.grid(True, which='major', alpha=0.3)
 plt.grid(True, which='minor', alpha=0.08)
 plt.xlabel("N$_2$ concentration [\%]")
-plt.yscale("log")
+#plt.yscale("log")
 plt.legend(loc="upper left")
 plt.savefig("plots/ArN2_primary.pdf")

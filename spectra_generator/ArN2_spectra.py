@@ -107,16 +107,18 @@ for con in concentrations:
             parameter_data, degrad_data, np.array([con/100]), pres
         )
 
-        yield_total = 0.9/1.9 * factor * yield_N2[0] * gaussiana(wavelength, 335, 2.5)
-        yield_total += 0.6/1.9 * factor * yield_N2[0] * gaussiana(wavelength, 360, 2.5)
-        yield_total += 0.25/1.9 * factor * yield_N2[0] * gaussiana(wavelength, 385, 2.5)
-        yield_total += 0.15/1.9 * factor * yield_N2[0] * gaussiana(wavelength, 410, 2.5)
+
+        yield_total = 0.13 * factor * yield_N2[0] * gaussiana(wavelength, 310, 3)
+        yield_total += 0.42 * factor * yield_N2[0] * gaussiana(wavelength, 335, 2.5)
+        yield_total += 0.3 * factor * yield_N2[0] * gaussiana(wavelength, 355, 2.5)
+        yield_total += 0.1 * factor * yield_N2[0] * gaussiana(wavelength, 378, 2.5)
+        yield_total += 0.05* factor * yield_N2[0] * gaussiana(wavelength, 403, 2.5)
 
         for name, yield_IR in equations.items():
             yield_ir = yield_IR(
                 parameter_data_IR, degrad_data_IR, np.array([con/100]), pres
             )
-            yield_total += (factor/norm) * yield_ir[0] * gaussiana(wavelength, float(name), 2.5)
+            yield_total += (factor/norm) * yield_ir[0] * gaussiana(wavelength, float(name), 2.8)
 
         spectra_con.append((pres, yield_total))
         global_ymax = max(global_ymax, np.max(yield_total))
@@ -148,5 +150,5 @@ for ax, (con, spectra_con) in zip(axs, all_spectra):
 
 fig.suptitle(r"Primary Ar-N$_2$ Spectra Prediction", fontsize=14)
 fig.tight_layout()
-fig.savefig("plots_ArN2/ArN2_4panels_concentrations.pdf", dpi=300, bbox_inches="tight")
+fig.savefig("plots_ArN2/ArN2_concentration.pdf", dpi=300, bbox_inches="tight")
 plt.show()

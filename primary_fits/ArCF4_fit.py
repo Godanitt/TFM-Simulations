@@ -156,6 +156,7 @@ experimental_data = {
 popt = fitParameters(equations, experimental_data, degrad_data, x0=x0, bounds=bounds)
 #popt = fitParameters_minimize(equations, experimental_data, degrad_data, x0=x0, bounds=bounds)
 
+popt_primary = popt
 
 par = popt.x
 par[4] *= 1
@@ -259,20 +260,22 @@ names_tex = [
     "${K_{\\mathrm{Ar^{**},Q(Ar)}}}$ [ns]",
     "${K_{\\mathrm{Ar^{**},Q(CF_4)}}}$ [ns]",
     "$1 / {\\tau_{\\mathrm{dis}} K_{\\mathrm{relax}}}$",
-    "$\\tau_{\mathrm{uv}} K_{\mathrm{CF_4^(+,*)Q(CF_4)}}$",
+    "$\\tau_{\mathrm{uv}} K_{\mathrm{CF_4^{+,*}Q(CF_4)}}$",
     "$P_{\\mathrm{CF_4^{+,*}}}|_{\\mathrm{dir}}$",
     "$K_{\\mathrm{Ar^{++},Q(CF_4)}}$ [ns]",
     "$P_{\\mathrm{Ar}^{++}}$",
     "$P_{\\mathrm{CF_3}}|_{\\mathrm{uv,dir}}$",
 ]
 
-latex_table, _, perr, rel = export_fit_table_latex(
-    result=popt,
+
+latex_table, payload  = export_fit_table_latex(
+    results=popt,
     names=names_tex,
     filename="tex_param/ArCF4_param.tex",
     caption="Parámetros obtenidos del ajuste global de Ar--CF$_4$.",
     label="tab:cf4_fit_params",
-    sigfigs=4
+    err_sigfigs=2,
+    rel_sigfigs=2
 )
 
 
@@ -340,3 +343,120 @@ plt.title("Matriz de Correlación de Parámetros Ajustados", fontsize=14)
 plt.tight_layout()
 
 plt.savefig("plots/ArCF4_CorrelationMatrix_GlobalFit.pdf", dpi=300)
+
+
+#######################################################################
+# =================== SECUNDARIO ========================
+#######################################################################
+
+# Para poder describir primario y secundario a la vez (fenomenologicamente) con la prescricpión de Pscint común y um threshold inferior de energía diferente tenemos que poner las siguientes exigencias. Estas son, aprox:
+# -- Nnorm ~ 0.14
+# -- Par** ~ 0.27
+# -- Pcf3  ~ 0.09
+# Con esto tienes un chi2 ~ 0.9 
+
+x0 = np.array([0.00,
+               0.0, 0.99, 3, 0.037*3,
+               1.0 ,0.1, 0.48, 50.1, 0.37,
+               0.2])
+lower = [0.0,
+         0.0, 0.27, 0.0, 0.0,
+         0.00, 0.065, 0.0, 50, 0.0,
+         0.1]
+
+upper = [0.155, 
+         0.11, 1.0, 10000.0, 10000.0,
+         10000.0, 10000.0, 1.0, 50.2, 1.0, 
+         0.3]
+         
+bounds=(lower, upper)
+
+popt_secondary = fitParameters(equations, experimental_data, degrad_data, x0=x0, bounds=bounds)
+
+
+latex_table, payload = export_fit_table_latex(
+    results=[popt_primary, popt_secondary],
+    names=names_tex,
+    filename="tex_param/ArCF4_param_primary_secondary.tex",
+    caption="Parámetros obtenidos del ajuste global de Ar--CF$_4$.",
+    label="tab:cf4_fit_params",
+    column_names=["Modelo Primario", "Modelo Primario y Secundario"],
+    units=None,
+    err_sigfigs=2,
+    show_relative_error=False,
+    relative_incertainty=[0.2, 0.2],
+)
+
+chi2 = 2 * popt_secondary.cost
+N_res = popt_secondary.fun.size
+N_par = popt_secondary.x.size
+dof   = N_res - N_par
+chi2_red = chi2 / dof
+
+print("="*60)
+print("Parámetros globales:", popt_secondary.x)
+print(f"Chi2 (real): {chi2}")
+print(f"Grados de libertad: {dof}")
+print(f"Chi2 reducido: {chi2_red}")
+print("="*60)
+
+par = popt_secondary.x
+
+
+fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
+    df_exp=yield_vis,
+    theory_func=theory_yield_vis,
+    fit_params= par,
+    degrad_data=degrad_data,
+    concentration_grid=concentrations,
+    pressures = pressure,
+    x_col="fCF4",
+    x_plot_factor=100,
+    min_positive_x=1e-3,
+    title="Primary ArCF$_4$ Visible Yield fit ",
+    xlabel="Concentration of CF$_4$ [$\%$]",
+    ylabel="Normalized Yield",
+    xlim=(0.1 * 0.9, 100 * 1.1),
+    ylim=(0.002, 0.4),
+    xscale="log",
+    yscale="log",
+    cmap="viridis",
+    darken_factor=-0.15,
+    legend=True,
+    legend_kwargs={"ncol": 2, "fontsize": 9, "loc":"upper left"},
+    output="plots/ArCF4_visible.pdf",
+    show=False,
+)
+
+
+
+concentrations = np.logspace(-6, 0, 1000)
+
+fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
+    df_exp=yield_uv,
+    theory_func=theory_yield_uv,
+    fit_params= par,
+    degrad_data=degrad_data,
+    concentration_grid=concentrations,
+    pressures = pressure,
+    x_col="fCF4",
+    x_plot_factor=100,
+    min_positive_x=1e-5,
+    title="Primary ArCF$_4$ UV Yield fit ",
+    xlabel="Concentration of CF$_4$ [$\%$]",
+    ylabel="Normalized Yield",
+    xlim=(0.001 * 0.9, 100 * 1.1),
+    ylim=(0.03,1.05),
+    xscale="log",
+    yscale="log",
+    cmap="viridis",
+    darken_factor=-0.15,
+    legend=True,
+    legend_kwargs={"ncol": 2, "fontsize": 9, "loc":"upper left"},
+    line_label_fmt=["{p:g} bar completed",
+                    "{p:g} bar CF3*"],
+    output="plots/ArCF4_uv.pdf",
+    show=True,
+    activate_components=False
+)
+

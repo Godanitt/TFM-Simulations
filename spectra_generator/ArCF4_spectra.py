@@ -13,7 +13,7 @@ sys.path.append(models_dir)
 sys.path.append(data_dir)
 
 from ArCF4 import *
-
+from ArCF4_infrarred import *
 
 ######################################33
 
@@ -24,10 +24,16 @@ DATA_DIR_PAR = "../data/Parameters"
 yield_N2_uv  = pd.read_csv(os.path.join(DATA_DIR_EXP, "vis.csv"))
 
 degrad_data = pd.read_csv(os.path.join(DATA_DIR_DEGRAD, "ArCF4.csv"))
+degrad_data_IR = pd.read_csv(os.path.join(DATA_DIR_DEGRAD, "ArCF4_IR.csv"))
 
 parameter_data = pd.read_csv(os.path.join(DATA_DIR_PAR, "ArCF4_primary.csv"))["parameter"].to_numpy()
+parameter_data_IR = pd.read_csv(os.path.join(DATA_DIR_PAR, "ArCF4_IR_primary.csv"))["parameter"].to_numpy()
+
+norm = parameter_data[0].copy()
 print(parameter_data)
 parameter_data[0] = 1
+
+
 
 ######################################33
 
@@ -55,9 +61,20 @@ def ion_potential(f):
 
 def gaussiana(x,mu,sigma):
     return (1 / (sigma * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x - mu) / sigma)**2)
+
 ######################################33
 
 fCF4 = np.logspace(-3,0,1000)
+
+
+equations = {
+    "696": theory_yield_ArCF4_Ir_696,
+    "727": theory_yield_ArCF4_Ir_727,
+    "750": theory_yield_ArCF4_Ir_750,
+    "763": theory_yield_ArCF4_Ir_763,
+    "772": theory_yield_ArCF4_Ir_772,
+    "794": theory_yield_ArCF4_Ir_794,
+}
 
 
 print(parameter_data)
@@ -105,6 +122,13 @@ for i,pres in enumerate(pressure):
         
         yield_total = yield_vis + yield_cf4 + yield_arDbleStar + yield_CF3
 
+        for name, yield_IR in equations.items():
+            yield_ir = yield_IR(
+                parameter_data_IR, degrad_data_IR, np.array([con/100]), pres
+            )
+            yield_total += (factor/norm) * yield_ir[0] * gaussiana(wavelength, float(name), 2.5)
+
+
         plt.plot(wavelength,yield_total,label=f"{con:.1f} $\%$ CF$_4$")
 
         plt.ylabel("ph/MeV/nm")
@@ -151,12 +175,21 @@ for con in concentrations:
         yield_arDbleStar_spec = yield_ArDbleStar[0] * gaussiana(wavelength, 220, 60)
         yield_CF3_spec = yield_cf3_uv[0] * gaussiana(wavelength, 245, 60)
 
+
         yield_total = (
             yield_vis_spec
             + yield_cf4_spec
             + yield_arDbleStar_spec
             + yield_CF3_spec
         )
+
+
+        for name, yield_IR in equations.items():
+            yield_ir = yield_IR(
+                parameter_data_IR, degrad_data_IR, np.array([con/100]), pres
+            )
+            yield_total += (factor/norm) * yield_ir[0] * gaussiana(wavelength, float(name), 2.5)
+
 
         spectra_con.append((pres, yield_total))
         global_ymax = max(global_ymax, np.max(yield_total))
@@ -187,5 +220,5 @@ for ax, (con, spectra_con) in zip(axs, all_spectra):
 
 fig.suptitle("Primary Ar-CF$_4$ Spectra Prediction", fontsize=14)
 fig.tight_layout()
-fig.savefig("plots_ArCF4/ArCF4_4panels.pdf", dpi=300, bbox_inches="tight")
+fig.savefig("plots_ArCF4/ArCF4_concentration.pdf", dpi=300, bbox_inches="tight")
 plt.show()

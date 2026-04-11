@@ -9,78 +9,63 @@ def W_ArN2(xN2, WAr=26.4, WN2=34.8):
     return 1.0 / ((1.0-xN2)/WAr + xN2/WN2)
 
 
-def theory_yield_N2_uv(x, degrad_data, fN2, n, activate_components = False):
-    fN2 = np.asarray(fN2, dtype=float)
+def theory_yield_N2_uv(x, degrad_data, fN2, n, activate_components=False):
+    fN2 = np.atleast_1d(np.asarray(fN2, dtype=float))
     W = W_ArN2(fN2)
 
-    concentration = degrad_data["concentration"]
-    Pob_N2 = degrad_data["N2_star"].to_numpy()
-    Pob_Ar_meta = degrad_data["Ar_meta"].to_numpy()
-    Pob_Ar_res = degrad_data["Ar_res"].to_numpy()
-    Pob_Ar_dbleStar = degrad_data["Ar_dbleStar"].to_numpy()
+    concentration = degrad_data["concentration"].to_numpy(dtype=float)
 
     cols = ["N2_star", "Ar_meta", "Ar_res", "Ar_dbleStar"]
-    Y = degrad_data[cols].to_numpy()   # shape: (n_puntos, 4)
-    
-    Y = np.asarray(Y, dtype=float)
-    fN2 = np.asarray(fN2, dtype=float)
+    Y = degrad_data[cols].to_numpy(dtype=float)
 
-    if len(fN2) > len(concentration):
-        conc = np.asarray(concentration, dtype=float)
-        yvals = np.asarray(Y, dtype=float)
+    idx = np.argsort(concentration)
+    conc_sorted = concentration[idx]
+    y_sorted = Y[idx]
 
-        idx = np.argsort(conc)
-        conc_sorted = conc[idx]
-        y_sorted = yvals[idx]
-
-        interp = PchipInterpolator(conc_sorted, y_sorted)
-        Y_interp = interp(fN2)
-    else:
-        Y_interp = Y
+    interp = PchipInterpolator(conc_sorted, y_sorted, axis=0)
+    Y_interp = interp(fN2)
 
     Pob_N2, Pob_Ar_meta, Pob_Ar_res, Pob_Ar_dbleStar = Y_interp.T
 
-    Nnorm               = x[0]
-    P_N2                = x[1]
-
-    tau_N2              = x[2]
-    K_N2_Q_N2           = x[3]
-    K_N2_Q_Ar           = x[4]
-
-
-    K_ArMeta_Q_N2c      = x[5]
-    K_ArMeta_Q_N2b      = x[6]
-    K_ArMeta_Q_2Ar      = x[7]
-
-    K_ArRes_Q_N2c       = x[8]
-    K_ArRes_Q_N2b       = x[9]  
-    K_ArRes_Q_2Ar       = x[10]     
-     
+    Nnorm          = x[0]
+    P_N2           = x[1]
+    tau_N2         = x[2]
+    K_N2_Q_N2      = x[3]
+    K_N2_Q_Ar      = x[4]
+    K_ArMeta_Q_N2c = x[5]
+    K_ArMeta_Q_N2b = x[6]
+    K_ArMeta_Q_2Ar = x[7]
+    K_ArRes_Q_N2c  = x[8]
+    K_ArRes_Q_N2b  = x[9]
+    K_ArRes_Q_2Ar  = x[10]
 
     frac_1 = (1/tau_N2) / (1/tau_N2 + n * fN2 * K_N2_Q_N2 + n * (1 - fN2) * K_N2_Q_Ar)
-
     factor_N2 = frac_1
 
-    frac_2 = (K_ArMeta_Q_N2c * fN2 * n) / ((K_ArMeta_Q_N2b + K_ArMeta_Q_N2c) * fN2 * n + (K_ArMeta_Q_2Ar * (1-fN2) * n**2))
+    frac_2 = (K_ArMeta_Q_N2c * fN2 * n) / (
+        (K_ArMeta_Q_N2b + K_ArMeta_Q_N2c) * fN2 * n +
+        (K_ArMeta_Q_2Ar * (1-fN2) * n**2)
+    )
+    factor_Ar_meta = frac_2
 
-    factor_Ar_meta = frac_2 
+    frac_5 = (K_ArRes_Q_N2c * fN2 * n) / (
+        (K_ArRes_Q_N2b + K_ArRes_Q_N2c) * fN2 * n +
+        K_ArRes_Q_2Ar * (1-fN2) * n**2
+    )
+    factor_Ar_res = frac_5
 
-    frac_5 = (K_ArRes_Q_N2c * fN2 * n) / ((K_ArRes_Q_N2b + K_ArRes_Q_N2c) * fN2 * n + K_ArRes_Q_2Ar * (1-fN2) * n**2 )
-
-    factor_Ar_res = frac_5 
-
-
+    total = (1/W) * Nnorm * factor_N2 * (
+        Pob_N2 * P_N2 + Pob_Ar_meta * factor_Ar_meta + Pob_Ar_res * factor_Ar_res
+    )
 
     if activate_components:
-        return ((1/W)* Nnorm * factor_N2 * (Pob_N2 * P_N2 + Pob_Ar_meta * factor_Ar_meta + Pob_Ar_res * factor_Ar_res ),
-                (1/W)* Nnorm * factor_N2 * (Pob_N2 * P_N2),
-                (1/W)* Nnorm * factor_N2 * (Pob_Ar_meta * factor_Ar_meta),
-                (1/W)* Nnorm * factor_N2 * (Pob_Ar_res * factor_Ar_res),
+        return (
+            total,
+            (1/W) * Nnorm * factor_N2 * (Pob_N2 * P_N2),
+            (1/W) * Nnorm * factor_N2 * (Pob_Ar_meta * factor_Ar_meta),
+            (1/W) * Nnorm * factor_N2 * (Pob_Ar_res * factor_Ar_res),
         )
-    else:
-        return  (1/W)* Nnorm * factor_N2 * (Pob_N2 * P_N2 + Pob_Ar_meta * factor_Ar_meta + Pob_Ar_res * factor_Ar_res ) 
-
-
+    return total
 
 ############################
 ## VERSION ANTIGUA

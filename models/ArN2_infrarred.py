@@ -1,8 +1,5 @@
 
 import numpy as np
-from scipy.interpolate import interp1d
-
-
 from scipy.interpolate import PchipInterpolator
 
 
@@ -409,12 +406,19 @@ def theory_yield_ArN2_Ir_794(x, degrad_data, fN2, n, activate_components = False
     tau_N2_772      = x[17]
     K_Ar_Q_Ar_772   = x[18]
     K_Ar_Q_N2_772   = x[19]
+
+
+
+    PAr_star_794    = x[20]
+    tau_N2_794      = x[21]
+    K_Ar_Q_Ar_794   = x[22]
+    K_Ar_Q_N2_794   = x[23]
   
-    #frac1 = PAr_star_794 * (1/tau_N2_794) / ( 1/tau_N2_794 + n * fN2 * K_Ar_Q_N2_794 + n * (1 - fN2) * K_Ar_Q_794)
+    frac1 = PAr_star_794 * (1/tau_N2_794) / ( 1/tau_N2_794 + n * fN2 * K_Ar_Q_N2_794 + n * (1 - fN2) * K_Ar_Q_Ar_794)
 
 
-    #if activate_components:
-    #    return (W * frac1 * Pob_Ar_794, W * frac1 * Pob_Ar_794)
-    #else:
-    #    return  W * frac1 * Pob_Ar_794
+    if activate_components:
+       return (W * frac1 * Pob_Ar_794, W * frac1 * Pob_Ar_794)
+    else:
+       return  W * frac1 * Pob_Ar_794
     

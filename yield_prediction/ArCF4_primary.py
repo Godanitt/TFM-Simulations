@@ -43,6 +43,12 @@ y_red_E100   = [450, 500, 600, 1150, 1300, 1850, 1900]
 yerr_red_E100= [60, 60, 60, 90, 100, 120, 120]
 
 
+vis_cf4_red_E100 = [100.0]
+vis_y_red_E100   = [1184.7]
+vis_yerr_red_E100= [47]
+
+ 
+
 
 cf4_pct = np.array([0, 1.0, 2.0, 5.0, 10, 20, 30, 50, 75, 100])/100
 
@@ -82,11 +88,29 @@ for i in range(len(pressure)):
 
 
 plt.errorbar(cf4_red_E100,
-             y_red_E100,
-             yerr=yerr_red_E100,
-             marker="o",
-             linestyle="none",
-             label="$\\alpha$'s exp data")
+            y_red_E100,
+            yerr=yerr_red_E100,
+            ms=4,
+            marker="o",
+            linestyle="none",
+            color=colors[0],
+            ecolor=colors[0],
+            elinewidth=1,
+            capsize=2,
+            label="$\\alpha$'s P. Amedo")
+
+
+plt.errorbar(vis_cf4_red_E100,
+             vis_y_red_E100,
+             yerr=vis_yerr_red_E100,
+            marker="v",
+            linestyle="none",
+            ms=5,
+            color=colors[0],
+            ecolor=colors[0],
+            elinewidth=1,
+            capsize=2,
+            label="$\\alpha$'s Lehaut")
 
 plt.xscale("log")
 #plt.yscale("log")
@@ -129,6 +153,9 @@ for i in range(len(pressure)):
         label=f"{pressure[i]} bar prediction",
         linewidth = 2
     )
+
+
+
 
 plt.xscale("log")
 #plt.yscale("log")

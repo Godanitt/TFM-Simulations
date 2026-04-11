@@ -330,7 +330,7 @@ fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
 
 names_tex = [
     "$N_{\\text{norm}}$",               
-
+    
     "$P_{\\text{N}_2}$"    ,            
 
     "$\\tau_{\\text{N}_2}$ [ns]",              
@@ -349,13 +349,13 @@ names_tex = [
 
 
 
-latex_table, _, perr, rel = export_fit_table_latex(
-    result=popt,
+latex_table, _ = export_fit_table_latex(
+    results=popt,
     names=names_tex,
     filename="tex_param/ArN2_param.tex",
     caption="Parámetros obtenidos del ajuparamste global.",
     label="tab:fit_params",
-    sigfigs=4
+    err_sigfigs=2,
 )
 
 #######################################################################
@@ -422,19 +422,20 @@ bounds=(list(lower_og+lower_semifixed), list(upper_og+upper_semifixed))
 popt4 = fitParameters(equations, experimental_data, degrad_data, x0=x0, bounds=bounds, fixed_idx = [2])
 x4 = popt4.x
 
-df = pd.DataFrame({"Parameter":names_tex,
-                   "$x_0$":x0,
-                   "Factor x1.2":x1,
-                   "Factor x1.5":x2,
-                   "Factor x2"  :x3,
-                   "Factor x3"  :x4})
 
-df.style.hide(axis="index").format(
-    lambda x: f"$\\num{{{x:.2e}}}$" if isinstance(x, (int, float)) else x
-    ).to_latex(
-    "tex_param/ArN2_free_factor.tex",
+popt_secondary = fitParameters(equations, experimental_data, degrad_data, x0=x0, bounds=bounds)
+
+
+latex_table, payload = export_fit_table_latex(
+    results=[x0, popt2, popt3, popt4],
+    names=names_tex,
+    filename="tex_param/ArN2_free_factor.tex",
     caption="Parameters known ($x_0$) and the obtained in the fit with a parameter factor freedom",
     label="tab:ArN2_free_factor",
-    siunitx=True,
-    hrules=True
+    column_names=["x0","x1.5","x2","x3"],
+    units=None,
+    err_sigfigs=2,
+    show_relative_error=False,
+    relative_incertainty=[0.0, 0.2, 0.2, 0.2],
+
 )
