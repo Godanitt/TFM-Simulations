@@ -436,6 +436,6 @@ latex_table, payload = export_fit_table_latex(
     units=None,
     err_sigfigs=2,
     show_relative_error=False,
-    relative_incertainty=[0.0, 0.2, 0.2, 0.2],
+    relative_incertainty=[0.0, 0.2, 0.2, 0.2, 0.2],
 
 )

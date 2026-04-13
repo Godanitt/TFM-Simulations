@@ -3,7 +3,7 @@ import pandas as pd
 from pathlib import Path
 
 
-def _coerce_result_like(result):
+def _coerce_result_like(result, sx0=None):
     """
     Convierte distintas entradas a un formato homogéneo compatible
     con el exportador.
@@ -15,17 +15,36 @@ def _coerce_result_like(result):
 
     Para x0/list/ndarray:
       - x    = vector de parámetros
-      - perr = NaN
-      - pcov = NaN
+      - perr = sx0 si se proporciona; si no, NaN
+      - pcov = diag(perr^2) si sx0 se proporciona; si no, NaN
+
+    Si result es un ajuste real (OptimizeResult o dict con info propia),
+    sx0 se ignora.
     """
     # Caso 1: vector puro -> lo interpretamos como x0
     if isinstance(result, (list, tuple, np.ndarray)):
         x = np.asarray(result, dtype=float)
         n = len(x)
+
+        if sx0 is None:
+            perr = np.full(n, np.nan, dtype=float)
+            pcov = np.full((n, n), np.nan, dtype=float)
+        else:
+            if np.isscalar(sx0):
+                perr = np.full(n, float(sx0), dtype=float)
+            else:
+                perr = np.asarray(sx0, dtype=float)
+                if perr.shape != (n,):
+                    raise ValueError(
+                        f"sx0 tiene forma {perr.shape}, pero debería ser ({n},)"
+                    )
+            perr = np.abs(perr)
+            pcov = np.diag(perr**2)
+
         return {
             "x": x,
-            "perr": np.full(n, np.nan, dtype=float),
-            "pcov": np.full((n, n), np.nan, dtype=float),
+            "perr": perr,
+            "pcov": pcov,
         }
 
     # Caso 2: dict con clave x
@@ -55,7 +74,7 @@ def _coerce_result_like(result):
     return result
 
 
-def _extract_fit_info(result):
+def _extract_fit_info(result, sx0=None):
     """
     Extrae de forma robusta:
       - popt : parámetros completos
@@ -66,8 +85,10 @@ def _extract_fit_info(result):
       - OptimizeResult / objetos con atributos .x, .perr, .pcov, .jac
       - dict con claves equivalentes
       - list / tuple / np.ndarray interpretados como x0
+
+    Si result es un x0 y sx0 no es None, usa sx0 como incertidumbre.
     """
-    result = _coerce_result_like(result)
+    result = _coerce_result_like(result, sx0=sx0)
 
     def _has(obj, key):
         return hasattr(obj, key) or (isinstance(obj, dict) and key in obj)
@@ -117,7 +138,6 @@ def _extract_fit_info(result):
         return popt, perr, pcov
 
     if not _has(result, "jac"):
-        # Si no hay jac y tampoco perr/pcov, tratamos esto como un vector sin errores
         perr = np.full(n_total, np.nan, dtype=float)
         pcov = np.full((n_total, n_total), np.nan, dtype=float)
         return popt, perr, pcov
@@ -350,15 +370,11 @@ def _normalize_results_input(results):
 
     Devuelve siempre una lista de entradas.
     """
-    # Caso especial: ndarray 1D = un único x0, no una lista de resultados
     if isinstance(results, np.ndarray):
         if results.ndim == 1:
             return [results]
         raise ValueError("'results' no puede ser un ndarray de dimensión > 1.")
 
-    # Si es lista/tupla, hay que distinguir:
-    # - [res1, res2, ...]  -> varios resultados
-    # - [1.0, 2.0, 3.0]    -> un único x0
     if isinstance(results, (list, tuple)):
         if len(results) == 0:
             raise ValueError("'results' no puede estar vacío.")
@@ -408,7 +424,49 @@ def _normalize_relative_incertainty(relative_incertainty, n_results):
     return rels
 
 
-def _build_results_payload(results, names, relative_incertainty=None):
+def _normalize_sx0(sx0, n_results):
+    """
+    Normaliza sx0 para que haya una entrada por resultado.
+
+    Acepta:
+      - None -> [None, ..., None]
+      - lista/tupla de longitud n_results
+      - para n_results == 1, también acepta un vector/scalar directo
+
+    Cada entrada sx0[i] puede ser:
+      - None
+      - escalar
+      - vector de longitud compatible con x0
+    """
+    if sx0 is None:
+        return [None] * n_results
+
+    if n_results == 1:
+        if not isinstance(sx0, (list, tuple)):
+            return [sx0]
+
+        if len(sx0) == 1:
+            return [sx0[0]]
+
+        is_numeric_vector = all(np.isscalar(v) for v in sx0)
+        if is_numeric_vector:
+            return [np.asarray(sx0, dtype=float)]
+
+    if not isinstance(sx0, (list, tuple)):
+        raise ValueError(
+            "Cuando hay varios resultados, 'sx0' debe ser una lista/tupla "
+            "con una entrada por resultado."
+        )
+
+    if len(sx0) != n_results:
+        raise ValueError(
+            f"len(sx0) = {len(sx0)} pero hay {n_results} resultados."
+        )
+
+    return list(sx0)
+
+
+def _build_results_payload(results, names, relative_incertainty=None, sx0=None):
     """
     Devuelve una lista de diccionarios con:
       popt, perr, pcov, rel_err_percent
@@ -419,14 +477,18 @@ def _build_results_payload(results, names, relative_incertainty=None):
 
     y reconstruye pcov como matriz diagonal:
       pcov = diag(perr^2)
+
+    Si result es un x0 y sx0 no es None, usa sx0 como incertidumbre.
+    Si result es un ajuste real, sx0 se ignora.
     """
     n_results = len(results)
     rel_incert_list = _normalize_relative_incertainty(relative_incertainty, n_results)
+    sx0_list = _normalize_sx0(sx0, n_results)
 
     payload = []
 
-    for result, rel_inc in zip(results, rel_incert_list):
-        popt, perr, pcov = _extract_fit_info(result)
+    for result, rel_inc, sx0_i in zip(results, rel_incert_list, sx0_list):
+        popt, perr, pcov = _extract_fit_info(result, sx0=sx0_i)
 
         if len(names) != len(popt):
             raise ValueError(
@@ -445,7 +507,6 @@ def _build_results_payload(results, names, relative_incertainty=None):
         nonzero = (popt != 0) & np.isfinite(perr)
         rel_err_percent[nonzero] = 100.0 * np.abs(perr[nonzero] / popt[nonzero])
 
-        # Para parámetros exactamente cero y error relativo forzado, dejamos 0
         zero_mask = (popt == 0) & np.isfinite(perr)
         rel_err_percent[zero_mask] = 0.0
 
@@ -456,6 +517,7 @@ def _build_results_payload(results, names, relative_incertainty=None):
                 "pcov": pcov,
                 "rel_err_percent": rel_err_percent,
                 "relative_incertainty": rel_inc,
+                "sx0": sx0_i,
             }
         )
 
@@ -478,6 +540,7 @@ def export_fit_table_latex(
     rel_sigfigs=2,
     show_relative_error=False,
     relative_incertainty=None,
+    sx0=None,
 ):
     """
     Exporta una tabla LaTeX con uno o varios resultados.
@@ -494,8 +557,6 @@ def export_fit_table_latex(
     label : str
     column_names : list[str] | None
         Nombres de las columnas-modelo.
-        Ejemplo:
-          ["Primary Model", "Primary & Secondary Model"]
     units : list[str|None] | None
         Unidades por parámetro. Si se da, se usa \\SI.
     err_sigfigs : int
@@ -507,6 +568,9 @@ def export_fit_table_latex(
     relative_incertainty : None, float o lista de float
         Si no es None, sobreescribe temporalmente todas las incertidumbres como
         sigma_i = relative_incertainty * abs(x_i)
+    sx0 : None o lista
+        Si un elemento de results es un x0, permite asignarle incertidumbres.
+        Si el elemento correspondiente es un ajuste real, sx0 se ignora.
 
     Requiere en el preámbulo:
       \\usepackage{siunitx}
@@ -532,15 +596,13 @@ def export_fit_table_latex(
     payload = _build_results_payload(
         results,
         names,
-        relative_incertainty=relative_incertainty
+        relative_incertainty=relative_incertainty,
+        sx0=sx0,
     )
 
-    # Estructura de columnas
     if show_relative_error:
-        # Parámetro + 2 columnas por modelo
         colspec = "l" + "cc" * n_results
     else:
-        # Parámetro + 1 columna por modelo
         colspec = "l" + "c" * n_results
 
     lines = []
@@ -552,7 +614,6 @@ def export_fit_table_latex(
     lines.append(r"\toprule")
 
     if show_relative_error:
-        # Cabecera superior agrupada
         header_top = [r"Parámetro"]
         for cname in column_names:
             header_top.append(rf"\multicolumn{{2}}{{c}}{{{cname}}}")
@@ -569,7 +630,6 @@ def export_fit_table_latex(
 
     lines.append(r"\midrule")
 
-    # Filas
     for ip, pname in enumerate(names):
         row = [pname]
 
@@ -619,6 +679,7 @@ def export_to_csv(
     err_sigfigs=2,
     rel_sigfigs=2,
     relative_incertainty=None,
+    sx0=None,
 ):
     """
     Exporta CSV con uno o varios resultados.
@@ -634,6 +695,8 @@ def export_to_csv(
     Si relative_incertainty no es None, sobreescribe temporalmente
     todas las incertidumbres como:
       sigma_i = relative_incertainty * abs(x_i)
+
+    Si result es un x0 y sx0 no es None, usa sx0 como incertidumbre.
     """
     results = _normalize_results_input(results)
     n_results = len(results)
@@ -649,7 +712,8 @@ def export_to_csv(
     payload = _build_results_payload(
         results,
         names,
-        relative_incertainty=relative_incertainty
+        relative_incertainty=relative_incertainty,
+        sx0=sx0,
     )
 
     data = {}
@@ -701,6 +765,7 @@ def export_fit_table_typst(
     rel_sigfigs=2,
     show_relative_error=False,
     relative_incertainty=None,
+    sx0=None,
 ):
     """
     Exporta una tabla Typst con uno o varios resultados.
@@ -708,6 +773,8 @@ def export_fit_table_typst(
     Si relative_incertainty no es None, sobreescribe temporalmente
     todas las incertidumbres como:
       sigma_i = relative_incertainty * abs(x_i)
+
+    Si result es un x0 y sx0 no es None, usa sx0 como incertidumbre.
     """
     results = _normalize_results_input(results)
     n_results = len(results)
@@ -723,7 +790,8 @@ def export_fit_table_typst(
     payload = _build_results_payload(
         results,
         names,
-        relative_incertainty=relative_incertainty
+        relative_incertainty=relative_incertainty,
+        sx0=sx0,
     )
 
     def fmt_name_typst(s):
