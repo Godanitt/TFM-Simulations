@@ -101,32 +101,93 @@ def _first_non_null(values):
     return None
 
 
-def _get_series_for_yield(df_pressure, conc_col, yield_name, no_sistematic=True):
+def _normalize_uncertainty_mode(uncertainty_mode):
+    if not isinstance(uncertainty_mode, str):
+        raise ValueError("introduzca una válida")
+
+    mode = uncertainty_mode.strip().lower()
+
+    aliases = {
+        "stadistic": "stadistic",
+        "statistic": "stadistic",
+        "statistical": "stadistic",
+        "estadistico": "stadistic",
+        "estadística": "stadistic",
+        "estadistica": "stadistic",
+        "sistematic": "sistematic",
+        "systematic": "sistematic",
+        "sistematico": "sistematic",
+        "sistemática": "sistematic",
+        "sistematica": "sistematic",
+        "all": "all",
+        "combined": "all",
+        "total": "all",
+        "todos": "all",
+    }
+
+    mode = aliases.get(mode, mode)
+    valid_modes = {"stadistic", "sistematic", "all"}
+
+    if mode not in valid_modes:
+        raise ValueError("introduzca una válida")
+
+    return mode
+
+
+def _get_error_candidates(mode, schema="new", is_n2=False):
+    if schema == "old":
+        mapping = {
+            "stadistic": ["uyields_estadistico", "u_yields_estadistico"],
+            "sistematic": [
+                "uyields_sistematico", "u_yields_sistematico",
+                "uyields_systematic", "u_yields_systematic",
+                "uyields_cal",
+            ],
+            "all": ["u_yields_zonas"],
+        }
+        return mapping[mode]
+
+    if is_n2:
+        mapping = {
+            "stadistic": ["u_yield_n2_estadistico"],
+            "sistematic": [
+                "u_yield_n2_sistematico", "u_yield_n2_systematic",
+                "u_yield_n2_cal",
+            ],
+            "all": ["u_yield_n2_combined"],
+        }
+        return mapping[mode]
+
+    mapping = {
+        "stadistic": ["u_yields_estadistico"],
+        "sistematic": [
+            "u_yields_sistematico", "u_yields_systematic",
+            "u_yields_cal", "u_yields_picos_cal",
+        ],
+        "all": ["u_yields_picos"],
+    }
+    return mapping[mode]
+
+
+def _get_series_for_yield(df_pressure, conc_col, yield_name, uncertainty_mode="stadistic"):
     """
     Devuelve:
         s      -> serie de valores
         err_s  -> serie de errores
     indexadas por concentración.
     """
+    uncertainty_mode = _normalize_uncertainty_mode(uncertainty_mode)
 
     # =========================
     # ESQUEMA VIEJO
     # =========================
     if "yields_zonas" in df_pressure.columns:
         value_col = "yields_zonas"
-
-        if no_sistematic:
-            err_col = _find_first_column(
-                df_pressure,
-                ["uyields_estadistico", "u_yields_estadistico"],
-                "columna de error estadístico del esquema viejo"
-            )
-        else:
-            err_col = _find_first_column(
-                df_pressure,
-                ["u_yields_zonas"],
-                "columna de error combinado del esquema viejo"
-            )
+        err_col = _find_first_column(
+            df_pressure,
+            _get_error_candidates(uncertainty_mode, schema="old"),
+            f"columna de error '{uncertainty_mode}' del esquema viejo"
+        )
 
         s = df_pressure.set_index(conc_col)[value_col].apply(lambda d: _extract_item(d, yield_name))
         err_s = df_pressure.set_index(conc_col)[err_col].apply(lambda d: _extract_item(d, yield_name))
@@ -146,18 +207,11 @@ def _get_series_for_yield(df_pressure, conc_col, yield_name, no_sistematic=True)
             "columna yield_N2"
         )
 
-        if no_sistematic:
-            err_col = _find_first_column(
-                df_pressure,
-                ["u_yield_n2_estadistico"],
-                "columna de error estadístico para yield_N2"
-            )
-        else:
-            err_col = _find_first_column(
-                df_pressure,
-                ["u_yield_n2_combined"],
-                "columna de error combinado para yield_N2"
-            )
+        err_col = _find_first_column(
+            df_pressure,
+            _get_error_candidates(uncertainty_mode, schema="new", is_n2=True),
+            f"columna de error '{uncertainty_mode}' para yield_N2"
+        )
 
         s = df_pressure.set_index(conc_col)[value_col]
         err_s = df_pressure.set_index(conc_col)[err_col]
@@ -170,18 +224,11 @@ def _get_series_for_yield(df_pressure, conc_col, yield_name, no_sistematic=True)
         "columna yields_picos"
     )
 
-    if no_sistematic:
-        err_col = _find_first_column(
-            df_pressure,
-            ["u_yields_estadistico"],
-            "columna de error estadístico para yields_picos"
-        )
-    else:
-        err_col = _find_first_column(
-            df_pressure,
-            ["u_yields_picos"],
-            "columna de error combinado para yields_picos"
-        )
+    err_col = _find_first_column(
+        df_pressure,
+        _get_error_candidates(uncertainty_mode, schema="new", is_n2=False),
+        f"columna de error '{uncertainty_mode}' para yields_picos"
+    )
 
     s = df_pressure.set_index(conc_col)[value_col].apply(lambda d: _extract_item(d, yield_name))
     err_s = df_pressure.set_index(conc_col)[err_col].apply(lambda d: _extract_item(d, yield_name))
@@ -204,18 +251,17 @@ def read_experimental(
     presiones,
     output_dir,
     concentraciones_reales=None,
-    no_sistematic=True,
+    uncertainty_mode="stadistic",
     output_concentration_name=None,
 ):
+    uncertainty_mode = _normalize_uncertainty_mode(uncertainty_mode)
+
     with open(archivo_entrada, "rb") as f:
         df = dill.load(f)
 
+    
     print("Columnas detectadas:")
     print(df.columns)
-    #dic = df.loc[1,"yields_picos"]
-    #print(dic)
-
-    #print(df["u_yield_n2_combined"],df["u_yield_n2_cal"])
 
     # Detectar columnas compatibles con ambos formatos
     pressure_col = _find_first_column(
@@ -229,8 +275,6 @@ def read_experimental(
         ["concentracion", "concentraciones", "N2 concentration (%)", "CF4 concentration (%)"],
         "columna de concentración"
     )
-
-
 
     # Nombre de la columna de salida para la concentración
     if output_concentration_name is None:
@@ -271,7 +315,7 @@ def read_experimental(
                 df_pressure=df_pressure,
                 conc_col=conc_col,
                 yield_name=y,
-                no_sistematic=no_sistematic,
+                uncertainty_mode=uncertainty_mode,
             )
 
             if use_numeric_reindex:
@@ -289,7 +333,6 @@ def read_experimental(
 
         yield_out = yield_out.fillna(0)
 
-        # Por si el nombre del yield lleva barras o cosas raras
         safe_y = str(y).replace("/", "_")
         out_path = os.path.join(output_dir, f"{safe_y}.csv")
         yield_out.to_csv(out_path, index=False)

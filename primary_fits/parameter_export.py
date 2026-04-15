@@ -725,21 +725,21 @@ def export_to_csv(
         perr = item["perr"]
         rel_err_percent = item["rel_err_percent"]
 
-        data[f"{safe_name}_value"] = popt
-        data[f"{safe_name}_uncertainty"] = perr
-        data[f"{safe_name}_value_pm_uncertainty"] = [
-            _format_value_uncertainty_text(v, e, err_sigfigs=err_sigfigs)
-            for v, e in zip(popt, perr)
-        ]
-        data[f"{safe_name}_siunitx_uncertainty"] = [
-            _format_uncertainty_siunitx_inner(v, e, err_sigfigs=err_sigfigs)
-            for v, e in zip(popt, perr)
-        ]
-        data[f"{safe_name}_rel_err_percent"] = rel_err_percent
-        data[f"{safe_name}_rel_err_percent_fmt"] = [
-            _format_scalar_text(r, sigfigs=rel_sigfigs)
-            for r in rel_err_percent
-        ]
+        data[f"parameter"] = popt
+        data[f"uncertainty"] = perr
+        # data[f"{safe_name}_value_pm_uncertainty"] = [
+        #     _format_value_uncertainty_text(v, e, err_sigfigs=err_sigfigs)
+        #     for v, e in zip(popt, perr)
+        # ]
+        # data[f"{safe_name}_siunitx_uncertainty"] = [
+        #     _format_uncertainty_siunitx_inner(v, e, err_sigfigs=err_sigfigs)
+        #     for v, e in zip(popt, perr)
+        # ]
+        # data[f"{safe_name}_rel_err_percent"] = rel_err_percent
+        # data[f"{safe_name}_rel_err_percent_fmt"] = [
+        #     _format_scalar_text(r, sigfigs=rel_sigfigs)
+        #     for r in rel_err_percent
+        # ]
 
     df = pd.DataFrame(data, index=names)
 

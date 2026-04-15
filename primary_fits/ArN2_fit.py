@@ -85,12 +85,11 @@ archivo_entrada = "../data/Experimental/ArN2/N2_primary_data_final.pkl"
 yields = ["yield_N2"]
 presiones = [1,2,2.5,3,4,5]
 concentraciones_reales= None
-no_sistematic = False
 
 
 output_dir = "../data/Experimental/ArN2/"
 
-read_experimental(archivo_entrada, yields, presiones, output_dir, concentraciones_reales=concentraciones_reales, no_sistematic = no_sistematic)
+read_experimental(archivo_entrada, yields, presiones, output_dir, concentraciones_reales=concentraciones_reales, uncertainty_mode="all")
 
 #####################################################
 ###### Traemos los datos anteriormente generados 
@@ -436,6 +435,6 @@ latex_table, payload = export_fit_table_latex(
     units=None,
     err_sigfigs=2,
     show_relative_error=False,
-    relative_incertainty=[0.0, 0.2, 0.2, 0.2, 0.2],
+    relative_incertainty=[0.0, 0.2, 0.2, 0.2],
 
 )

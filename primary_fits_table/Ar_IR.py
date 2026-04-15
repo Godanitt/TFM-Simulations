@@ -19,9 +19,14 @@ except ImportError as exc:
 BASE_DIR = os.path.dirname(__file__)
 models_dir = os.path.abspath(os.path.join(BASE_DIR, '../models'))
 data_dir = os.path.abspath(os.path.join(BASE_DIR, '../data'))
+fit_dir = os.path.abspath(os.path.join(BASE_DIR, '../primary_fits'))
 
 sys.path.append(models_dir)
 sys.path.append(data_dir)
+sys.path.append(fit_dir)
+from fiting import fitParameters, fitParameters_lmfit, fitParameters_minimize
+from parameter_export import export_fit_table_latex, export_to_csv
+from ploting import plot_fit_vs_experiment_by_pressure
 
 # =========================================================
 # Imports: models and utilities
@@ -388,7 +393,7 @@ def fit_n2_ir():
         presiones,
         "../data/Experimental/ArN2/",
         concentraciones_reales=None,
-        no_sistematic=False,
+        uncertainty_mode="all",
     )
 
     data_dir_exp = "../data/Experimental/ArN2/"

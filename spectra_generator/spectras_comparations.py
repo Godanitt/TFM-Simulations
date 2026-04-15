@@ -1,69 +1,126 @@
 import os
+import sys
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import sys
-import seaborn as sns
-import dill 
+import dill
 import scienceplots
+import scipy.special as sc
 
-plt.style.use(['science', 'grid'])
-models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../models'))
-data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data'))
+plt.style.use(["science", "grid"])
 
-sys.path.append(models_dir)
-sys.path.append(data_dir)
+# =========================================================
+# CARGA ROBUSTA DE PICKLES
+# =========================================================
+class CompatUnpickler(dill.Unpickler):
+    def find_class(self, module, name):
+        if module == "scipy.special._special_ufuncs" and hasattr(sc, name):
+            return getattr(sc, name)
+        return super().find_class(module, name)
+
+def safe_dill_load(path):
+    with open(path, "rb") as f:
+        return CompatUnpickler(f).load()
+
+# =========================================================
+# RUTAS: funciona tanto en script como en notebook
+# =========================================================
+try:
+    BASE_DIR = Path(__file__).resolve().parent
+except NameError:
+    BASE_DIR = Path.cwd()
+
+MODELS_DIR = (BASE_DIR / "../models").resolve()
+DATA_DIR = (BASE_DIR / "../data").resolve()
+
+sys.path.append(str(MODELS_DIR))
+sys.path.append(str(DATA_DIR))
 
 from ArN2 import *
 from ArN2_infrarred import *
-from ArCF4 import * 
-from ArCF4_infrarred import * 
+from ArCF4 import *
+from ArCF4_infrarred import *
 
+# =========================================================
+# CONFIGURACIÓN
+# =========================================================
+DATA_DIR_DEGRAD = BASE_DIR / "../data/Primary_DegradData"
+DATA_DIR_PAR = BASE_DIR / "../data/Parameters"
+DATA_DIR_EXP = BASE_DIR / "../data/Experimental"
 
-######################################33
+pressure = [1]
+concentrations = [0.1, 1, 5, 100]
+wavelength = np.linspace(200, 800, 2000)
 
-DATA_DIR_DEGRAD = "../data/Primary_DegradData"
-DATA_DIR_PAR = "../data/Parameters"
+# referencia de normalización: 95/5 -> 5% aditivo, 1 bar
+REF_CON = 5
+REF_PRES = 1
 
-degrad_data_cf4 = pd.read_csv(os.path.join(DATA_DIR_DEGRAD, "ArCF4.csv"))
-degrad_data_cf4_IR = pd.read_csv(os.path.join(DATA_DIR_DEGRAD, "ArCF4_IR.csv"))
-degrad_data_n2 = pd.read_csv(os.path.join(DATA_DIR_DEGRAD, "ArN2.csv"))
-degrad_data_n2_IR = pd.read_csv(os.path.join(DATA_DIR_DEGRAD, "ArN2_IR.csv"))
+# ventana para buscar el pico visible experimental de CF4
+VISIBLE_MIN = 500
+VISIBLE_MAX = 750
 
+# =========================================================
+# DATOS
+# =========================================================
+degrad_data_cf4 = pd.read_csv(DATA_DIR_DEGRAD / "ArCF4.csv")
+degrad_data_cf4_IR = pd.read_csv(DATA_DIR_DEGRAD / "ArCF4_IR.csv")
+degrad_data_n2 = pd.read_csv(DATA_DIR_DEGRAD / "ArN2.csv")
+degrad_data_n2_IR = pd.read_csv(DATA_DIR_DEGRAD / "ArN2_IR.csv")
 
-parameter_data_cf4 = pd.read_csv(os.path.join(DATA_DIR_PAR, "ArCF4_primary.csv"))["parameter"].to_numpy()
-parameter_data_cf4_IR = pd.read_csv(os.path.join(DATA_DIR_PAR, "ArCF4_IR_primary.csv"))["parameter"].to_numpy()
-parameter_data_n2= pd.read_csv(os.path.join(DATA_DIR_PAR, "ArN2_primary.csv"))["parameter"].to_numpy()
-parameter_data_n2_IR = pd.read_csv(os.path.join(DATA_DIR_PAR, "ArN2_IR_primary.csv"))["parameter"].to_numpy()
-
+parameter_data_cf4 = pd.read_csv(DATA_DIR_PAR / "ArCF4_primary.csv")["parameter"].to_numpy()
+parameter_data_cf4_IR = pd.read_csv(DATA_DIR_PAR / "ArCF4_IR_primary.csv")["parameter"].to_numpy()
+parameter_data_n2 = pd.read_csv(DATA_DIR_PAR / "ArN2_primary.csv")["parameter"].to_numpy()
+parameter_data_n2_IR = pd.read_csv(DATA_DIR_PAR / "ArN2_IR_primary.csv")["parameter"].to_numpy()
 
 norm_cf4 = parameter_data_cf4[0].copy()
-norm_n2  = parameter_data_n2[0].copy()
+norm_n2 = parameter_data_n2[0].copy()
 
-norm = (norm_cf4+norm_n2)/2
+print("norm =", norm_cf4, norm_n2)
 
-######################################
+norm = 1
 
-def gaussiana(x,mu,sigma):
-    return (1 / (sigma * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x - mu) / sigma)**2)
+# =========================================================
+# FUNCIONES AUXILIARES
+# =========================================================
+def gaussiana(x, mu, sigma):
+    return (1 / (sigma * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x - mu) / sigma) ** 2)
 
-######################################33
+def normalize_all_spectra(all_spectra, ref_value):
+    out = []
+    for con, spectra_con in all_spectra:
+        new_spectra = []
+        for pres, y in spectra_con:
+            new_spectra.append((pres, y / ref_value))
+        out.append((con, new_spectra))
+    return out
 
-with open("../data/Experimental/ArN2/N2_primary_data_final.pkl", "rb") as f:
-        df = dill.load(f)
+def get_cf4_exp_visible_reference(df_cf4, con_ref=REF_CON, pres_ref=REF_PRES,
+                                  visible_min=VISIBLE_MIN, visible_max=VISIBLE_MAX):
+    mask = np.isclose(df_cf4["concentracion"], con_ref) & np.isclose(df_cf4["presion"], pres_ref)
+    if not np.any(mask):
+        raise ValueError(f"No encuentro el espectro experimental CF4 para con={con_ref}, P={pres_ref}")
 
+    dic = df_cf4.loc[mask].iloc[0]["data(norm)"]
+    wavelen = np.asarray(dic["wavelength"], dtype=float)
+    intensity = np.asarray(dic["intensity"], dtype=float)
 
-spectrum = df.loc[0,"mean_spectrum"]
+    vis_mask = (wavelen >= visible_min) & (wavelen <= visible_max)
+    if not np.any(vis_mask):
+        raise ValueError("La ventana visible está vacía en el espectro experimental de referencia.")
 
+    return np.max(intensity[vis_mask])
 
-cmap = "viridis"
-cmap_obj = plt.get_cmap(cmap)
-pressure = [1]
-colors = cmap_obj(np.linspace(0.15, 0.85, len(pressure)))
-concentrations = [0.1,1,10,100]
+# =========================================================
+# CARGA DE PICKLES
+# =========================================================
+df_N2 = safe_dill_load(DATA_DIR_EXP / "ArN2/N2_primary_data_final.pkl")
+df_CF4 = safe_dill_load(DATA_DIR_EXP / "ArCF4/CF4_primary_data_final.pkl")
 
-wavelength = np.linspace(200,800,2000)
-
+# =========================================================
+# ECUACIONES IR
+# =========================================================
 equations_n2 = {
     "696": theory_yield_ArN2_Ir_696,
     "727": theory_yield_ArN2_Ir_727,
@@ -72,71 +129,68 @@ equations_n2 = {
     "772": theory_yield_ArN2_Ir_772,
 }
 
-
+# Ajusta estos nombres si en tu módulo se llaman distinto
 equations_cf4 = {
-    "696": theory_yield_ArN2_Ir_696,
-    "727": theory_yield_ArN2_Ir_727,
-    "750": theory_yield_ArN2_Ir_750,
-    "763": theory_yield_ArN2_Ir_763,
-    "772": theory_yield_ArN2_Ir_772,
-    "794": theory_yield_ArN2_Ir_794,
+    "696": theory_yield_ArCF4_Ir_696,
+    "727": theory_yield_ArCF4_Ir_727,
+    "750": theory_yield_ArCF4_Ir_750,
+    "763": theory_yield_ArCF4_Ir_763,
+    "772": theory_yield_ArCF4_Ir_772,
+    "794": theory_yield_ArCF4_Ir_794,
 }
 
-
-
-
 # =========================================================
-# PRIMERA PASADA: calcular todos los espectros y el ymax global
+# PRIMERA PASADA: ESPECTROS TEÓRICOS SIN NORMALIZAR
 # =========================================================
-all_spectra_n2 = []
-global_ymax = 0
+all_spectra_n2_raw = []
+all_spectra_cf4_raw = []
 
+theory_visible_ref = None  # máximo del visible teórico CF4 a 95/5
+
+# ---------- N2 ----------
 for con in concentrations:
     spectra_con = []
-    factor = (1/0.012) * W_ArN2(con/100) / norm
-
+    factor = (1 / 0.012) * W_ArN2(con / 100) / norm
 
     for pres in pressure:
         yield_N2 = theory_yield_N2_uv(
-            parameter_data_n2, degrad_data_n2, np.array([con/100]), pres
+            parameter_data_n2, degrad_data_n2, np.array([con / 100]), pres
         )
-   
+
         yield_total = 0.13 * factor * yield_N2[0] * gaussiana(wavelength, 310, 3)
         yield_total += 0.42 * factor * yield_N2[0] * gaussiana(wavelength, 335, 2.5)
-        yield_total += 0.3 * factor * yield_N2[0] * gaussiana(wavelength, 355, 2.5)
-        yield_total += 0.1 * factor * yield_N2[0] * gaussiana(wavelength, 378, 2.5)
-        yield_total += 0.05* factor * yield_N2[0] * gaussiana(wavelength, 403, 2.5)
+        yield_total += 0.30 * factor * yield_N2[0] * gaussiana(wavelength, 355, 2.5)
+        yield_total += 0.10 * factor * yield_N2[0] * gaussiana(wavelength, 378, 2.5)
+        yield_total += 0.05 * factor * yield_N2[0] * gaussiana(wavelength, 403, 2.5)
 
         for name, yield_IR in equations_n2.items():
             yield_ir = yield_IR(
-                parameter_data_n2_IR, degrad_data_n2_IR, np.array([con/100]), pres
+                parameter_data_n2_IR, degrad_data_n2_IR, np.array([con / 100]), pres
             )
-            yield_total += (factor) * yield_ir[0] * gaussiana(wavelength, float(name), 2.8)
+            yield_total += factor * yield_ir[0] * gaussiana(wavelength, float(name), 2.8)
 
         spectra_con.append((pres, yield_total))
-        global_ymax = max(global_ymax, np.max(yield_total))
 
-    all_spectra_n2.append((con, spectra_con))
+    all_spectra_n2_raw.append((con, spectra_con))
 
-# Guardamos todo primero
-all_spectra_cf4 = []
-global_ymax = 0
-
+# ---------- CF4 ----------
 for con in concentrations:
     spectra_con = []
 
     for pres in pressure:
-
-        factor = (1/0.015) * ion_potential(con/100) / norm
+        factor = (1 / 0.015) * ion_potential(con / 100) / norm
 
         yield_vis = theory_yield_vis(
-            parameter_data_cf4, degrad_data_cf4, np.array([con/100]), pres
+            parameter_data_cf4, degrad_data_cf4, np.array([con / 100]), pres
         ) * factor
 
         yield_uv, yield_cf4, yield_ArDbleStar, yield_cf3_uv = theory_yield_uv(
-            parameter_data_cf4, degrad_data_cf4, np.array([con/100]), pres, activate_components=True
+            parameter_data_cf4,
+            degrad_data_cf4,
+            np.array([con / 100]),
+            pres,
+            activate_components=True
         )
-
 
         yield_uv *= factor
         yield_cf4 *= factor
@@ -145,14 +199,13 @@ for con in concentrations:
 
         yield_vis_spec = yield_vis[0] * gaussiana(wavelength, 630, 40)
 
-        yield_cf4_230 = (0.8/1.85) * yield_cf4[0] * gaussiana(wavelength, 230, 20)
-        yield_cf4_290 = (0.95/1.85) * yield_cf4[0] * gaussiana(wavelength, 290, 20)
-        yield_cf4_364 = (0.10/1.85) * yield_cf4[0] * gaussiana(wavelength, 364, 40)
+        yield_cf4_230 = (0.8 / 1.85) * yield_cf4[0] * gaussiana(wavelength, 230, 20)
+        yield_cf4_290 = (0.95 / 1.85) * yield_cf4[0] * gaussiana(wavelength, 290, 20)
+        yield_cf4_364 = (0.10 / 1.85) * yield_cf4[0] * gaussiana(wavelength, 364, 40)
         yield_cf4_spec = yield_cf4_230 + yield_cf4_290 + yield_cf4_364
 
         yield_arDbleStar_spec = yield_ArDbleStar[0] * gaussiana(wavelength, 220, 60)
         yield_CF3_spec = yield_cf3_uv[0] * gaussiana(wavelength, 245, 60)
-
 
         yield_total = (
             yield_vis_spec
@@ -161,54 +214,137 @@ for con in concentrations:
             + yield_CF3_spec
         )
 
-
         for name, yield_IR in equations_cf4.items():
             yield_ir = yield_IR(
-                parameter_data_cf4_IR, degrad_data_cf4_IR, np.array([con/100]), pres
+                parameter_data_cf4_IR, degrad_data_cf4_IR, np.array([con / 100]), pres
             )
-            yield_total += (factor) * yield_ir[0] * gaussiana(wavelength, float(name), 2.7)
+            yield_total += factor * yield_ir[0] * gaussiana(wavelength, float(name), 2.7)
 
+        # referencia teórica: pico del visible CF4 a 95/5
+        if np.isclose(con, REF_CON) and np.isclose(pres, REF_PRES):
+            theory_visible_ref = np.max(yield_vis_spec)
 
         spectra_con.append((pres, yield_total))
-        global_ymax = max(global_ymax, np.max(yield_total))
 
-    all_spectra_cf4.append((con, spectra_con))
+    all_spectra_cf4_raw.append((con, spectra_con))
 
+if theory_visible_ref is None or theory_visible_ref <= 0:
+    raise ValueError("No pude determinar la referencia teórica del pico visible para CF4 al 95/5.")
 
+# referencia experimental: pico visible experimental CF4 a 95/5
+exp_visible_ref = get_cf4_exp_visible_reference(df_CF4)
+
+print(f"Referencia teórica visible CF4 (95/5): {theory_visible_ref}")
+print(f"Referencia experimental visible CF4 (95/5): {exp_visible_ref}")
 
 # =========================================================
-# SEGUNDA PASADA: dibujar una única figura con 4 paneles
+# NORMALIZACIÓN GLOBAL
+# =========================================================
+all_spectra_n2 = normalize_all_spectra(all_spectra_n2_raw, theory_visible_ref)
+all_spectra_cf4 = normalize_all_spectra(all_spectra_cf4_raw, theory_visible_ref)
+
+# =========================================================
+# CÁLCULO DE ymax GLOBAL NORMALIZADO
+# =========================================================
+global_ymax = 0.0
+
+for _, spectra_con in all_spectra_n2:
+    for _, y in spectra_con:
+        global_ymax = max(global_ymax, np.max(y))
+
+for _, spectra_con in all_spectra_cf4:
+    for _, y in spectra_con:
+        global_ymax = max(global_ymax, np.max(y))
+
+# también incluimos los espectros experimentales ya normalizados
+for con in concentrations:
+    for pres in pressure:
+        mask_n2 = np.isclose(df_N2["N2 concentration (%)"], con) & np.isclose(df_N2["P (bar)"], pres)
+        if np.any(mask_n2):
+            dic = df_N2.loc[mask_n2].iloc[0]["mean_spectrum"]
+            intensity = np.asarray(dic["intensity"], dtype=float) / exp_visible_ref
+            global_ymax = max(global_ymax, np.max(intensity))
+
+        mask_cf4 = np.isclose(df_CF4["concentracion"], con) & np.isclose(df_CF4["presion"], pres)
+        if np.any(mask_cf4):
+            dic = df_CF4.loc[mask_cf4].iloc[0]["data(norm)"]
+            intensity = np.asarray(dic["intensity"], dtype=float) / exp_visible_ref
+            global_ymax = max(global_ymax, np.max(intensity))
+
+# =========================================================
+# FIGURA FINAL
 # =========================================================
 fig, axs = plt.subplots(2, 2, figsize=(9, 6), sharex=True, sharey=True)
 axs = axs.ravel()
 
-for ax, (con_cf4, spectra_cf4_con), (con_n2,spectra_n2_con) in zip(axs, all_spectra_cf4,all_spectra_n2):
-
-    for k, (pres, yield_total_cf4,) in enumerate(spectra_cf4_con):
-        ax.plot(
-            wavelength,
-            yield_total_cf4,
-            color="blue",
-            label=f"CF$_4$ {pres:.1f} bar"
-        )
-
-    for k, (pres, yield_total_n2,) in enumerate(spectra_n2_con):
+for ax, (con_cf4, spectra_cf4_con), (con_n2, spectra_n2_con) in zip(
+    axs, all_spectra_cf4, all_spectra_n2
+):
+    # -------------------------
+    # N2 teórico + experimental
+    # -------------------------
+    for pres, yield_total_n2 in spectra_n2_con:
         ax.plot(
             wavelength,
             yield_total_n2,
             color="red",
-            label=f"N$_2$ {pres:.1f} bar"
+            lw=2,
+            label=f"N$_2$ Teo. {pres:.1f} bar"
         )
+
+        mask_n2 = np.isclose(df_N2["N2 concentration (%)"], con_n2) & np.isclose(df_N2["P (bar)"], pres)
+        if np.any(mask_n2):
+            dic = df_N2.loc[mask_n2].iloc[0]["mean_spectrum"]
+            wavelen = np.asarray(dic["wavelength"], dtype=float)
+            intensity = np.asarray(dic["intensity"], dtype=float) / exp_visible_ref
+
+            ax.plot(
+                wavelen,
+                intensity,
+                color="green",
+                lw=1.8,
+                label=f"N$_2$ Exp. {pres:.1f} bar"
+            )
+
+    # -------------------------
+    # CF4 teórico + experimental
+    # -------------------------
+    for pres, yield_total_cf4 in spectra_cf4_con:
+        ax.plot(
+            wavelength,
+            yield_total_cf4,
+            color="blue",
+            lw=2,
+            label=f"CF$_4$ Teo. {pres:.1f} bar"
+        )
+
+        mask_cf4 = np.isclose(df_CF4["concentracion"], con_cf4) & np.isclose(df_CF4["presion"], pres)
+        if np.any(mask_cf4):
+            dic = df_CF4.loc[mask_cf4].iloc[0]["data(norm)"]
+            wavelen = np.asarray(dic["wavelength"], dtype=float)
+            intensity = np.asarray(dic["intensity"], dtype=float) / exp_visible_ref
+
+            ax.plot(
+                wavelen,
+                intensity,
+                color="orange",
+                lw=1.8,
+                label=f"CF$_4$ Exp. {pres:.1f} bar"
+            )
 
     ax.set_title(f"{con_cf4:.1f} $\%$ Aditivo")
     ax.set_xlabel(r"$\lambda$ [nm]")
-    ax.set_ylabel("ph/MeV/nm")
-    ax.grid(True, which='major', alpha=0.3)
-    ax.grid(True, which='minor', alpha=0.08)
-    ax.set_ylim(0, 1.5 * global_ymax)
-    ax.legend(ncol=2,loc="upper right")
+    ax.set_ylabel("Intensidad normalizada")
+    ax.grid(True, which="major", alpha=0.3)
+    ax.grid(True, which="minor", alpha=0.08)
+    ax.set_xlim(200, 800)
+    ax.set_ylim(0, 1.15 * global_ymax)
+    ax.legend(ncol=2, loc="upper right", fontsize=8)
 
-fig.suptitle(r"Primary Ar-N$_2$ \& Ar-CF$_4$ Spectra Prediction", fontsize=14)
+fig.suptitle(
+    r"Primary Ar-N$_2$ \& Ar-CF$_4$ Spectra Prediction (normalizado al pico visible de 95/5 = 1)",
+    fontsize=13
+)
 fig.tight_layout()
-fig.savefig("Comparation.pdf", dpi=300, bbox_inches="tight")
+fig.savefig("Comparation_normalized.pdf", dpi=300, bbox_inches="tight")
 plt.show()

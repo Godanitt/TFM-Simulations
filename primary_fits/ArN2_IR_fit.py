@@ -124,12 +124,11 @@ archivo_entrada = "../data/Experimental/ArN2/N2_primary_data_final.pkl"
 yields = ["696","727","750","763","772"]
 presiones = [1,2,3,4,5]
 concentraciones_reales= None
-no_sistematic = False
 
 
 output_dir = "../data/Experimental/ArN2/"
 
-read_experimental(archivo_entrada, yields, presiones, output_dir, concentraciones_reales=concentraciones_reales, no_sistematic = no_sistematic)
+read_experimental(archivo_entrada, yields, presiones, output_dir, concentraciones_reales=concentraciones_reales,uncertainty_mode="all")
 
 
 
@@ -276,7 +275,7 @@ for name in equations:
         xlabel="Concentration of N$_2$ [$\%$]",
         ylabel="Normalized Yield",
         xlim=(0.1 * 0.9, 100 * 1.1),
-        ylim=(0.00005, 0.02),
+        ylim=(0.0001, 0.07),
         xscale="log",
         yscale="log",
         cmap="viridis",
@@ -356,13 +355,12 @@ names_csv = [
 export_to_csv("../data/Parameters/ArN2_IR_primary.csv",popt,names_csv)
 
 
-latex_table, _, perr, rel = export_fit_table_latex(
-    result=popt,
+latex_table, _ = export_fit_table_latex(
+    results=popt,
     names=names_tex,
     filename="tex_param/ArN2_IR_param.tex",
     caption="Parámetros obtenidos del ajuparamste global.",
-    label="tab:fit_params",
-    sigfigs=4
+    label="tab:fit_params"
 )
 
 #######################################################################

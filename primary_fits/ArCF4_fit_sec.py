@@ -111,14 +111,39 @@ DATA_DIR = "../data/Primary_DegradData"
 degrad_data        = pd.read_csv(os.path.join(DATA_DIR, "ArCF4.csv"))
 
 
-#########################################################3
-####### AJUSTE
+names_csv = [
+    "Nnorm",
+    "PCF3dir vis$",
+    "PAr**",
+    "KAr**QAr",
+    "KAr**QCF4",
+    "1/tauDiscKrelax",
+    "tauUvKCF4QCF4",
+    "PCF4dir",
+    "KAr++QCF4",
+    "PAr++",
+    "PCF3dir uv$",
+]
 
-# Para poder describir primario y secundario a la vez (fenomenologicamente) con la prescricpión de Pscint común y um threshold inferior de energía diferente tenemos que poner las siguientes exigencias. Estas son, aprox:
-# -- Nnorm ~ 0.14
-# -- Par** ~ 0.27
-# -- Pcf3  ~ 0.09
-# Con esto tienes un chi2 ~ 0.9 
+names_tex = [
+    "$N_{\\text{norm}}$",
+    "$P_{\\mathrm{CF_3}}|_{\\mathrm{vis,dir}}$",
+    "$P_{\\mathrm{Ar}^{**}} $",
+    "${K_{\\mathrm{Ar^{**},Q(Ar)}}}$ [ns]",
+    "${K_{\\mathrm{Ar^{**},Q(CF_4)}}}$ [ns]",
+    "$1 / {\\tau_{\\mathrm{dis}} K_{\\mathrm{relax}}}$",
+    "$\\tau_{\mathrm{uv}} K_{\mathrm{CF_4^{+,*}Q(CF_4)}}$",
+    "$P_{\\mathrm{CF_4^{+,*}}}|_{\\mathrm{dir}}$",
+    "$K_{\\mathrm{Ar^{++},Q(CF_4)}}$ [ns]",
+    "$P_{\\mathrm{Ar}^{++}}$",
+    "$P_{\\mathrm{CF_3}}|_{\\mathrm{uv,dir}}$",
+]
+
+
+
+#######################################################################
+# =================== PRIMARIO ========================
+#######################################################################
 
 x0 = np.array([0.14,
                0.10, 0.99, 3, 0.037*3,
@@ -133,7 +158,7 @@ upper = [0.99,
          1.0, 1.0, 10000.0, 10000.0,
          10000.0, 0.066, 1.0, 50.2, 1.0, 
          0.0001]
-         
+
 bounds=(lower, upper)
 
 equations = {
@@ -152,29 +177,81 @@ experimental_data = {
 }
 
 
-popt = fitParameters(equations, experimental_data, 
+popt_primary = fitParameters(equations, experimental_data, 
                      degrad_data, x0=x0, bounds=bounds,
                      fixed_idx=[6,8,10],
                      fixed_values = [0.065, 50.05, 0.0001],
                      #fixed_error=[0.01],
                      #is_infrared=True
                      )
-#popt = fitParameters_minimize(equations, experimental_data, degrad_data, x0=x0, bounds=bounds)
-
-popt_primary = popt
-
-par = popt.x
-par[4] *= 1
-par[5] *= 1
 
 #######################################################################
-# =================== PLOT ========================
+# =================== SECUNDARIO ========================
 #######################################################################
+
+# Para poder describir primario y secundario a la vez (fenomenologicamente) con la prescricpión de Pscint común y um threshold inferior de energía diferente tenemos que poner las siguientes exigencias. Estas son, aprox:
+# -- Nnorm ~ 0.14
+# -- Par** ~ 0.27
+# -- Pcf3  ~ 0.09
+# Con esto tienes un chi2 ~ 0.9 
+
+x0 = np.array([0.00,
+               0.0, 0.99, 3, 0.037*3,
+               1.0 ,0.1, 0.48, 50.1, 0.37,
+               0.2])
+lower = [0.0,
+         0.0, 0.27, 0.0, 0.0,
+         0.00, 0.065, 0.0, 50, 0.0,
+         0.12]
+
+upper = [0.2, 
+         0.11, 1.0, 10000.0, 10000.0,
+         10000.0, 10000.0, 1.0, 50.2, 1.0, 
+         0.3]
+         
+popt_secondary = fitParameters(equations,
+                               experimental_data,
+                               degrad_data, 
+                               x0=x0,
+                               bounds=bounds,
+                               fixed_idx=[0,1,2,6,8,10],
+                               fixed_values = [0.15,0.109,0.271,.065, 50.05, 0.2],)
+
+export_to_csv("../data/Parameters/ArCF4_secondary.csv",popt_secondary,names_csv)
+
+
+latex_table, payload = export_fit_table_latex(
+    results=[popt_primary, popt_secondary],
+    names=names_tex,
+    filename="tex_param/ArCF4_param_primary_secondary.tex",
+    caption="Parámetros obtenidos del ajuste global de Ar--CF$_4$.",
+    label="tab:cf4_fit_params",
+    column_names=["Modelo Primario", "Modelo Primario y Secundario"],
+    units=None,
+    err_sigfigs=2,
+    show_relative_error=False,
+)
+
+chi2 = 2 * popt_secondary.cost
+N_res = popt_secondary.fun.size
+N_par = popt_secondary.x.size
+dof   = N_res - N_par
+chi2_red = chi2 / dof
+
+print("="*60)
+print("Parámetros globales:", popt_secondary.x)
+print(f"Chi2 (real): {chi2}")
+print(f"Grados de libertad: {dof}")
+print(f"Chi2 reducido: {chi2_red}")
+print("="*60)
+
+par = popt_secondary.x
+
+#############################33
+#### PLOT 
 
 pressure = [1,3,4]
 
-concentrations = np.logspace(-4, 0, 1000)
-yield_vis_plot = yield_vis["1.0bar"]
 
 fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
     df_exp=yield_vis,
@@ -195,20 +272,15 @@ fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
     yscale="log",
     cmap="viridis",
     darken_factor=-0.15,
-    label_mode="legend",
-    legend_kwargs={"ncol": 2, "fontsize": 9},
-    # label_mode="annotate",
-    # annotate_fmt="{p:g} bar",
-    # annotate_fontsize=10,
-    # annotate_bbox=True,
-    output="plots/ArCF4_visible.pdf",
+    legend=True,
+    legend_kwargs={"ncol": 2, "fontsize": 9, "loc":"upper left"},
+    output="plots/ArCF4_sec/ArCF4_visible.pdf",
     show=False,
 )
 
 
 
 concentrations = np.logspace(-6, 0, 1000)
-
 
 fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
     df_exp=yield_uv,
@@ -229,124 +301,12 @@ fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
     yscale="log",
     cmap="viridis",
     darken_factor=-0.15,
-    label_mode="legend",
-    legend_kwargs={"ncol": 2, "fontsize": 9},
-    # label_mode="annotate",
-    # annotate_fmt="{p:g} bar",
-    # annotate_fontsize=10,
-    # annotate_bbox=True,
-    output="plots/ArCF4_uv.pdf",
+    legend=True,
+    legend_kwargs={"ncol": 2, "fontsize": 9, "loc":"upper left"},
+    line_label_fmt=["{p:g} bar completed",
+                    "{p:g} bar CF3*"],
+    output="plots/ArCF4_sec/ArCF4_uv.pdf",
     show=True,
     activate_components=False
 )
-
-
-
-
-
-#######################################################################
-# =================== LATEX, TYPST, CSV EXPORT ========================
-#######################################################################
-names_csv = [
-    "Nnorm",
-    "PCF3dir vis$",
-    "PAr**",
-    "KAr**QAr",
-    "KAr**QCF4",
-    "1/tauDiscKrelax",
-    "tauUvKCF4QCF4",
-    "PCF4dir",
-    "KAr++QCF4",
-    "PAr++",
-    "PCF3dir uv$",
-]
-
-export_to_csv("../data/Parameters/ArCF4_primary.csv",popt,names_csv)
-
-
-names_tex = [
-    "$N_{\\text{norm}}$",
-    "$P_{\\mathrm{CF_3}}|_{\\mathrm{vis,dir}}$",
-    "$P_{\\mathrm{Ar}^{**}} $",
-    "${K_{\\mathrm{Ar^{**},Q(Ar)}}}$ [ns]",
-    "${K_{\\mathrm{Ar^{**},Q(CF_4)}}}$ [ns]",
-    "$1 / {\\tau_{\\mathrm{dis}} K_{\\mathrm{relax}}}$",
-    "$\\tau_{\mathrm{uv}} K_{\mathrm{CF_4^{+,*}Q(CF_4)}}$",
-    "$P_{\\mathrm{CF_4^{+,*}}}|_{\\mathrm{dir}}$",
-    "$K_{\\mathrm{Ar^{++},Q(CF_4)}}$ [ns]",
-    "$P_{\\mathrm{Ar}^{++}}$",
-    "$P_{\\mathrm{CF_3}}|_{\\mathrm{uv,dir}}$",
-]
-
-
-latex_table, payload  = export_fit_table_latex(
-    results=popt,
-    names=names_tex,
-    filename="tex_param/ArCF4_param.tex",
-    caption="Parámetros obtenidos del ajuste global de Ar--CF$_4$.",
-    label="tab:cf4_fit_params",
-    err_sigfigs=2,
-    rel_sigfigs=2
-)
-
-
-#######################################################################
-# =================== CDATA ========================
-#######################################################################
-
-
-J = popt.jac
-m, p = J.shape
-s2 = 2 * popt.cost / (m - p)
-chi2 = 2 * popt.cost
-N_res = popt.fun.size
-N_par = popt.x.size
-dof   = N_res - N_par
-chi2_red = chi2 / dof
-
-
-print("="*60)
-print("Parámetros globales:", popt.x)
-print(f"Chi2 (real): {chi2}")
-print(f"Grados de libertad: {dof}")
-print(f"Chi2 reducido: {chi2_red}")
-print("="*60)
-
-
-cov_theta =  s2 * np.linalg.inv(J.T @ J)
-
-#######################################################################
-# =================== CORRELATION MATRIX ========================
-#######################################################################
-
-
-# # Construimos matriz de correlación a partir de covarianzas
-# diag = np.sqrt(np.diag(cov_theta))
-# outer = np.outer(diag, diag)
-# corr = cov_theta / outer
-
-# # Seguridad numérica
-# corr = np.clip(corr, -1, 1)
-
-# # DataFrame para seaborn
-# corr_df = pd.DataFrame(corr, columns=names_tex, index=names_tex)
-
-# # --- Plot estilo seaborn ---
-# plt.figure(figsize=(10, 8))
-# sns.heatmap(
-#     corr_df,
-#     cmap="coolwarm",
-#     vmin=-1,
-#     vmax=1,
-#     annot=True,
-#     fmt=".2f",
-#     linewidths=0.5,
-#     square=True,
-#     cbar_kws={"label": "Correlación"}
-# )
-# plt.title("Matriz de Correlación de Parámetros Ajustados", fontsize=14)
-# plt.tight_layout()
-
-# plt.savefig("plots/ArCF4_CorrelationMatrix_GlobalFit.pdf", dpi=300)
-
 

@@ -38,6 +38,9 @@ def theory_yield_N2_uv(x, degrad_data, fN2, n, activate_components=False):
     K_ArRes_Q_N2c  = x[8]
     K_ArRes_Q_N2b  = x[9]
     K_ArRes_Q_2Ar  = x[10]
+    # P_Ar_dbleStar  = x[11]
+    # frac_Ar_dbleStar  = x[12]
+
 
     frac_1 = (1/tau_N2) / (1/tau_N2 + n * fN2 * K_N2_Q_N2 + n * (1 - fN2) * K_N2_Q_Ar)
     factor_N2 = frac_1
@@ -55,7 +58,8 @@ def theory_yield_N2_uv(x, degrad_data, fN2, n, activate_components=False):
     factor_Ar_res = frac_5
 
     total = (1/W) * Nnorm * factor_N2 * (
-        Pob_N2 * P_N2 + Pob_Ar_meta * factor_Ar_meta + Pob_Ar_res * factor_Ar_res
+        Pob_N2 * P_N2 + Pob_Ar_meta * factor_Ar_meta + Pob_Ar_res * factor_Ar_res 
+       # + Pob_Ar_dbleStar * P_Ar_dbleStar * (frac_Ar_dbleStar * factor_Ar_meta + (1-frac_Ar_dbleStar) * factor_Ar_meta)
     )
 
     if activate_components:

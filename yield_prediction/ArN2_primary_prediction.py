@@ -29,7 +29,7 @@ degrad_data = pd.read_csv(os.path.join(DATA_DIR_DEGRAD, "ArN2.csv"))
 
 parameter_data = pd.read_csv(os.path.join(DATA_DIR_PAR, "ArN2_primary.csv"))["parameter"].to_numpy()
 print(parameter_data)
-parameter_data[0] = 1
+parameter_data[0]  = 1
 print(parameter_data)
 
 
