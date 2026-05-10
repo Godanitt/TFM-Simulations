@@ -12,6 +12,7 @@ cf4_pct = np.array([0, 1.0, 2.0, 5.0, 10, 20, 30, 50, 75, 100]) / 100
 # Potencial de ionización (según la columna Ar/CF4)
 ion_pot = np.array([26.4, 26.7, 26.9, 27.4, 28.1, 29.4, 30.2, 31.7, 33.0, 34.3])
 
+energy_X_ray_CF4 = 15
 
 def W_ArCF4(f):
     f_cf4 = np.asarray(f, dtype=float)
@@ -31,6 +32,9 @@ def interpolation(yvals, fN2, conc):
     conc_sel = conc_sel[mask]
     y_sel = y_sel[mask]
 
+    if len(conc_sel) == 0:
+        raise ValueError("No hay ningún punto válido para interpolar.")
+
     order = np.argsort(conc_sel)
     conc_sorted = conc_sel[order]
     y_sorted = y_sel[order]
@@ -38,9 +42,25 @@ def interpolation(yvals, fN2, conc):
     conc_unique, unique_idx = np.unique(conc_sorted, return_index=True)
     y_unique = y_sorted[unique_idx]
 
-    if len(conc_unique) < 2:
-        raise ValueError(f"No hay suficientes puntos para interpolar: {conc_unique}")
+    # ------------------------------------------------------------
+    # Caso especial: solo hay una concentración disponible
+    # ------------------------------------------------------------
+    if len(conc_unique) == 1:
+        y0 = y_unique[0]
 
+        # Si fN2 era escalar, devolvemos un escalar o un vector, según y0
+        if fN2.ndim == 0:
+            return y0
+
+        # Si fN2 es un array, devolvemos y0 repetido para cada punto de fN2
+        return np.broadcast_to(
+            y0,
+            fN2.shape + np.shape(y0)
+        ).copy()
+
+    # ------------------------------------------------------------
+    # Caso normal: interpolación PCHIP
+    # ------------------------------------------------------------
     interp = PchipInterpolator(conc_unique, y_unique, axis=0)
     return interp(fN2)
 
@@ -103,9 +123,9 @@ def theory_yield_ArCF4_Ir_696(x, degrad_data, fN2, n, activate_components = Fals
     frac1 = PAr_star_696 * (1/tau_N2_696) / ( 1/tau_N2_696 + n * fN2 * K_Ar_Q_N2_696 + n * (1 - fN2) * K_Ar_Q_Ar_696)
 
     if activate_components:
-        return (W * frac1 * Pob_Ar_696, W * frac1 * Pob_Ar_696)
+        return (frac1 * Pob_Ar_696, frac1 * Pob_Ar_696) / energy_X_ray_CF4
     else:
-        return  W * frac1 * Pob_Ar_696
+        return  frac1 * Pob_Ar_696 / energy_X_ray_CF4
     
     
 
@@ -164,13 +184,13 @@ def theory_yield_ArCF4_Ir_727(x, degrad_data, fN2, n, activate_components = Fals
     K_Ar_Q_N2_772   = x[19]
 
   
-    frac1 = PAr_star_727 * (1/tau_N2_727) / ( 1/tau_N2_727 + n * fN2 * K_Ar_Q_N2_727+ n * (1 - fN2) * K_Ar_Q_Ar_727)
+    frac1 = PAr_star_727 * (1/tau_N2_727) / ( 1/tau_N2_727 + n * fN2 * K_Ar_Q_N2_727+ n * (1 - fN2) * K_Ar_Q_Ar_727) 
 
 
     if activate_components:
-        return (W * frac1 * Pob_Ar_727, W * frac1 * Pob_Ar_727)
+        return (frac1 * Pob_Ar_727, frac1 * Pob_Ar_727) / energy_X_ray_CF4
     else:
-        return  W * frac1 * Pob_Ar_727
+        return  frac1 * Pob_Ar_727 / energy_X_ray_CF4
     
 
 ###################################
@@ -232,9 +252,9 @@ def theory_yield_ArCF4_Ir_750(x, degrad_data, fN2, n, activate_components = Fals
 
 
     if activate_components:
-        return (W * frac1 * Pob_Ar_750, W * frac1 * Pob_Ar_750)
+        return (frac1 * Pob_Ar_750, frac1 * Pob_Ar_750) / energy_X_ray_CF4
     else:
-        return W * frac1 * Pob_Ar_750
+        return frac1 * Pob_Ar_750 / energy_X_ray_CF4
     
 
 ###################################
@@ -295,9 +315,9 @@ def theory_yield_ArCF4_Ir_763(x, degrad_data, fN2, n, activate_components = Fals
 
 
     if activate_components:
-        return (W * frac1 * Pob_Ar_764, W * frac1 * Pob_Ar_764)
+        return (frac1 * Pob_Ar_764, frac1 * Pob_Ar_764) / energy_X_ray_CF4
     else:
-        return  W * frac1 * Pob_Ar_764
+        return  frac1 * Pob_Ar_764 / energy_X_ray_CF4
     
 
 ###################################
@@ -358,9 +378,9 @@ def theory_yield_ArCF4_Ir_772(x, degrad_data, fN2, n, activate_components = Fals
 
 
     if activate_components:
-        return (W * frac1 * Pob_Ar_772, W * frac1 * Pob_Ar_772)
+        return (frac1 * Pob_Ar_772, frac1 * Pob_Ar_772) / energy_X_ray_CF4
     else:
-        return  W * frac1 * Pob_Ar_772
+        return  frac1 * Pob_Ar_772 / energy_X_ray_CF4
     
 
 ###################################
@@ -430,7 +450,7 @@ def theory_yield_ArCF4_Ir_794(x, degrad_data, fN2, n, activate_components = Fals
 
 
     if activate_components:
-       return (W * frac1 * Pob_Ar_794, W * frac1 * Pob_Ar_794)
+       return (frac1 * Pob_Ar_794, frac1 * Pob_Ar_794) / energy_X_ray_CF4
     else:
-       return  W * frac1 * Pob_Ar_794
+       return  frac1 * Pob_Ar_794 / energy_X_ray_CF4
     

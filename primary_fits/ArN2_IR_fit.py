@@ -135,12 +135,29 @@ read_experimental(archivo_entrada, yields, presiones, output_dir, concentracione
 #####################################################
 ###### Traemos los datos anteriormente generados 
 
+def W_N2(xN2, WAr=26.4, WN2=34.8):
+    return 1.0 / ((1.0-xN2)/WAr + xN2/WN2)
+
+
 DATA_DIR = "../data/Experimental/ArN2/"
 yield_696_ir  = pd.read_csv(os.path.join(DATA_DIR, "696.csv"))
 yield_727_ir  = pd.read_csv(os.path.join(DATA_DIR, "727.csv"))
 yield_750_ir  = pd.read_csv(os.path.join(DATA_DIR, "750.csv"))
 yield_763_ir  = pd.read_csv(os.path.join(DATA_DIR, "763.csv"))
 yield_772_ir  = pd.read_csv(os.path.join(DATA_DIR, "772.csv"))
+
+w_n2 =  W_N2(yield_696_ir["N2 concentration (%)"].to_numpy()/100) 
+y_cols = ["1.0bar", "2.0bar",  "3.0bar", "4.0bar", "5.0bar", 'Err 1.0bar','Err 2.0bar','Err 3.0bar','Err 4.0bar','Err 5.0bar']
+factor = (1 / w_n2)[:, None]
+
+
+yield_696_ir[y_cols]  = yield_696_ir[y_cols].to_numpy() * factor
+yield_727_ir[y_cols]  = yield_727_ir[y_cols].to_numpy() * factor
+yield_750_ir[y_cols]  = yield_750_ir[y_cols].to_numpy() * factor
+yield_763_ir[y_cols]  = yield_763_ir[y_cols].to_numpy() * factor
+yield_772_ir[y_cols]  = yield_772_ir[y_cols].to_numpy() * factor
+
+
 
 yield_696_ir_n, thr_696 = apply_global_threshold(yield_696_ir)
 yield_727_ir_n, thr_727 = apply_global_threshold(yield_727_ir,is_727=True)
@@ -191,19 +208,19 @@ lower       = np.array([
                ]) + lower_semifixed
 
 x0          = np.array([
-               0.25, 0.0, 1.0, 1.0, 
-               0.25, 0.0, 1.0, 1.0, 
-               0.25, 0.0, 1.0, 1.0, 
-               0.25, 0.0, 1.0, 1.0, 
-               0.25, 0.0, 1.0, 1.0, 
+               0.0159, 0.0, 1.0, 1.0, 
+               0.0159, 0.0, 1.0, 1.0, 
+               0.0159, 0.0, 1.0, 1.0, 
+               0.0159, 0.0, 1.0, 1.0, 
+               0.0159, 0.0, 1.0, 1.0,  
                ]) + x0_semifixed
 
 upper          = np.array([
-               0.25, 0.0, 1000.0, 1000.0, 
-               0.25, 0.0, 1000.0, 1000.0, 
-               0.25, 0.0, 1000.0, 1000.0, 
-               0.25, 0.0, 1000.0, 1000.0, 
-               0.25, 0.0, 1000.0, 1000.0, 
+               0.02, 0.0, 1000.0, 1000.0, 
+               0.02, 0.0, 1000.0, 1000.0, 
+               0.02, 0.0, 1000.0, 1000.0, 
+               0.02, 0.0, 1000.0, 1000.0, 
+               0.02, 0.0, 1000.0, 1000.0, 
                ]) + upper_semifixed
 
 bounds=(list(lower), list(upper))
@@ -275,7 +292,7 @@ for name in equations:
         xlabel="Concentration of N$_2$ [$\%$]",
         ylabel="Normalized Yield",
         xlim=(0.1 * 0.9, 100 * 1.1),
-        ylim=(0.0001, 0.07),
+        ylim=(0.00001, 0.007),
         xscale="log",
         yscale="log",
         cmap="viridis",

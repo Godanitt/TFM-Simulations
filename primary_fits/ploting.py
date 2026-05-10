@@ -463,6 +463,7 @@ def plot_fit_vs_experiment_by_pressure(
         - "legend"   -> usa leyenda normal
         - "annotate" -> escribe etiquetas cerca de la curva y no usa leyenda
     """
+    norm = fit_params[0]
     if err_patterns is None:
         err_patterns = [
             "Err {col}",
@@ -484,8 +485,8 @@ def plot_fit_vs_experiment_by_pressure(
     else:
         fig = ax.figure
 
-    ax.grid(True, which="major", alpha=0.3)
-    ax.grid(True, which="minor", alpha=0.08)
+    ax.grid(False) #, which="major", alpha=0.3)
+    ax.grid(False) #, which="minor", alpha=0.08)
 
     x_exp = df_exp[x_col].to_numpy(dtype=float).copy()
     if xscale == "log" and min_positive_x is not None:
@@ -644,6 +645,16 @@ def plot_fit_vs_experiment_by_pressure(
                 ylim=ylim
             )
         )
+
+
+    secax = ax.secondary_yaxis(
+        'right',
+        functions=(lambda y: y*1000/norm, lambda y: y*1000/norm)
+    )
+    secax.set_ylabel("ph / MeV")
+
+    ax.tick_params(axis='y', which='both', right=False, labelright=False)
+    secax.tick_params(axis='y', which='both', left=False, labelleft=False)
 
     if title is not None:
         ax.set_title(title)

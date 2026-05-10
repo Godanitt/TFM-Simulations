@@ -76,6 +76,19 @@ cmap = plt.get_cmap("viridis")
 colors = cmap(np.linspace(0, 1, 10))
 
 ####################################################################################
+
+# % de CF4 en Ar
+cf4_pct = np.array([0, 1.0, 2.0, 5.0, 10, 20, 30, 50, 75, 100]) / 100
+
+# Potencial de ionización (según la columna Ar/CF4)
+ion_pot = np.array([26.4, 26.7, 26.9, 27.4, 28.1, 29.4, 30.2, 31.7, 33.0, 34.3])
+
+def W_CF4(f):
+    f_cf4 = np.asarray(f, dtype=float)
+    W = np.interp(f_cf4, cf4_pct, ion_pot)
+    return W
+
+####################################################################################
 # =================== DATA PARA AJUSTE  ========================
 ####################################################################################
 
@@ -111,10 +124,18 @@ yield_uv.loc[0, "fCF4"] = 0.001
 yield_vis.loc[0, :].drop(['Err 1.0bar','Err 2.0bar','Err 2.5bar','Err 3.0bar','Err 4.0bar','Err 5.0bar'])
 yield_vis = yield_vis.fillna(0)
 
+w_cf4 =  W_CF4(yield_vis["fCF4"].to_numpy()/100) 
+y_cols = ["1.0bar", "2.0bar", "2.5bar", "3.0bar", "4.0bar", "5.0bar", 'Err 1.0bar','Err 2.0bar','Err 2.5bar','Err 3.0bar','Err 4.0bar','Err 5.0bar']
+factor = (1 / w_cf4)[:, None]
+
+yield_vis[y_cols]  = yield_vis[y_cols].to_numpy() * factor
+yield_uv[y_cols]  = yield_uv[y_cols].to_numpy() * factor
+
 experimental_data = {
     "vis": yield_vis,
     "uv": yield_uv
 }
+
 
 ####################################################################################
 # =================== AJUSTE NOMINAL ========================
@@ -173,6 +194,7 @@ cov_theta = s2 * np.linalg.inv(J.T @ J)
 popt_og = popt
 par_natural = popt.x.copy()
 
+
 ####################################################################################
 # =================== AJUSTES LOW & UP  ========================
 ####################################################################################
@@ -182,6 +204,15 @@ read_experimental(archivo_entrada, yields, presiones, output_dir, uncertainty_mo
 DATA_DIR = "../data/Experimental/ArCF4/"
 yield_uv = pd.read_csv(os.path.join(DATA_DIR, "UV.csv"))
 yield_vis = pd.read_csv(os.path.join(DATA_DIR, "vis.csv"))
+
+
+w_cf4 =  W_CF4(yield_vis["fCF4"].to_numpy()/100) 
+y_cols = ["1.0bar", "2.0bar", "2.5bar", "3.0bar", "4.0bar", "5.0bar", 'Err 1.0bar','Err 2.0bar','Err 2.5bar','Err 3.0bar','Err 4.0bar','Err 5.0bar']
+factor = (1 / w_cf4)[:, None]
+
+yield_vis[y_cols]  = yield_vis[y_cols].to_numpy() * factor
+yield_uv[y_cols]  = yield_uv[y_cols].to_numpy() * factor
+
 
 y_cols = ['1.0bar', '2.0bar', '2.5bar', '3.0bar', '4.0bar', '5.0bar']
 err_cols = ['Err 1.0bar', 'Err 2.0bar', 'Err 2.5bar', 'Err 3.0bar', 'Err 4.0bar', 'Err 5.0bar']
@@ -273,6 +304,14 @@ read_experimental(archivo_entrada, yields, presiones, output_dir, uncertainty_mo
 DATA_DIR = "../data/Experimental/ArCF4/"
 yield_uv = pd.read_csv(os.path.join(DATA_DIR, "UV.csv"))
 yield_vis = pd.read_csv(os.path.join(DATA_DIR, "vis.csv"))
+
+
+w_cf4 =  W_CF4(yield_vis["fCF4"].to_numpy()/100) 
+y_cols = ["1.0bar", "2.0bar", "2.5bar", "3.0bar", "4.0bar", "5.0bar", 'Err 1.0bar','Err 2.0bar','Err 2.5bar','Err 3.0bar','Err 4.0bar','Err 5.0bar']
+factor = (1 / w_cf4)[:, None]
+
+yield_vis[y_cols]  = yield_vis[y_cols].to_numpy() * factor
+yield_uv[y_cols]  = yield_uv[y_cols].to_numpy() * factor
 
 yield_uv.loc[0, "fCF4"] = 0.001
 
@@ -400,11 +439,19 @@ plt.show()
 # =================== PH per MeV ========================
 ####################################################################################
 
+con_uv_cf4_morozov = [100.0]
+y_uv_cf4_morozov   = [2175]
+y_err_uv_cf4_morozov= [2600-2175]
+
+
 read_experimental(archivo_entrada, yields, presiones, output_dir, uncertainty_mode="all")
 
 DATA_DIR = "../data/Experimental/ArCF4/"
 yield_uv = pd.read_csv(os.path.join(DATA_DIR, "UV.csv"))
 yield_vis = pd.read_csv(os.path.join(DATA_DIR, "vis.csv"))
+
+yield_vis[y_cols]  = yield_vis[y_cols].to_numpy() * factor
+yield_uv[y_cols]  = yield_uv[y_cols].to_numpy() * factor
 
 yield_uv.loc[0, "fCF4"] = 0.001
 
@@ -419,8 +466,8 @@ norm = par_natural[0]
 
 fCF4 = np.logspace(-5, 0, 100)
 
-factor = 1/0.015/norm*ion_potential(fCF4)
-factor2= 1/0.015/norm*ion_potential(yield_uv["fCF4"].to_numpy()/100)
+factor  = 1000 / norm 
+factor2 = 1000 / norm 
 
 def model_uv(par):
     return theory_yield_uv(par, degrad_data, fCF4, 1)
@@ -478,6 +525,17 @@ plt.errorbar(
 )
 
 
+plt.errorbar(con_uv_cf4_morozov,
+             y_uv_cf4_morozov,
+             yerr=y_err_uv_cf4_morozov,
+            marker="x",
+            linestyle="none",
+            ms=5,
+            color=colors[6],
+            ecolor=colors[6],
+            elinewidth=1,
+            capsize=2,
+            label="$\\alpha$'s Morozov")
 
 plt.xscale("log")
 # plt.yscale("log")
@@ -506,6 +564,13 @@ yerr_red_E100= [60, 60, 60, 90, 100, 120, 120]
 vis_cf4_red_E100 = [100.0]
 vis_y_red_E100   = [1184.7]
 vis_yerr_red_E100= [47]
+
+
+vis2_cf4_red_E100 = [100.0]
+vis2_y_red_E100= [695]
+vis2_yerr_red_E100= [827-695]
+
+
 
 fCF4 = np.logspace(-3, 0, 100)
 
@@ -582,6 +647,18 @@ plt.errorbar(cf4_red_E100,
             capsize=2,
             label="$\\alpha$'s P. Amedo")
 
+plt.errorbar(vis2_cf4_red_E100,
+             vis2_y_red_E100,
+             yerr=vis2_yerr_red_E100,
+            marker="x",
+            linestyle="none",
+            ms=5,
+            color=colors[6],
+            ecolor=colors[6],
+            elinewidth=1,
+            capsize=2,
+            label="$\\alpha$'s Morozov")
+
 
 plt.errorbar(vis_cf4_red_E100,
              vis_y_red_E100,
@@ -594,6 +671,8 @@ plt.errorbar(vis_cf4_red_E100,
             elinewidth=1,
             capsize=2,
             label="$\\alpha$'s Lehaut")
+
+
 
 
 

@@ -54,8 +54,36 @@ def _apply_argon_gap_to_mapping(df):
     df = df.sort_values("level").reset_index(drop=True)
     return df
 
+def _apply_he_gap_to_mapping(df):
+    """
+    Inserta hueco en el nivel 2 y desplaza +1 todos los niveles > 1.
+    Se usa cuando hay que corregir la ausencia de un estado de He.
 
-def _build_mapping_table_for_file(table_df, active_gases, argon_update):
+    Es decir:
+        level 0 -> 0
+        level 1 -> 1
+        level 2 -> hueco
+        level 2 original -> 3
+        level 3 original -> 4
+        ...
+    """
+    df = df.copy()
+
+    # Desplazar todos los niveles posteriores al 1
+    df.loc[df["level"] > 1, "level"] += 1
+
+    # Crear fila hueca en level = 2
+    cols = list(df.columns)
+    gap_row = {col: pd.NA for col in cols}
+    gap_row["level"] = 2
+
+    gap_df = pd.DataFrame([gap_row], columns=cols)
+
+    df = pd.concat([df, gap_df], ignore_index=True)
+    df = df.sort_values("level").reset_index(drop=True)
+
+    return df
+def _build_mapping_table_for_file(table_df, active_gases, argon_update, helium_update=True):
     """
     Construye la tabla de mapeo que se usará para un archivo concreto.
 
@@ -64,10 +92,12 @@ def _build_mapping_table_for_file(table_df, active_gases, argon_update):
         * filtra al gas activo
         * renumera desde 0
         * si es Ar y argon_update=True, inserta hueco 3..7
+        * si es He y helium_update=True, inserta hueco 2
     - Mezcla:
         * filtra solo los gases activos
         * conserva numeración global de mezcla
         * si hay Ar y argon_update=True, inserta hueco 3..7 globalmente
+        * si hay He y helium_update=True, inserta hueco 2 globalmente
     """
     base = table_df.copy()
 
@@ -86,6 +116,9 @@ def _build_mapping_table_for_file(table_df, active_gases, argon_update):
         # Renumerar desde 0 para gas puro
         base["level"] = np.arange(len(base), dtype=int)
 
+        if pure_gas == "he" and helium_update:
+            base = _apply_he_gap_to_mapping(base)
+
         if pure_gas == "ar" and argon_update:
             base = _apply_argon_gap_to_mapping(base)
 
@@ -93,8 +126,12 @@ def _build_mapping_table_for_file(table_df, active_gases, argon_update):
 
     # Mezcla
     if len(active_gases) >= 2:
+        if "he" in active_gases and helium_update:
+            base = _apply_he_gap_to_mapping(base)
+
         if "ar" in active_gases and argon_update:
             base = _apply_argon_gap_to_mapping(base)
+
         return base
 
     # Caso residual
@@ -127,6 +164,7 @@ def export_hlevels_to_csv(
         - en mezclas con Ar: inserta hueco global 3..7
         - en Ar puro: renumera desde 0 e inserta hueco 3..7
     """
+    argon_update = False
     folder = Path(folder_path)
     table_path = Path(table_path)
 

@@ -68,19 +68,19 @@ def calcula_yields(pressure,Norm,Xray_energy_cf4=0.015,Xray_energy_n2=0.012):
     f0 = 0.00001
     f1 = 1
 
-    y_cf4_ir  = theory_yield_ArCF4_Ir_696(parameter_data_ArCF4_IR, degrad_data_ArCF4_IR, f0, pressure) / Xray_energy_cf4 * (W_ArCF4_0) / Norm
-    y_cf4_ir += theory_yield_ArCF4_Ir_727(parameter_data_ArCF4_IR, degrad_data_ArCF4_IR, f0, pressure) / Xray_energy_cf4 * (W_ArCF4_0) / Norm
-    y_cf4_ir += theory_yield_ArCF4_Ir_750(parameter_data_ArCF4_IR, degrad_data_ArCF4_IR, f0, pressure) / Xray_energy_cf4 * (W_ArCF4_0) / Norm
-    y_cf4_ir += theory_yield_ArCF4_Ir_763(parameter_data_ArCF4_IR, degrad_data_ArCF4_IR, f0, pressure) / Xray_energy_cf4 * (W_ArCF4_0) / Norm
-    y_cf4_ir += theory_yield_ArCF4_Ir_772(parameter_data_ArCF4_IR, degrad_data_ArCF4_IR, f0, pressure) / Xray_energy_cf4 * (W_ArCF4_0) / Norm
-    y_cf4_ir += theory_yield_ArCF4_Ir_794(parameter_data_ArCF4_IR, degrad_data_ArCF4_IR, f0, pressure) / Xray_energy_cf4 * (W_ArCF4_0) / Norm
+    y_cf4_ir  = theory_yield_ArCF4_Ir_696(parameter_data_ArCF4_IR, degrad_data_ArCF4_IR, f0, pressure) * 1000 / Norm
+    y_cf4_ir += theory_yield_ArCF4_Ir_727(parameter_data_ArCF4_IR, degrad_data_ArCF4_IR, f0, pressure) * 1000 / Norm
+    y_cf4_ir += theory_yield_ArCF4_Ir_750(parameter_data_ArCF4_IR, degrad_data_ArCF4_IR, f0, pressure) * 1000 / Norm
+    y_cf4_ir += theory_yield_ArCF4_Ir_763(parameter_data_ArCF4_IR, degrad_data_ArCF4_IR, f0, pressure) * 1000 / Norm
+    y_cf4_ir += theory_yield_ArCF4_Ir_772(parameter_data_ArCF4_IR, degrad_data_ArCF4_IR, f0, pressure) * 1000 / Norm
+    y_cf4_ir += theory_yield_ArCF4_Ir_794(parameter_data_ArCF4_IR, degrad_data_ArCF4_IR, f0, pressure) * 1000 / Norm
 
     
-    y_n2_ir = theory_yield_ArN2_Ir_696(parameter_data_ArN2_IR, degrad_data_ArN2_IR, f0, pressure) / Xray_energy_n2 * (W_ArN2_0) / Norm
-    y_n2_ir += theory_yield_ArN2_Ir_727(parameter_data_ArN2_IR, degrad_data_ArN2_IR, f0, pressure) / Xray_energy_n2* (W_ArN2_0) / Norm
-    y_n2_ir += theory_yield_ArN2_Ir_750(parameter_data_ArN2_IR, degrad_data_ArN2_IR, f0, pressure) / Xray_energy_n2 * (W_ArN2_0) / Norm
-    y_n2_ir += theory_yield_ArN2_Ir_763(parameter_data_ArN2_IR, degrad_data_ArN2_IR, f0, pressure) / Xray_energy_n2 * (W_ArN2_0) / Norm
-    y_n2_ir += theory_yield_ArN2_Ir_772(parameter_data_ArN2_IR, degrad_data_ArN2_IR, f0, pressure) / Xray_energy_n2 * (W_ArN2_0) / Norm
+    y_n2_ir = theory_yield_ArN2_Ir_696(parameter_data_ArN2_IR, degrad_data_ArN2_IR, f0, pressure)  * 1000 / Norm
+    y_n2_ir += theory_yield_ArN2_Ir_727(parameter_data_ArN2_IR, degrad_data_ArN2_IR, f0, pressure) * 1000 / Norm
+    y_n2_ir += theory_yield_ArN2_Ir_750(parameter_data_ArN2_IR, degrad_data_ArN2_IR, f0, pressure) * 1000 / Norm
+    y_n2_ir += theory_yield_ArN2_Ir_763(parameter_data_ArN2_IR, degrad_data_ArN2_IR, f0, pressure) * 1000 / Norm
+    y_n2_ir += theory_yield_ArN2_Ir_772(parameter_data_ArN2_IR, degrad_data_ArN2_IR, f0, pressure) * 1000 / Norm
 
     return np.array([y_cf4_ir])
 

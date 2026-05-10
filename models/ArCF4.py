@@ -11,6 +11,7 @@ cf4_pct = np.array([0, 1.0, 2.0, 5.0, 10, 20, 30, 50, 75, 100]) / 100
 # Potencial de ionización (según la columna Ar/CF4)
 ion_pot = np.array([26.4, 26.7, 26.9, 27.4, 28.1, 29.4, 30.2, 31.7, 33.0, 34.3])
 
+energy_X_ray_CF4 = 15
 
 def ion_potential(f):
     f_cf4 = np.asarray(f, dtype=float)
@@ -70,7 +71,7 @@ def theory_yield_vis(x, degrad_data, fCF4, n, activate_components=False):
     denom = n * f_cf4 * K2 + n * (1.0 - f_cf4) * K + 1 / 30
     frac = np.where(denom == 0, 0.0, K2 * n * f_cf4 / denom)
 
-    total = (1 / ion_potential(f_cf4)) * N * (
+    total =  N * (
         p_CF3 * P_CF3 + frac * p_DbleStar * P_Ar_dbleStar
     )
     
@@ -78,12 +79,12 @@ def theory_yield_vis(x, degrad_data, fCF4, n, activate_components=False):
     if activate_components:
         if scalar_input:
             return total.item()
-        return total
+        return total/energy_X_ray_CF4
 
     if scalar_input:
-        return total.item()
+        return total.item()/energy_X_ray_CF4
     
-    return total
+    return total/energy_X_ray_CF4
 
 def theory_yield_uv(x, degrad_data, fCF4, n, activate_components=False):
     f_cf4, scalar_input = _prepare_f_cf4(fCF4)
@@ -116,21 +117,21 @@ def theory_yield_uv(x, degrad_data, fCF4, n, activate_components=False):
     frac4 = np.where(denom == 0, 0.0, numer / denom)
 
     total = ((p_CF3_uv * theory_yield_vis(x, degrad_data, fCF4, n, activate_components=False))
-        + 1 / ion_potential(f_cf4) * N * (
+        + N * (
         + (frac1 * frac2) * (p_CF3 * P_CF4 + frac3 * P_Ar_3rd * PAr_3rd)
         + tercer_continuo * frac4 * P_Ar_3rd
     )
     )
 
     if activate_components:
-        comp_cf4= 1 / ion_potential(f_cf4) * N * (frac1 * frac2) * (p_CF3 * P_CF4 + frac3 * P_Ar_3rd * PAr_3rd)
-        comp_arDbleStar = 1 / ion_potential(f_cf4) * N * (tercer_continuo * frac4 * P_Ar_3rd)
-        comp_cf3 = p_CF3_uv*(theory_yield_vis(x, degrad_data, fCF4, n, activate_components=False))
+        comp_cf4= N * (frac1 * frac2) * (p_CF3 * P_CF4 + frac3 * P_Ar_3rd * PAr_3rd) / energy_X_ray_CF4
+        comp_arDbleStar = N * (tercer_continuo * frac4 * P_Ar_3rd) / energy_X_ray_CF4
+        comp_cf3 = p_CF3_uv*(theory_yield_vis(x, degrad_data, fCF4, n, activate_components=False)) / energy_X_ray_CF4
         if scalar_input:
             return total.item(), comp_cf3.item()
         return total, comp_cf4, comp_arDbleStar, comp_cf3
 
     if scalar_input:
-        return total.item()
+        return total.item()/energy_X_ray_CF4
     
-    return total
+    return total/energy_X_ray_CF4

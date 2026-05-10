@@ -126,7 +126,7 @@ DATA_DIR_DEGRAD = "../data/Primary_DegradData"
 
 degrad_data = pd.read_csv(os.path.join(DATA_DIR_DEGRAD, "ArCF4.csv"))
 
-parameter_data_og = pd.read_csv(os.path.join(DATA_DIR_PAR, "ArCF4_primary.csv"))["parameter"].to_numpy()
+parameter_data_og = pd.read_csv(os.path.join(DATA_DIR_PAR, "ArCF4_secondary.csv"))["parameter"].to_numpy()
 parameter_data_og[0] = 1
 parameter_data = parameter_data_og.copy()
 
@@ -416,12 +416,12 @@ for i, gap in enumerate(gaps):
             plt.xscale("log")
             plt.xlim(4,105)
             if j%2 == 0: #
-                plt.plot(_fCF4*100,theory_yield_vis(parameter_data,garfield_data,_fCF4,1) * (ion_potential(_fCF4) / npe)
+                plt.plot(_fCF4*100,theory_yield_vis(parameter_data,garfield_data,_fCF4,1) *  15  / npe
                         ,label=f"{prob:.2f},{Ear:.2f},{Ecf4:.2f}",
                         color=colors[j])
                 
 
-            yy = theory_yield_vis(parameter_data, garfield_data, con, 1) * (ion_potential(con) / npe)
+            yy = theory_yield_vis(parameter_data, garfield_data, con, 1) *  15  / npe
 
             phe = np.asarray(phe).ravel()
             yy = np.asarray(yy).ravel()
@@ -456,7 +456,7 @@ for i, gap in enumerate(gaps):
     plt.xlabel("$P_{\mathrm{scint}}$")
     plt.ylabel("$\\chi^2$")
     plt.yscale("log")
-    plt.savefig("plots/Chi2_ArCF4_thresholds.pdf")
+    plt.savefig("plots/Chi2_ArCFparameter_data_og4_thresholds.pdf")
 
 
 idx = np.argmin(chi2)

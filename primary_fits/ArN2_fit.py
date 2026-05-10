@@ -112,8 +112,8 @@ degrad_data        = pd.read_csv(os.path.join(DATA_DIR, "ArN2.csv"))
 #########################################################3
 ####### AJUSTE
 
-to_m3  = 2.69 * 10**(25) * 10**(-9)
-to_cm3 = 2.69 * 10**(19) * 10**(-9)
+to_m3  = 2.69 * 10**(25) * 10**(-9) * 273.15 / 300
+to_cm3 = 2.69 * 10**(19) * 10**(-9) * 273.15 / 300
 
 
 tau_N2          = 1e2/np.mean(np.array([2.6,2.07,3.3,2.5,2.74,2.66])) 
@@ -135,25 +135,28 @@ x0_semifixed = np.array([
                tau_N2, K_N2_Q_N2, K_N2_Q_Ar, 
                K_ArMeta_Q_N2c, K_ArMeta_Q_N2b, K_ArMeta_Q_2Ar,
                K_ArRes_Q_N2c, K_ArRes_Q_N2b, K_ArRes_Q_2Ar,
+               0.0, 0.0
                ])
 
-lower_semifixed = x0_semifixed*0.33
-upper_semifixed = x0_semifixed*3
+lower_semifixed = x0_semifixed/1.5
+upper_semifixed = x0_semifixed*1.5
 
 lower_og       = np.array([
                0.0, 
-               0.0, 0.0, 0.0, 
                0.0,
+               0.0, 0.0, 0.0, 
                0.0, 0.0, 0.0,
                0.0, 0.0, 0.0,
+               0.0, 0.0
                ]) # + lower_semifixed
 
 x0_og         = np.array([
-               0.25, 
-               0.0,
+               0.0, 
+               1.0,
                0.0, 0.0, 0.0, 
                0.0, 0.0, 0.0,
                0.0, 0.0, 0.0,
+               0.0, 0.0
                ]) # + x0_semifixed
 
 upper_og          = np.array([
@@ -162,6 +165,7 @@ upper_og          = np.array([
                0.0, 0.0, 0.0, 
                0.0, 0.0, 0.0,
                0.0, 0.0, 0.0,
+               1.0, 1.0
                ]) #+ upper_semifixed
 
 bounds=(list(lower_og+lower_semifixed), list(upper_og+upper_semifixed))
@@ -169,6 +173,16 @@ bounds=(list(lower_og+lower_semifixed), list(upper_og+upper_semifixed))
 equations = {
     "vis": theory_yield_N2_uv,
 }
+
+def W_N2(xN2, WAr=26.4, WN2=34.8):
+    return 1.0 / ((1.0-xN2)/WAr + xN2/WN2)
+
+
+w_n2 =  W_N2(yield_N2_uv["N2 concentration (%)"].to_numpy()/100) 
+y_cols = ["1.0bar", "2.0bar",  "3.0bar", "4.0bar", "5.0bar", 'Err 1.0bar','Err 2.0bar','Err 3.0bar','Err 4.0bar','Err 5.0bar']
+factor = (1 / w_n2)[:, None]
+
+yield_N2_uv[y_cols]  = yield_N2_uv[y_cols].to_numpy() * factor
 
 experimental_data = {
     "vis": yield_N2_uv,
@@ -207,19 +221,23 @@ names_csv = [
     "K_ArRes_Q_N2c"  ,    
     "K_ArRes_Q_N2b"   ,   
     "K_ArRes_Q_2Ar"    ,  
+
+    "P_N2"    ,   
+    "P_N2"    ,   
+    
 ]
 
 export_to_csv("../data/Parameters/ArN2_primary.csv", popt, names_csv)
 
-J = popt.jac
-m, p = J.shape
-s2 = 2 * popt.cost / (m - p)
-cov_theta =  s2 * np.linalg.inv(J.T @ J)
-chi2 = 2 * popt.cost
-N_res = popt.fun.size
-N_par = popt.x.size
-dof   = N_res - N_par
-chi2_red = chi2 / dof
+# J = popt.jac
+# m, p = J.shape
+# s2 = 2 * popt.cost / (m - p)
+# cov_theta =  s2 * np.linalg.inv(J.T @ J)
+# chi2 = 2 * popt.cost
+# N_res = popt.fun.size
+# N_par = popt.x.size
+# dof   = N_res - N_par
+# chi2_red = chi2 / dof
 
 #######################################################################
 # =================== PLOT ========================
@@ -343,6 +361,10 @@ names_tex = [
     "$K_{\\text{Ar}_{1s4} Q (\\text{N}_2(\\text{C}))}$ [ns$^{-1}$]" ,    
     "$K_{\\text{Ar}_{1s4} Q (\\text{N}_2(\\text{B}))}$ [ns$^{-1}$]" ,  
     "$K_{\\text{Ar}_{1s4} Q (\\text{2Ar})}$ [ns$^{-1}$]" ,  
+
+    "$P_{\\text{N}_2}$"    ,            
+    "$P_{\\text{N}_2}$"    ,            
+
 
  ]
 

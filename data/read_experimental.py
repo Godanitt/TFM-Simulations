@@ -4,11 +4,16 @@ import pandas as pd
 import dill
 import scipy.special
 import importlib
-import matplotlib.pyplot as plt 
-plt.style.use(['science'])
+import matplotlib.pyplot as plt
+
+try:
+    import scienceplots  # registra el estilo 'science'
+    plt.style.use(['science'])
+except Exception:
+    pass
 
 """
-Script que nos permite leer los datos de los yields de visible/ultravioleta,
+Script que nos permite leer los datos de los yields de visible/ultravioleta/infrarrojo,
 sacándolos en formato pickle y csv.
 """
 
@@ -40,9 +45,19 @@ def _find_first_column(df, candidates, what="columna"):
 
 def _is_nan_like(x):
     try:
-        return pd.isna(x)
+        out = pd.isna(x)
+        if isinstance(out, (bool, np.bool_)):
+            return bool(out)
+        return False
     except Exception:
         return False
+
+
+def _is_missing_value(x):
+    """True solo para None/NaN escalares, no para dict/list/array."""
+    if x is None:
+        return True
+    return _is_nan_like(x)
 
 
 def _extract_item(obj, key):
@@ -57,6 +72,13 @@ def _extract_item(obj, key):
     if isinstance(obj, dict):
         if key in obj:
             return obj[key]
+
+        # Si key es str y representa un entero, prueba también con int(key).
+        # Esto es necesario para líneas IR guardadas como claves enteras: 696, 727, ...
+        if isinstance(key, str) and key.strip().isdigit():
+            ikey = int(key.strip())
+            if ikey in obj:
+                return obj[ikey]
 
         # búsqueda case-insensitive si key es str
         if isinstance(key, str):
@@ -79,11 +101,48 @@ def _extract_item(obj, key):
         pass
 
     # si key es str pero representa entero
-    if isinstance(key, str) and key.isdigit():
+    if isinstance(key, str) and key.strip().isdigit():
         try:
-            return obj[int(key)]
+            return obj[int(key.strip())]
         except Exception:
             pass
+
+    return np.nan
+
+
+def _extract_from_nested_dict(obj, outer_key, inner_key):
+    """Extrae obj[outer_key][inner_key] tolerando claves str/int."""
+    outer = _extract_item(obj, outer_key)
+    if _is_missing_value(outer):
+        return np.nan
+    return _extract_item(outer, inner_key)
+
+
+def _extract_yield_from_zonas(obj, yield_name, yield_mode="auto"):
+    """
+    Extrae un yield desde columnas tipo yields_zonas/u_yields_zonas.
+
+    yield_mode:
+        - "auto": primero intenta la clave directa; si no existe, busca dentro de "ir".
+        - "direct": busca solo la clave directa: "UV", "vis", etc.
+        - "ir": busca dentro de obj["ir"][yield_name], por ejemplo obj["ir"][696].
+    """
+    yield_mode = _normalize_yield_mode(yield_mode)
+
+    if yield_mode == "ir":
+        return _extract_from_nested_dict(obj, "ir", yield_name)
+
+    if yield_mode == "direct":
+        return _extract_item(obj, yield_name)
+
+    # auto: compatible con UV/vis antiguos y con líneas IR dentro de yields_zonas["ir"]
+    direct_value = _extract_item(obj, yield_name)
+    if not _is_missing_value(direct_value):
+        return direct_value
+
+    ir_value = _extract_from_nested_dict(obj, "ir", yield_name)
+    if not _is_missing_value(ir_value):
+        return ir_value
 
     return np.nan
 
@@ -93,7 +152,8 @@ def _first_non_null(values):
         if v is None:
             continue
         try:
-            if pd.isna(v):
+            out = pd.isna(v)
+            if isinstance(out, (bool, np.bool_)) and out:
                 continue
         except Exception:
             pass
@@ -134,6 +194,42 @@ def _normalize_uncertainty_mode(uncertainty_mode):
     return mode
 
 
+def _normalize_yield_mode(yield_mode):
+    if not isinstance(yield_mode, str):
+        raise ValueError("yield_mode debe ser 'auto', 'direct' o 'ir'")
+
+    mode = yield_mode.strip().lower()
+
+    aliases = {
+        "auto": "auto",
+        "automatic": "auto",
+        "normal": "auto",
+        "zona": "auto",
+        "zonas": "auto",
+        "direct": "direct",
+        "directo": "direct",
+        "uvvis": "direct",
+        "uv/vis": "direct",
+        "visible": "direct",
+        "vis": "direct",
+        "uv": "direct",
+        "ir": "ir",
+        "infrared": "ir",
+        "infrarred": "ir",       # por compatibilidad con tu nombre de módulo
+        "infrarrojo": "ir",
+        "infrarrojos": "ir",
+        "infra-rojo": "ir",
+    }
+
+    mode = aliases.get(mode, mode)
+    valid_modes = {"auto", "direct", "ir"}
+
+    if mode not in valid_modes:
+        raise ValueError("yield_mode debe ser 'auto', 'direct' o 'ir'")
+
+    return mode
+
+
 def _get_error_candidates(mode, schema="new", is_n2=False):
     if schema == "old":
         mapping = {
@@ -169,7 +265,13 @@ def _get_error_candidates(mode, schema="new", is_n2=False):
     return mapping[mode]
 
 
-def _get_series_for_yield(df_pressure, conc_col, yield_name, uncertainty_mode="stadistic"):
+def _get_series_for_yield(
+    df_pressure,
+    conc_col,
+    yield_name,
+    uncertainty_mode="stadistic",
+    yield_mode="auto",
+):
     """
     Devuelve:
         s      -> serie de valores
@@ -177,6 +279,7 @@ def _get_series_for_yield(df_pressure, conc_col, yield_name, uncertainty_mode="s
     indexadas por concentración.
     """
     uncertainty_mode = _normalize_uncertainty_mode(uncertainty_mode)
+    yield_mode = _normalize_yield_mode(yield_mode)
 
     # =========================
     # ESQUEMA VIEJO
@@ -189,8 +292,26 @@ def _get_series_for_yield(df_pressure, conc_col, yield_name, uncertainty_mode="s
             f"columna de error '{uncertainty_mode}' del esquema viejo"
         )
 
-        s = df_pressure.set_index(conc_col)[value_col].apply(lambda d: _extract_item(d, yield_name))
-        err_s = df_pressure.set_index(conc_col)[err_col].apply(lambda d: _extract_item(d, yield_name))
+        s = df_pressure.set_index(conc_col)[value_col].apply(
+            lambda d: _extract_yield_from_zonas(d, yield_name, yield_mode=yield_mode)
+        )
+        err_s = df_pressure.set_index(conc_col)[err_col].apply(
+            lambda d: _extract_yield_from_zonas(d, yield_name, yield_mode=yield_mode)
+        )
+
+        # Si no encontró nada, da info útil
+        if s.isna().all():
+            example = _first_non_null(df_pressure[value_col].tolist())
+            if isinstance(example, dict):
+                available = list(example.keys())
+                ir_available = []
+                if isinstance(example.get("ir"), dict):
+                    ir_available = list(example["ir"].keys())
+                raise KeyError(
+                    f"El yield '{yield_name}' no aparece en '{value_col}' usando yield_mode='{yield_mode}'. "
+                    f"Claves superiores disponibles: {available}. "
+                    f"Líneas IR disponibles: {ir_available}"
+                )
 
         return s, err_s
 
@@ -253,13 +374,22 @@ def read_experimental(
     concentraciones_reales=None,
     uncertainty_mode="stadistic",
     output_concentration_name=None,
+    yield_mode="auto",
 ):
+    """
+    Lee un pickle experimental y genera un CSV por yield.
+
+    Parámetros nuevos:
+        yield_mode="auto"  -> detecta UV/vis directos y también líneas dentro de yields_zonas["ir"].
+        yield_mode="ir"    -> fuerza la lectura de infrarrojos: yields_zonas["ir"][696], etc.
+        yield_mode="direct"-> fuerza la lectura directa: yields_zonas["UV"], yields_zonas["vis"], etc.
+    """
     uncertainty_mode = _normalize_uncertainty_mode(uncertainty_mode)
+    yield_mode = _normalize_yield_mode(yield_mode)
 
     with open(archivo_entrada, "rb") as f:
         df = dill.load(f)
 
-    
     print("Columnas detectadas:")
     print(df.columns)
 
@@ -316,6 +446,7 @@ def read_experimental(
                 conc_col=conc_col,
                 yield_name=y,
                 uncertainty_mode=uncertainty_mode,
+                yield_mode=yield_mode,
             )
 
             if use_numeric_reindex:

@@ -20,6 +20,21 @@ from fiting import fitParameters,fitParameters_lmfit,fitParameters_minimize
 from parameter_export import export_fit_table_latex, export_to_csv
 from ploting import plot_fit_vs_experiment_by_pressure
 
+
+# % de CF4 en Ar
+cf4_pct = np.array([0, 1.0, 2.0, 5.0, 10, 20, 30, 50, 75, 100]) / 100
+
+# Potencial de ionización (según la columna Ar/CF4)
+ion_pot = np.array([26.4, 26.7, 26.9, 27.4, 28.1, 29.4, 30.2, 31.7, 33.0, 34.3])
+
+energy_X_ray_CF4 = 15
+
+def W_CF4(f):
+    f_cf4 = np.asarray(f, dtype=float)
+    W = np.interp(f_cf4, cf4_pct, ion_pot)
+    return W
+
+
 #########################################################
 ####### CREAMOS LOS ARCHIVOS + LOS CARGAMOS 
 
@@ -120,7 +135,7 @@ degrad_data        = pd.read_csv(os.path.join(DATA_DIR, "ArCF4.csv"))
 # -- Pcf3  ~ 0.09
 # Con esto tienes un chi2 ~ 0.9 
 
-x0 = np.array([0.14,
+x0 = np.array([0.0,
                0.10, 0.99, 3, 0.037*3,
                1.0 ,0.065, 0.48, 50.10, 0.37,
                0.00001])
@@ -145,6 +160,16 @@ yield_uv.loc[0,"fCF4"]=0.001
 
 yield_vis.loc[0, :].drop(['Err 1.0bar','Err 2.0bar','Err 2.5bar','Err 3.0bar','Err 4.0bar','Err 5.0bar'])
 yield_vis.fillna(0)
+
+
+
+w_cf4 =  W_CF4(yield_vis["fCF4"].to_numpy()/100) 
+y_cols = ["1.0bar", "2.0bar", "2.5bar", "3.0bar", "4.0bar", "5.0bar", 'Err 1.0bar','Err 2.0bar','Err 2.5bar','Err 3.0bar','Err 4.0bar','Err 5.0bar']
+factor = (1 / w_cf4)[:, None]
+
+yield_vis[y_cols]  = yield_vis[y_cols].to_numpy() * factor
+yield_uv[y_cols]  = yield_uv[y_cols].to_numpy() * factor
+
 
 experimental_data = {
     "vis": yield_vis,
@@ -188,9 +213,9 @@ fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
     min_positive_x=1e-3,
     title="Primary ArCF$_4$ Visible Yield fit ",
     xlabel="Concentration of CF$_4$ [$\%$]",
-    ylabel="Normalized Yield",
+    ylabel="Arb./eV",
     xlim=(0.1 * 0.9, 100 * 1.1),
-    ylim=(0.002, 0.4),
+    ylim=(0.00002, 0.01),
     xscale="log",
     yscale="log",
     cmap="viridis",
@@ -222,9 +247,9 @@ fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
     min_positive_x=1e-5,
     title="Primary ArCF$_4$ UV Yield fit ",
     xlabel="Concentration of CF$_4$ [$\%$]",
-    ylabel="Normalized Yield",
+    ylabel="Arb.    /eV",
     xlim=(0.001 * 0.9, 100 * 1.1),
-    ylim=(0.03,1.05),
+    ylim=(0.001,0.04),
     xscale="log",
     yscale="log",
     cmap="viridis",

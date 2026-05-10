@@ -72,6 +72,7 @@ x0_semifixed = np.array([
     tau_N2, K_N2_Q_N2, K_N2_Q_Ar,
     K_ArMeta_Q_N2c, K_ArMeta_Q_N2b, K_ArMeta_Q_2Ar,
     K_ArRes_Q_N2c, K_ArRes_Q_N2b, K_ArRes_Q_2Ar,
+    0.0,0.0
 ], dtype=float)
 
 lower_semifixed = x0_semifixed * 0.33
@@ -83,6 +84,7 @@ lower_og = np.array([
     0.0, 0.0, 0.0,
     0.0, 0.0, 0.0,
     0.0, 0.0, 0.0,
+    0.0,0.0
 ], dtype=float)
 
 x0_og = np.array([
@@ -91,6 +93,7 @@ x0_og = np.array([
     0.0, 0.0, 0.0,
     0.0, 0.0, 0.0,
     0.0, 0.0, 0.0,
+    0.0,0.0
 ], dtype=float)
 
 upper_og = np.array([
@@ -99,6 +102,7 @@ upper_og = np.array([
     0.0, 0.0, 0.0,
     0.0, 0.0, 0.0,
     0.0, 0.0, 0.0,
+    0.00001,0.00001
 ], dtype=float)
 
 x0 = x0_og + x0_semifixed
@@ -108,7 +112,7 @@ equations = {
     "vis": theory_yield_N2_uv
 }
 
-fixed_idx = [2]
+fixed_idx = [2,11,12]
 fixed_error = [0.376]
 
 # =========================================================
@@ -160,6 +164,18 @@ def envelope_from_nominal_up_down(y0, y_low, y_up):
 # AJUSTE NOMINAL
 # =========================================================
 yield_nominal = load_experimental(uncertainty_mode="all")
+
+def W_N2(xN2, WAr=26.4, WN2=34.8):
+    return 1.0 / ((1.0-xN2)/WAr + xN2/WN2)
+
+
+w_n2 =  W_N2(yield_nominal["N2 concentration (%)"].to_numpy()/100) 
+y_cols = ["1.0bar", "2.0bar",  "3.0bar", "4.0bar", "5.0bar", 'Err 1.0bar','Err 2.0bar','Err 3.0bar','Err 4.0bar','Err 5.0bar']
+factor = (1 / w_n2)[:, None]
+
+yield_nominal[y_cols]  = yield_nominal[y_cols].to_numpy() * factor
+
+
 experimental_data = {"vis": yield_nominal}
 
 popt = fitParameters(
@@ -210,6 +226,12 @@ if len(free_idx) != cov_theta.shape[0]:
 # =========================================================
 yield_sys = load_experimental(uncertainty_mode="systematic")
 
+w_n2 =  W_N2(yield_sys["N2 concentration (%)"].to_numpy()/100) 
+y_cols = ["1.0bar", "2.0bar",  "3.0bar", "4.0bar", "5.0bar", 'Err 1.0bar','Err 2.0bar','Err 3.0bar','Err 4.0bar','Err 5.0bar']
+factor = (1 / w_n2)[:, None]
+yield_sys[y_cols]  = yield_sys[y_cols].to_numpy() * factor
+
+
 y_cols = ["1.0bar", "2.0bar", "2.5bar", "3.0bar", "4.0bar", "5.0bar"]
 err_cols = ["Err 1.0bar", "Err 2.0bar", "Err 2.5bar", "Err 3.0bar", "Err 4.0bar", "Err 5.0bar"]
 
@@ -253,6 +275,12 @@ par_up  = popt_up.x.copy()
 # DATOS EXPERIMENTALES PARA PLOT
 # =========================================================
 yield_plot = load_experimental(uncertainty_mode="all")
+
+w_n2 =  W_N2(yield_plot["N2 concentration (%)"].to_numpy()/100) 
+y_cols = ["1.0bar", "2.0bar",  "3.0bar", "4.0bar", "5.0bar", 'Err 1.0bar','Err 2.0bar','Err 3.0bar','Err 4.0bar','Err 5.0bar']
+factor = (1 / w_n2)[:, None]
+yield_plot[y_cols]  = yield_plot[y_cols].to_numpy() * factor
+
 yield_plot.loc[yield_plot["N2 concentration (%)"] <= 0, "N2 concentration (%)"] = 1e-6
 
 # =========================================================
@@ -260,8 +288,8 @@ yield_plot.loc[yield_plot["N2 concentration (%)"] <= 0, "N2 concentration (%)"] 
 # =========================================================
 fN2 = np.logspace(-4, 0, 1000)
 
-factor = 1/0.012/norm*W_ArN2(fN2)
-factor2= 1/0.012/norm*W_ArN2(yield_plot["N2 concentration (%)"].to_numpy()/100)
+factor = 1000/norm
+factor2= 1000/norm
 
 
 def model_total(par):

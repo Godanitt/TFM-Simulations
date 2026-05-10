@@ -107,6 +107,29 @@ yield_uv  = pd.read_csv(os.path.join(DATA_DIR, "UV.csv"))
 yield_vis = pd.read_csv(os.path.join(DATA_DIR, "vis.csv"))
 
 
+
+# % de CF4 en Ar
+cf4_pct = np.array([0, 1.0, 2.0, 5.0, 10, 20, 30, 50, 75, 100]) / 100
+
+# Potencial de ionización (según la columna Ar/CF4)
+ion_pot = np.array([26.4, 26.7, 26.9, 27.4, 28.1, 29.4, 30.2, 31.7, 33.0, 34.3])
+
+energy_X_ray_CF4 = 15
+
+def W_CF4(f):
+    f_cf4 = np.asarray(f, dtype=float)
+    W = np.interp(f_cf4, cf4_pct, ion_pot)
+    return W
+
+w_cf4 =  W_CF4(yield_vis["fCF4"].to_numpy()/100) 
+y_cols = ["1.0bar", "2.0bar", "2.5bar", "3.0bar", "4.0bar", "5.0bar", 'Err 1.0bar','Err 2.0bar','Err 2.5bar','Err 3.0bar','Err 4.0bar','Err 5.0bar']
+factor = (1 / w_cf4)[:, None]
+
+yield_vis[y_cols]  = yield_vis[y_cols].to_numpy() * factor
+yield_uv[y_cols]  = yield_uv[y_cols].to_numpy() * factor
+
+#####################################################
+
 DATA_DIR = "../data/Primary_DegradData"
 degrad_data        = pd.read_csv(os.path.join(DATA_DIR, "ArCF4.csv"))
 
@@ -200,22 +223,25 @@ x0 = np.array([0.00,
                1.0 ,0.1, 0.48, 50.1, 0.37,
                0.2])
 lower = [0.0,
-         0.0, 0.27, 0.0, 0.0,
-         0.00, 0.065, 0.0, 50, 0.0,
-         0.12]
+         0.0, 0.0, 0.0, 0.0,
+         0.00, 0.0, 0.0, 0, 0.0,
+         0.0]
 
-upper = [0.2, 
-         0.11, 1.0, 10000.0, 10000.0,
-         10000.0, 10000.0, 1.0, 50.2, 1.0, 
-         0.3]
+upper = [1.0, 
+         1.0, 1.0, 10000.0, 10000.0,
+         10000.0, 10000.0, 1.0, 10000, 1.0, 
+         1.0]
          
+bounds=(lower, upper)
+
 popt_secondary = fitParameters(equations,
                                experimental_data,
                                degrad_data, 
                                x0=x0,
                                bounds=bounds,
                                fixed_idx=[0,1,2,6,8,10],
-                               fixed_values = [0.15,0.109,0.271,.065, 50.05, 0.2],)
+                               fixed_values = [0.0032,0.109,0.271,.065, 50.05, 0.2],
+                               fixed_error=0.01)
 
 export_to_csv("../data/Parameters/ArCF4_secondary.csv",popt_secondary,names_csv)
 
@@ -253,6 +279,8 @@ par = popt_secondary.x
 pressure = [1,3,4]
 
 
+concentrations = np.logspace(-4, 0, 1000)
+
 fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
     df_exp=yield_vis,
     theory_func=theory_yield_vis,
@@ -267,7 +295,7 @@ fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
     xlabel="Concentration of CF$_4$ [$\%$]",
     ylabel="Normalized Yield",
     xlim=(0.1 * 0.9, 100 * 1.1),
-    ylim=(0.002, 0.4),
+    ylim=(0.0002, 0.01),
     xscale="log",
     yscale="log",
     cmap="viridis",
@@ -296,7 +324,7 @@ fig, ax, pressure_cols = plot_fit_vs_experiment_by_pressure(
     xlabel="Concentration of CF$_4$ [$\%$]",
     ylabel="Normalized Yield",
     xlim=(0.001 * 0.9, 100 * 1.1),
-    ylim=(0.03,1.05),
+    ylim=(0.001, 0.1),
     xscale="log",
     yscale="log",
     cmap="viridis",

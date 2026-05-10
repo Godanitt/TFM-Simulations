@@ -5,6 +5,8 @@ from scipy.interpolate import interp1d
 
 from scipy.interpolate import PchipInterpolator
 
+energy_X_ray_N2 = 12 # eV
+
 def W_ArN2(xN2, WAr=26.4, WN2=34.8):
     return 1.0 / ((1.0-xN2)/WAr + xN2/WN2)
 
@@ -38,8 +40,8 @@ def theory_yield_N2_uv(x, degrad_data, fN2, n, activate_components=False):
     K_ArRes_Q_N2c  = x[8]
     K_ArRes_Q_N2b  = x[9]
     K_ArRes_Q_2Ar  = x[10]
-    # P_Ar_dbleStar  = x[11]
-    # frac_Ar_dbleStar  = x[12]
+    P_Ar_dbleStar  = x[11]
+    frac_Ar_dbleStar  = x[12]
 
 
     frac_1 = (1/tau_N2) / (1/tau_N2 + n * fN2 * K_N2_Q_N2 + n * (1 - fN2) * K_N2_Q_Ar)
@@ -47,29 +49,29 @@ def theory_yield_N2_uv(x, degrad_data, fN2, n, activate_components=False):
 
     frac_2 = (K_ArMeta_Q_N2c * fN2 * n) / (
         (K_ArMeta_Q_N2b + K_ArMeta_Q_N2c) * fN2 * n +
-        (K_ArMeta_Q_2Ar * (1-fN2) * n**2)
+        (K_ArMeta_Q_2Ar * (1-fN2)**2 * n**2)
     )
     factor_Ar_meta = frac_2
 
     frac_5 = (K_ArRes_Q_N2c * fN2 * n) / (
         (K_ArRes_Q_N2b + K_ArRes_Q_N2c) * fN2 * n +
-        K_ArRes_Q_2Ar * (1-fN2) * n**2
+        K_ArRes_Q_2Ar * (1-fN2)**2 * n**2
     )
     factor_Ar_res = frac_5
 
-    total = (1/W) * Nnorm * factor_N2 * (
+    total = (W) * Nnorm/30 * factor_N2 * (
         Pob_N2 * P_N2 + Pob_Ar_meta * factor_Ar_meta + Pob_Ar_res * factor_Ar_res 
-       # + Pob_Ar_dbleStar * P_Ar_dbleStar * (frac_Ar_dbleStar * factor_Ar_meta + (1-frac_Ar_dbleStar) * factor_Ar_meta)
+        + Pob_Ar_dbleStar * P_Ar_dbleStar * (frac_Ar_dbleStar * factor_Ar_meta + (1-frac_Ar_dbleStar) * factor_Ar_res)
     )
 
     if activate_components:
         return (
-            total,
-            (1/W) * Nnorm * factor_N2 * (Pob_N2 * P_N2),
-            (1/W) * Nnorm * factor_N2 * (Pob_Ar_meta * factor_Ar_meta),
-            (1/W) * Nnorm * factor_N2 * (Pob_Ar_res * factor_Ar_res),
+            total/energy_X_ray_N2,
+            Nnorm * factor_N2 * (Pob_N2 * P_N2)/energy_X_ray_N2,
+            Nnorm * factor_N2 * (Pob_Ar_meta * factor_Ar_meta)/energy_X_ray_N2,
+            Nnorm * factor_N2 * (Pob_Ar_res * factor_Ar_res)/energy_X_ray_N2,
         )
-    return total
+    return total/energy_X_ray_N2
 
 ############################
 ## VERSION ANTIGUA
@@ -111,7 +113,7 @@ def _theory_yield_N2_uv(x, degrad_data, fN2, n, activate_components = False):
     frac3  = np.where(denom == 0, 0.0, (1/30)/ denom)
     
     if activate_components:
-        return ((1/W) * N * (P_N2 + (P_Ar_Star + P_Ar_dbleStar * frac3) * frac1) * frac2,
-                (1/W) * N * P_N2 * frac2)
+        return ( N * (P_N2 + (P_Ar_Star + P_Ar_dbleStar * frac3) * frac1) * frac2,
+                 N * P_N2 * frac2)
     else:
-        return (1/W)* N * (P_N2 + (P_Ar_Star + P_Ar_dbleStar * p_dbleStar * frac3) * p_Star * frac1) * frac2
+        return  N * (P_N2 + (P_Ar_Star + P_Ar_dbleStar * p_dbleStar * frac3) * p_Star * frac1) * frac2

@@ -92,24 +92,23 @@ def calcula_yields(pressure,Norm,Xray_energy_cf4=0.015,Xray_energy_n2=0.012):
     f0 = 0.00001
     f1 = 1
 
-    y_cf3 = theory_yield_vis(parameter_data_ArCF4,  degrad_data_ArCF4,    f1,  pressure) / Xray_energy_cf4 * (W_ArCF4_100)  / Norm
-    y_cf4 = theory_yield_uv(parameter_data_ArCF4,   degrad_data_ArCF4,    f1,  pressure) / Xray_energy_cf4 * (W_ArCF4_100)  / Norm
-    y_3rd = theory_yield_uv(parameter_data_ArCF4,   degrad_data_ArCF4,    f0,  pressure) / Xray_energy_cf4 * (W_ArCF4_0)  / Norm
-    y_n2 = theory_yield_N2_uv(parameter_data_ArN2,  degrad_data_ArN2,     f1,  pressure) / Xray_energy_n2 * (W_ArN2_100)  / Norm
+    y_cf3 = theory_yield_vis(parameter_data_ArCF4,  degrad_data_ArCF4,    f1,  pressure) * 1000 / Norm
+    y_cf4 = theory_yield_uv(parameter_data_ArCF4,   degrad_data_ArCF4,    f1,  pressure) * 1000 / Norm
+    y_3rd = theory_yield_uv(parameter_data_ArCF4,   degrad_data_ArCF4,    f0,  pressure) * 1000 / Norm
+    y_n2 = theory_yield_N2_uv(parameter_data_ArN2,  degrad_data_ArN2,     f1,  pressure) * 1000 / Norm
 
-    y_cf4_ir  = theory_yield_ArCF4_Ir_696(parameter_data_ArCF4_IR, degrad_data_ArCF4_IR, f0, pressure) / Xray_energy_cf4 * (W_ArCF4_0) / Norm
-    y_cf4_ir += theory_yield_ArCF4_Ir_727(parameter_data_ArCF4_IR, degrad_data_ArCF4_IR, f0, pressure) / Xray_energy_cf4 * (W_ArCF4_0) / Norm
-    y_cf4_ir += theory_yield_ArCF4_Ir_750(parameter_data_ArCF4_IR, degrad_data_ArCF4_IR, f0, pressure) / Xray_energy_cf4 * (W_ArCF4_0) / Norm
-    y_cf4_ir += theory_yield_ArCF4_Ir_763(parameter_data_ArCF4_IR, degrad_data_ArCF4_IR, f0, pressure) / Xray_energy_cf4 * (W_ArCF4_0) / Norm
-    y_cf4_ir += theory_yield_ArCF4_Ir_772(parameter_data_ArCF4_IR, degrad_data_ArCF4_IR, f0, pressure) / Xray_energy_cf4 * (W_ArCF4_0) / Norm
-    y_cf4_ir += theory_yield_ArCF4_Ir_794(parameter_data_ArCF4_IR, degrad_data_ArCF4_IR, f0, pressure) / Xray_energy_cf4 * (W_ArCF4_0) / Norm
-
+    y_cf4_ir  = theory_yield_ArCF4_Ir_696(parameter_data_ArCF4_IR, degrad_data_ArCF4_IR, f0, pressure) * 1000 / Norm
+    y_cf4_ir += theory_yield_ArCF4_Ir_727(parameter_data_ArCF4_IR, degrad_data_ArCF4_IR, f0, pressure) * 1000 / Norm
+    y_cf4_ir += theory_yield_ArCF4_Ir_750(parameter_data_ArCF4_IR, degrad_data_ArCF4_IR, f0, pressure) * 1000 / Norm
+    y_cf4_ir += theory_yield_ArCF4_Ir_763(parameter_data_ArCF4_IR, degrad_data_ArCF4_IR, f0, pressure) * 1000 / Norm
+    y_cf4_ir += theory_yield_ArCF4_Ir_772(parameter_data_ArCF4_IR, degrad_data_ArCF4_IR, f0, pressure) * 1000 / Norm
+    y_cf4_ir += theory_yield_ArCF4_Ir_794(parameter_data_ArCF4_IR, degrad_data_ArCF4_IR, f0, pressure) * 1000 / Norm
     
-    y_n2_ir = theory_yield_ArN2_Ir_696(parameter_data_ArN2_IR, degrad_data_ArN2_IR, f0, pressure) / Xray_energy_n2 * (W_ArN2_0) / Norm
-    y_n2_ir += theory_yield_ArN2_Ir_727(parameter_data_ArN2_IR, degrad_data_ArN2_IR, f0, pressure) / Xray_energy_n2* (W_ArN2_0) / Norm
-    y_n2_ir += theory_yield_ArN2_Ir_750(parameter_data_ArN2_IR, degrad_data_ArN2_IR, f0, pressure) / Xray_energy_n2 * (W_ArN2_0) / Norm
-    y_n2_ir += theory_yield_ArN2_Ir_763(parameter_data_ArN2_IR, degrad_data_ArN2_IR, f0, pressure) / Xray_energy_n2 * (W_ArN2_0) / Norm
-    y_n2_ir += theory_yield_ArN2_Ir_772(parameter_data_ArN2_IR, degrad_data_ArN2_IR, f0, pressure) / Xray_energy_n2 * (W_ArN2_0) / Norm
+    y_n2_ir = theory_yield_ArN2_Ir_696(parameter_data_ArN2_IR, degrad_data_ArN2_IR, f0, pressure) * 1000 / Norm
+    y_n2_ir += theory_yield_ArN2_Ir_727(parameter_data_ArN2_IR, degrad_data_ArN2_IR, f0, pressure) * 1000 / Norm
+    y_n2_ir += theory_yield_ArN2_Ir_750(parameter_data_ArN2_IR, degrad_data_ArN2_IR, f0, pressure) * 1000 / Norm
+    y_n2_ir += theory_yield_ArN2_Ir_763(parameter_data_ArN2_IR, degrad_data_ArN2_IR, f0, pressure) * 1000 / Norm
+    y_n2_ir += theory_yield_ArN2_Ir_772(parameter_data_ArN2_IR, degrad_data_ArN2_IR, f0, pressure) * 1000 / Norm
 
     return np.array([y_3rd,y_cf4,y_cf3,y_n2[0],y_cf4_ir,y_n2_ir])
 
@@ -131,21 +130,22 @@ names_tex = np.array([
 x0 = calcula_yields(1,normCF4)
 x1 = calcula_yields(1,normN2)
 
-x2 = calcula_yields(1,0.1467)
-x3 = calcula_yields(1,0.18201)
-x4 = calcula_yields(1,0.225)
+# x2 = calcula_yields(1,0.1467)
+# x3 = calcula_yields(1,0.18201)
+# x4 = calcula_yields(1,0.225)
 
-print(f"Norm CF4 = {normCF4:.2f}")
-print(f"Norm N2 = {normN2:.2f}")
+print(f"Norm CF4 = {normCF4:.6f}")
+print(f"Norm N2 = {normN2:.6f}")
 print("=="*30)
 
 
 df = pd.DataFrame({"Parameter"  :names_tex,
                    "Norm ArCF4" :x0,
                    "Norm ArN2"  :x1,
-                   "140 ph/MeV" :x2,
-                   "110 ph/MeV" :x3,
-                   "90 ph/MeV"  :x4})
+                #    "140 ph/MeV" :x2,
+                #    "110 ph/MeV" :x3,
+                #    "90 ph/MeV"  :x4
+                   })
 
 df.style.hide(axis="index").format(
     lambda x: f"$\\num{{{x:.3e}}}$" if isinstance(x, (int, float)) else x

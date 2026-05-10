@@ -3,6 +3,11 @@
 #include <vector>
 #include "Garfield/MediumMagboltz.hh"
 
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <cstdio>
 
 using namespace Garfield;
 using namespace std;
@@ -53,15 +58,46 @@ void ExportAllLevelsCsv(Garfield::MediumMagboltz* gas,
 
 int main() {
 
-  MediumMagboltz * gas = new MediumMagboltz ();
-  gas->SetComposition("ar", 90., "cf4", 10.);
+  MediumMagboltz* gas = new MediumMagboltz();
+
+  gas->SetComposition("he", 90., "cf4", 10.);
   gas->SetTemperature(293.15);
   gas->SetPressure(760.);
+
+  gas->SetMaxElectronEnergy(400.0);
+
+  gas->EnableDebugging();
+  gas->PrintGas();
+
+  
   gas->Initialise(true);
 
-  const std::vector<std::string> gasNames = {"Ar", "CF4"};
+  gas->DisableDebugging();
 
-  ExportAllLevelsCsv(gas, "level_gas_state.csv", gasNames);
+  const int nLevels = gas->GetNumberOfLevels();
+  std::cout << "# of levels: " << nLevels << std::endl;
 
+  int ngas = 0;
+  int type = 0;
+  std::string description;
+  double en = 0.;
+
+  for (int il = 0; il < nLevels; ++il) {
+    gas->GetLevel(il, ngas, type, description, en);
+    
+    std::cout << "level " << il
+              << " | gas index = " << ngas
+              << " | type = " << type
+              << " (" << CollisionTypeToString(type) << ")"
+              << " | energy = " << en << " eV"
+              << " | description = " << description
+              << std::endl;
+  }
+
+  const std::vector<std::string> gasNames = {"He", "CF4"};
+
+  ExportAllLevelsCsv(gas, "HeCF4_level_data.csv", gasNames);
+
+  delete gas;
   return 0;
 }

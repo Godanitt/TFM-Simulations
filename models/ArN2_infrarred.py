@@ -2,6 +2,8 @@
 import numpy as np
 from scipy.interpolate import PchipInterpolator
 
+energy_X_ray_N2 = 12
+
 
 def W_ArN2(xN2, WAr=26.4, WN2=34.8):
     return 1.0 / ((1.0-xN2)/WAr + xN2/WN2)
@@ -91,9 +93,9 @@ def theory_yield_ArN2_Ir_696(x, degrad_data, fN2, n, activate_components = False
     frac1 = PAr_star_696 * (1/tau_N2_696) / ( 1/tau_N2_696 + n * fN2 * K_Ar_Q_N2_696 + n * (1 - fN2) * K_Ar_Q_Ar_696)
 
     if activate_components:
-        return (W * frac1 * Pob_Ar_696, W * frac1 * Pob_Ar_696)
+        return (frac1 * Pob_Ar_696, frac1 * Pob_Ar_696) / energy_X_ray_N2
     else:
-        return  W * frac1 * Pob_Ar_696
+        return  frac1 * Pob_Ar_696 / energy_X_ray_N2
     
     
 
@@ -156,9 +158,9 @@ def theory_yield_ArN2_Ir_727(x, degrad_data, fN2, n, activate_components = False
 
 
     if activate_components:
-        return (W * frac1 * Pob_Ar_727, W * frac1 * Pob_Ar_727)
+        return (frac1 * Pob_Ar_727, frac1 * Pob_Ar_727) / energy_X_ray_N2
     else:
-        return  W * frac1 * Pob_Ar_727
+        return  frac1 * Pob_Ar_727 / energy_X_ray_N2
     
 
 ###################################
@@ -220,9 +222,9 @@ def theory_yield_ArN2_Ir_750(x, degrad_data, fN2, n, activate_components = False
 
 
     if activate_components:
-        return (W * frac1 * Pob_Ar_750, W * frac1 * Pob_Ar_750)
+        return (frac1 * Pob_Ar_750, frac1 * Pob_Ar_750) / energy_X_ray_N2
     else:
-        return W * frac1 * Pob_Ar_750
+        return frac1 * Pob_Ar_750 / energy_X_ray_N2
     
 
 ###################################
@@ -283,9 +285,9 @@ def theory_yield_ArN2_Ir_763(x, degrad_data, fN2, n, activate_components = False
 
 
     if activate_components:
-        return (W * frac1 * Pob_Ar_764, W * frac1 * Pob_Ar_764)
+        return (frac1 * Pob_Ar_764, frac1 * Pob_Ar_764) / energy_X_ray_N2
     else:
-        return  W * frac1 * Pob_Ar_764
+        return  frac1 * Pob_Ar_764 / energy_X_ray_N2
     
 
 ###################################
@@ -346,9 +348,9 @@ def theory_yield_ArN2_Ir_772(x, degrad_data, fN2, n, activate_components = False
 
 
     if activate_components:
-        return (W * frac1 * Pob_Ar_772, W * frac1 * Pob_Ar_772)
+        return (frac1 * Pob_Ar_772, frac1 * Pob_Ar_772) / energy_X_ray_N2
     else:
-        return  W * frac1 * Pob_Ar_772
+        return  frac1 * Pob_Ar_772 / energy_X_ray_N2
     
 
 ###################################
@@ -418,7 +420,7 @@ def theory_yield_ArN2_Ir_794(x, degrad_data, fN2, n, activate_components = False
 
 
     if activate_components:
-       return (W * frac1 * Pob_Ar_794, W * frac1 * Pob_Ar_794)
+       return (frac1 * Pob_Ar_794, frac1 * Pob_Ar_794) / energy_X_ray_N2
     else:
-       return  W * frac1 * Pob_Ar_794
+       return  frac1 * Pob_Ar_794 / energy_X_ray_N2
     

@@ -150,18 +150,21 @@ theory_visible_ref = None  # máximo del visible teórico CF4 a 95/5
 # ---------- N2 ----------
 for con in concentrations:
     spectra_con = []
-    factor = (1 / 0.012) * W_ArN2(con / 100) / norm
+    factor = 1 # (1 / 0.012) * W_ArN2(con / 100) / norm
 
     for pres in pressure:
         yield_N2 = theory_yield_N2_uv(
             parameter_data_n2, degrad_data_n2, np.array([con / 100]), pres
         )
 
-        yield_total = 0.13 * factor * yield_N2[0] * gaussiana(wavelength, 310, 3)
-        yield_total += 0.42 * factor * yield_N2[0] * gaussiana(wavelength, 335, 2.5)
-        yield_total += 0.30 * factor * yield_N2[0] * gaussiana(wavelength, 355, 2.5)
-        yield_total += 0.10 * factor * yield_N2[0] * gaussiana(wavelength, 378, 2.5)
-        yield_total += 0.05 * factor * yield_N2[0] * gaussiana(wavelength, 403, 2.5)
+        #yield_total = 0.13 * factor * yield_N2[0] * gaussiana(wavelength, 310, 3)
+        yield_total = 0.47 * factor * yield_N2[0] * gaussiana(wavelength, 335, 2.5*1.5)
+        yield_total += 0.32 * factor * yield_N2[0] * gaussiana(wavelength, 355, 2.5*1.5)
+        yield_total += 0.13 * factor * yield_N2[0] * gaussiana(wavelength, 378, 2.5*1.5)
+        yield_total += 0.08 * factor * yield_N2[0] * gaussiana(wavelength, 403, 2.5*1.5)
+
+
+        print("integral  n2 = ",np.trapezoid(yield_total,wavelength))
 
         for name, yield_IR in equations_n2.items():
             yield_ir = yield_IR(
@@ -178,7 +181,7 @@ for con in concentrations:
     spectra_con = []
 
     for pres in pressure:
-        factor = (1 / 0.015) * ion_potential(con / 100) / norm
+        factor = 1 # (1 / 0.015) * ion_potential(con / 100) / norm
 
         yield_vis = theory_yield_vis(
             parameter_data_cf4, degrad_data_cf4, np.array([con / 100]), pres
@@ -200,8 +203,8 @@ for con in concentrations:
         yield_vis_spec = yield_vis[0] * gaussiana(wavelength, 630, 40)
 
         yield_cf4_230 = (0.8 / 1.85) * yield_cf4[0] * gaussiana(wavelength, 230, 20)
-        yield_cf4_290 = (0.95 / 1.85) * yield_cf4[0] * gaussiana(wavelength, 290, 20)
-        yield_cf4_364 = (0.10 / 1.85) * yield_cf4[0] * gaussiana(wavelength, 364, 40)
+        yield_cf4_290 = (0.8 / 1.85) * yield_cf4[0] * gaussiana(wavelength, 290, 20)
+        yield_cf4_364 = (0.25 / 1.85) * yield_cf4[0] * gaussiana(wavelength, 364, 40)
         yield_cf4_spec = yield_cf4_230 + yield_cf4_290 + yield_cf4_364
 
         yield_arDbleStar_spec = yield_ArDbleStar[0] * gaussiana(wavelength, 220, 60)
@@ -214,6 +217,9 @@ for con in concentrations:
             + yield_CF3_spec
         )
 
+
+        print("integral  cf4 = ",np.trapezoid(yield_total,wavelength))
+        
         for name, yield_IR in equations_cf4.items():
             yield_ir = yield_IR(
                 parameter_data_cf4_IR, degrad_data_cf4_IR, np.array([con / 100]), pres
@@ -232,7 +238,7 @@ if theory_visible_ref is None or theory_visible_ref <= 0:
     raise ValueError("No pude determinar la referencia teórica del pico visible para CF4 al 95/5.")
 
 # referencia experimental: pico visible experimental CF4 a 95/5
-exp_visible_ref = get_cf4_exp_visible_reference(df_CF4)
+exp_visible_ref = 1 #  get_cf4_exp_visible_reference(df_CF4)
 
 print(f"Referencia teórica visible CF4 (95/5): {theory_visible_ref}")
 print(f"Referencia experimental visible CF4 (95/5): {exp_visible_ref}")
@@ -261,8 +267,8 @@ for con in concentrations:
     for pres in pressure:
         mask_n2 = np.isclose(df_N2["N2 concentration (%)"], con) & np.isclose(df_N2["P (bar)"], pres)
         if np.any(mask_n2):
-            dic = df_N2.loc[mask_n2].iloc[0]["mean_spectrum"]
-            intensity = np.asarray(dic["intensity"], dtype=float) / exp_visible_ref
+            dic = df_N2.loc[mask_n2].iloc[0]["spectrum_new_cal"]
+            intensity =   np.asarray(dic["intensity"], dtype=float) / exp_visible_ref
             global_ymax = max(global_ymax, np.max(intensity))
 
         mask_cf4 = np.isclose(df_CF4["concentracion"], con) & np.isclose(df_CF4["presion"], pres)
@@ -292,11 +298,15 @@ for ax, (con_cf4, spectra_cf4_con), (con_n2, spectra_n2_con) in zip(
             label=f"N$_2$ Teo. {pres:.1f} bar"
         )
 
-        mask_n2 = np.isclose(df_N2["N2 concentration (%)"], con_n2) & np.isclose(df_N2["P (bar)"], pres)
+        mask_n2 = (df_N2["N2 concentration (%)"] == con_n2) & (df_N2["P (bar)"] == pres)
+
+        # print("con N2", con_n2)
+        # print(mask_n2)
+
         if np.any(mask_n2):
             dic = df_N2.loc[mask_n2].iloc[0]["mean_spectrum"]
             wavelen = np.asarray(dic["wavelength"], dtype=float)
-            intensity = np.asarray(dic["intensity"], dtype=float) / exp_visible_ref
+            intensity =  np.asarray(dic["intensity"], dtype=float) / exp_visible_ref  
 
             ax.plot(
                 wavelen,
@@ -305,6 +315,12 @@ for ax, (con_cf4, spectra_cf4_con), (con_n2, spectra_n2_con) in zip(
                 lw=1.8,
                 label=f"N$_2$ Exp. {pres:.1f} bar"
             )
+            nn1 = int(len(wavelen)/6)
+            nn2 = int(len(wavelen)/2.8)
+            
+            integral = np.trapezoid(intensity[nn1:nn2],wavelen[nn1:nn2])
+
+            print("Integral n2 exp",integral)
 
     # -------------------------
     # CF4 teórico + experimental
@@ -332,6 +348,10 @@ for ax, (con_cf4, spectra_cf4_con), (con_n2, spectra_n2_con) in zip(
                 label=f"CF$_4$ Exp. {pres:.1f} bar"
             )
 
+            integral2 = np.trapezoid(intensity[:],wavelen[:])
+            print("integral experimental cf4",integral2)
+
+
     ax.set_title(f"{con_cf4:.1f} $\%$ Aditivo")
     ax.set_xlabel(r"$\lambda$ [nm]")
     ax.set_ylabel("Intensidad normalizada")
@@ -347,4 +367,7 @@ fig.suptitle(
 )
 fig.tight_layout()
 fig.savefig("Comparation_normalized.pdf", dpi=300, bbox_inches="tight")
+
+print("razones integral",integral/integral2)
 plt.show()
+
